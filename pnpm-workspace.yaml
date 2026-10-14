@@ -18,3 +18,7 @@ onlyBuiltDependencies:
 # a newer release passes packaged-runtime-deps and the packaged Electron smoke.
 patchedDependencies:
   app-builder-lib@26.8.1: patches/app-builder-lib@26.8.1.patch
+
+# extract-zip's yauzl 2 stream lifecycle can leave extraction incomplete on Node 26.
+overrides:
+  extract-zip>yauzl: 3.4.0

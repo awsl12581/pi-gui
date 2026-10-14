@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-14 16:56 CST
-> 文档版本：v1
-> 修改说明：删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。
+> 最后修改时间：2026-10-14 21:20 CST
+> 文档版本：v2
+> 修改说明：记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -130,6 +130,17 @@ Desktop packaging and its test fixtures stay under `apps/desktop`; the marketing
 
 The root commands make that ownership explicit: `marketing:media` records the README and website media, `marketing:capture` produces showcase captures through the desktop app, and `marketing:render` renders the Remotion showcase. Generated historical media and user artifacts must not be removed as dependency cleanup. Packaging dependencies also require packaged-runtime verification before removal because bundling and pnpm staging can need packages that have no direct source import.
 
+## Development dependency installation
+
+Development commands support Node 24–26 (`>=24.0.0 <27`); CI and cloud setup use Node 24.
+Electron 37 retains its bundled Node runtime independently. `pnpm-workspace.yaml` scopes a
+`yauzl 3.4.0` override to `extract-zip` to avoid incomplete extraction on Node 26.
+The root `postinstall` runs `scripts/prepare-desktop-dependencies.mjs`: it checks the Electron
+executable and makes node-pty's macOS prebuilt helper executable. This setup runs in the
+Node development environment and does not expose new renderer or preload capabilities.
+Proxy download instructions are in the root README; npm registry settings do not route
+Electron's separate GitHub binary download.
+
 ## Proof
 
 Use [baseline checks](ci-baseline.md), [desktop lane commands](../apps/desktop/README.md), and the [verification skill](../.agents/skills/verify-pi-gui/SKILL.md). `check:architecture` enforces renderer, contract-authority, and host dependency rules. `test:guards` includes rejected fixtures for those boundaries and state-owner access.
@@ -162,3 +173,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | 版本 | 修改时间             | 修改内容                                                     |
 | ---- | -------------------- | ------------------------------------------------------------ |
 | v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。 |
+| v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。 |

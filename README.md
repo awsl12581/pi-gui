@@ -1,5 +1,9 @@
 # pi-gui
 
+> 最后修改时间：2026-10-14 21:20 CST
+> 文档版本：v1
+> 修改说明：明确支持 Node 24–26、CI Node 24，并说明 Electron 代理下载与安装准备。
+
 The desktop app for the [pi](https://github.com/earendil-works/pi) coding agent.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
@@ -137,13 +141,33 @@ See [docs/architecture.md](docs/architecture.md) for ownership and boundaries.
 
 ## Development
 
-Requires Node 22.19 or newer (CI runs Node 22) and [pnpm](https://pnpm.io) through `corepack`.
+Requires Node 24–26 (`>=24.0.0 <27`; CI runs Node 24) and [pnpm](https://pnpm.io) through `corepack`.
 `pnpm-lock.yaml` is the authoritative lockfile.
 
 ```bash
 corepack enable
 pnpm install
 ```
+
+If installation stops at `electron postinstall: node install.js` while using an HTTPS proxy,
+Electron's downloader needs proxy support enabled explicitly. In a POSIX shell, reuse the
+proxy already configured in your environment:
+
+```bash
+ELECTRON_GET_USE_PROXY=1 \
+GLOBAL_AGENT_HTTPS_PROXY="${https_proxy:-$HTTPS_PROXY}" \
+GLOBAL_AGENT_HTTP_PROXY="${http_proxy:-${HTTP_PROXY:-${https_proxy:-$HTTPS_PROXY}}}" \
+electron_config_cache="$PWD/.cache/electron" \
+pnpm install --frozen-lockfile
+```
+
+The npm registry serves package archives; Electron downloads its runtime separately from
+GitHub. Changing the registry alone does not change that download route.
+
+The workspace pins `extract-zip`'s ZIP reader to `yauzl 3.4.0` so Electron extraction completes
+on Node 26. The root postinstall checks Electron's executable and restores execute permission
+on node-pty's macOS prebuilt helper. Electron keeps its own bundled Node runtime; the range
+above applies to development commands.
 
 Common commands, from the repo root:
 
@@ -205,3 +229,9 @@ and the [pi](https://github.com/earendil-works/pi) runtime and ecosystem.
 ## License
 
 [MIT](./LICENSE) © Matthew Lam
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                                              |
+| ---- | -------------------- | --------------------------------------------------------------------- |
+| v1   | 2026-10-14 21:20 CST | 明确支持 Node 24–26、CI Node 24，并说明 Electron 代理下载与安装准备。 |
