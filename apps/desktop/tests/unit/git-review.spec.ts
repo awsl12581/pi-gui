@@ -454,6 +454,7 @@ test("inherited Git repository overrides cannot redirect review reads or staging
   const decoy = await repository();
   await writeFile(join(cwd, "file.txt"), "checkout change\n");
   await writeFile(join(decoy, "decoy.txt"), "decoy change\n");
+  const decoyIndex = await readFile(join(decoy, ".git", "index"));
   const overrides = {
     GIT_DIR: join(decoy, ".git"),
     GIT_WORK_TREE: decoy,
@@ -475,6 +476,7 @@ test("inherited Git repository overrides cannot redirect review reads or staging
   }
   expect(await git(cwd, "diff", "--cached", "--name-only")).toBe("file.txt\n");
   expect(await git(decoy, "diff", "--cached", "--name-only")).toBe("");
+  expect(await readFile(join(decoy, ".git", "index"))).toEqual(decoyIndex);
 });
 
 test("reviews list only changed paths, so a huge repository's full listings cannot exceed the cap", async () => {

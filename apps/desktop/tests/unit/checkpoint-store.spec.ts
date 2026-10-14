@@ -86,6 +86,35 @@ function boundary(
   };
 }
 
+test("checkpoint capture isolates inherited repository overrides and preserves the source index", async () => {
+  const { workspace, store } = await fixture();
+  const decoy = await fixture();
+  await writeFile(join(workspace, "source.txt"), "source contents\n");
+  await git(workspace, ["add", "."]);
+  await git(workspace, ["commit", "-m", "baseline"]);
+  await writeFile(join(decoy.workspace, "decoy.txt"), "decoy contents\n");
+  await git(decoy.workspace, ["add", "."]);
+  const index = await readFile(join(workspace, ".git", "index"));
+  const decoyIndex = await readFile(join(decoy.workspace, ".git", "index"));
+  const overrides = {
+    GIT_DIR: join(decoy.workspace, ".git"),
+    GIT_WORK_TREE: decoy.workspace,
+    GIT_INDEX_FILE: join(decoy.workspace, ".git", "index"),
+  };
+  const previous = Object.fromEntries(Object.keys(overrides).map((key) => [key, process.env[key]]));
+  Object.assign(process.env, overrides);
+  try {
+    available(await store.capture(workspace));
+  } finally {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+  expect(await readFile(join(workspace, ".git", "index"))).toEqual(index);
+  expect(await readFile(join(decoy.workspace, ".git", "index"))).toEqual(decoyIndex);
+});
+
 test("captures raw bytes, modes, symlink targets and deletions without changing source Git state", async () => {
   const { directory, workspace, store } = await fixture();
   await writeFile(join(workspace, "raw.txt"), "base\n");
