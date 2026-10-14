@@ -1,5 +1,7 @@
 # Dependencies, generated output, and local verification artifacts.
 **/node_modules/
+# Git symlink; Windows may check it out as link-target text rather than Markdown.
+/CLAUDE.md
 # Anchor outputs to roots so similarly named source folders stay checked.
 /dist/
 /dist-electron/
