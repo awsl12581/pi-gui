@@ -19,7 +19,7 @@
         "../../packages/session-driver/src/dev-reload-probe.ts"
       ],
       "@pi-gui/catalogs/node": ["../../packages/catalogs/src/node/index.ts"],
-      "@pi-gui/catalogs/node/atomic-write": ["../../packages/catalogs/src/node/atomic-write.ts"]
+      "@pi-gui/platform": ["../../packages/platform/src/index.ts"]
     }
   }
 }

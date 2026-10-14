@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { runProcess } from "@pi-gui/platform";
 import type { AgentToolResult } from "@earendil-works/pi-coding-agent";
 import { sessionKey } from "@pi-gui/session-driver";
 import type {
@@ -58,7 +57,6 @@ const MIN_SUPERVISION_INTERVAL_MS = 250;
 const CHILD_START_TIMEOUT_MS = 10_000;
 const CHILD_RUNNING_FAILURE_GRACE_MS = 1_000;
 const pendingCreateChildThreadToolCalls = new Set<string>();
-const execFileAsync = promisify(execFile);
 
 interface OrchestrationStateView {
   readonly selectedWorkspaceId?: string;
@@ -1983,8 +1981,10 @@ async function gitOutputLines(
   args: readonly string[],
 ): Promise<readonly string[]> {
   try {
-    const { stdout } = await execFileAsync("git", args, { cwd: workspacePath });
-    return stdout
+    const result = await runProcess("git", args, { cwd: workspacePath });
+    if (result.exitCode !== 0) return [];
+    return result.stdout
+      .toString("utf8")
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);

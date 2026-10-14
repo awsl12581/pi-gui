@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { realpath, stat } from "node:fs/promises";
+import { stat } from "node:fs/promises";
+import { resolveExistingPath } from "@pi-gui/platform";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -37,13 +38,13 @@ export async function validateDesktopExtensionIdentity(
   source: string,
   loadedExtensions: readonly LoadedDesktopExtensionSource[],
 ): Promise<DesktopExtensionSourceIdentity> {
-  const sourcePath = await realpath(localFilePath(source, "Extension source"));
+  const sourcePath = await resolveExistingPath(localFilePath(source, "Extension source"));
   const matches = await Promise.all(
     loadedExtensions.map(async ({ resolvedPath }) => {
       // Inline factories have no file-based asset authority.
       if (!path.isAbsolute(resolvedPath)) return false;
       try {
-        return (await realpath(resolvedPath)) === sourcePath;
+        return (await resolveExistingPath(resolvedPath)) === sourcePath;
       } catch {
         return false;
       }
@@ -65,7 +66,7 @@ export async function validateDesktopExtensionFrontend(
   identity: DesktopExtensionSourceIdentity,
   frontend: string | URL,
 ): Promise<ValidatedDesktopExtensionSource> {
-  const frontendPath = await realpath(localFilePath(frontend, "Desktop frontend"));
+  const frontendPath = await resolveExistingPath(localFilePath(frontend, "Desktop frontend"));
   if (!isPathWithin(path.dirname(identity.sourcePath), frontendPath)) {
     throw new Error("Desktop frontend must stay inside its loaded extension directory");
   }
@@ -107,7 +108,7 @@ export async function resolveDesktopExtensionAsset(
   if (!isPathWithin(assetRoot, candidate)) {
     throw new Error("Desktop asset path is outside its browser build");
   }
-  const resolved = await realpath(candidate);
+  const resolved = await resolveExistingPath(candidate);
   if (!isPathWithin(assetRoot, resolved) || !(await stat(resolved)).isFile()) {
     throw new Error("Desktop asset path is outside its browser build");
   }

@@ -1,4 +1,3 @@
-import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { constants, type Stats } from "node:fs";
 import {
@@ -18,6 +17,7 @@ import type { SessionRef, TurnCaptureBoundary } from "@pi-gui/session-driver";
 import type { ReviewCoverage, ReviewIssue } from "../../contracts/review";
 import { readJsonWithBackup, writeFileAtomicQueued } from "../persistence/atomic-file-write";
 import { isolatedGitEnvironment } from "../platform/files/git-environment";
+import { runProcess } from "@pi-gui/platform";
 
 export interface CheckpointCaptureLimits {
   readonly timeoutMs: number;
@@ -1074,31 +1074,28 @@ function git(
   input?: Buffer,
   extraEnv: Record<string, string> = {},
 ): Promise<Buffer> {
-  return new Promise((accept, reject) => {
-    const child = execFile(
-      "git",
-      [
-        "-c",
-        "core.fsmonitor=false",
-        "-c",
-        "core.untrackedCache=false",
-        "-c",
-        `core.hooksPath=${process.platform === "win32" ? "NUL" : "/dev/null"}`,
-        ...args,
-      ],
-      {
-        cwd,
-        // Keep normal global/system exclude configuration, but never inherited Git repository overrides.
-        env: isolatedGitEnvironment(extraEnv),
-        encoding: "buffer",
-        signal,
-        killSignal: "SIGKILL",
-        maxBuffer: 16 * 1024 * 1024,
-      },
-      (error, stdout) => (error ? reject(error) : accept(stdout)),
-    );
-    child.stdin?.on("error", () => undefined);
-    child.stdin?.end(input);
+  return runProcess(
+    "git",
+    [
+      "-c",
+      "core.fsmonitor=false",
+      "-c",
+      "core.untrackedCache=false",
+      "-c",
+      `core.hooksPath=${process.platform === "win32" ? "NUL" : "/dev/null"}`,
+      ...args,
+    ],
+    {
+      cwd,
+      env: isolatedGitEnvironment(extraEnv),
+      signal,
+      stdin: input,
+      maxOutputBytes: 16 * 1024 * 1024,
+    },
+  ).then((result) => {
+    if (result.exitCode !== 0)
+      throw new Error(result.stderr.toString("utf8") || "Git command failed.");
+    return result.stdout;
   });
 }
 

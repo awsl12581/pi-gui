@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { copyFile, mkdir, open, readFile, rename, unlink } from "node:fs/promises";
 import { dirname } from "node:path";
+import { writeFileAtomically } from "@pi-gui/platform";
 
 const writeQueueByPath = new Map<string, Promise<void>>();
 
@@ -127,7 +128,7 @@ async function promoteToTarget(
         throw error;
       }
     }
-    await renameReplace(tmpPath, filePath);
+    await installTemp(tmpPath, filePath);
     return;
   }
 
@@ -141,22 +142,15 @@ async function promoteToTarget(
     }
   }
 
-  await renameReplace(tmpPath, filePath);
+  await installTemp(tmpPath, filePath);
+}
+
+async function installTemp(src: string, dest: string): Promise<void> {
+  await writeFileAtomically(dest, await readFile(src));
+  await cleanupTempFile(src);
 }
 
 async function renameReplace(src: string, dest: string): Promise<void> {
-  try {
-    await rename(src, dest);
-    return;
-  } catch (error) {
-    if (!isReplaceRenameError(error)) {
-      throw error;
-    }
-  }
-
-  // Windows rename cannot atomically replace an existing file; remove the
-  // destination first, then rename into the now-free path.
-  await cleanupTempFile(dest);
   await rename(src, dest);
 }
 
@@ -176,15 +170,6 @@ async function fsyncDir(dir: string): Promise<void> {
 
 function isMissingFileError(error: unknown): boolean {
   return typeof error === "object" && error !== null && "code" in error && error.code === "ENOENT";
-}
-
-function isReplaceRenameError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error.code === "EEXIST" || error.code === "EPERM")
-  );
 }
 
 async function cleanupTempFile(filePath: string): Promise<void> {

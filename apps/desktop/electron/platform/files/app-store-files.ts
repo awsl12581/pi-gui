@@ -1,8 +1,7 @@
-import { execFile } from "node:child_process";
 import { open, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
 import ignore from "ignore";
+import { runProcess } from "@pi-gui/platform";
 import type { WorkspaceFilePreview } from "../../../contracts/ipc";
 import { isolatedGitEnvironment } from "./git-environment";
 import { resolveExistingWorkspacePath } from "./workspace-paths";
@@ -15,7 +14,6 @@ const DEFAULT_MAX_FILES = 20_000;
 const ALWAYS_IGNORED_NAMES = new Set([".git", "node_modules", ".DS_Store"]);
 const GIT_LIST_MAX_BUFFER = 64 * 1024 * 1024;
 const GIT_LIST_TIMEOUT_MS = 15_000;
-const execFileAsync = promisify(execFile);
 
 export interface ListWorkspaceFilesOptions {
   readonly force?: boolean;
@@ -138,14 +136,14 @@ async function listGitCheckoutFiles(
 }
 
 async function gitText(cwd: string, args: readonly string[]): Promise<string> {
-  const { stdout } = await execFileAsync("git", args, {
+  const result = await runProcess("git", args, {
     cwd,
     env: isolatedGitEnvironment(),
-    maxBuffer: GIT_LIST_MAX_BUFFER,
-    timeout: GIT_LIST_TIMEOUT_MS,
-    windowsHide: true,
+    maxOutputBytes: GIT_LIST_MAX_BUFFER,
+    timeoutMs: GIT_LIST_TIMEOUT_MS,
   });
-  return stdout;
+  if (result.exitCode !== 0) throw new Error(result.stderr.toString("utf8"));
+  return result.stdout.toString("utf8");
 }
 
 function nulRecords(output: string): string[] {

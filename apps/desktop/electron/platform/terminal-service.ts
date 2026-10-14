@@ -10,6 +10,7 @@ import type {
 } from "../../contracts/ipc";
 import { desktopIpc } from "../../contracts/ipc";
 import { appendTerminalReplay } from "../../contracts/terminal-model";
+import { resolveShell } from "@pi-gui/platform";
 
 type NodePty = typeof import("node-pty");
 type IPty = import("node-pty").IPty;
@@ -65,34 +66,34 @@ export class TerminalService {
 
   constructor(private readonly options: TerminalServiceOptions) {}
 
-  ensurePanel(
+  async ensurePanel(
     webContents: WebContents,
     workspaceId: string,
     terminalScopeId: string,
     size?: Partial<TerminalSize>,
-  ): TerminalPanelSnapshot {
+  ): Promise<TerminalPanelSnapshot> {
     const root = this.ensureRoot(webContents, workspaceId, terminalScopeId);
     if (!root.activeSessionId || root.sessionIds.length === 0) {
-      const session = this.createSessionForRoot(webContents, root, size);
+      const session = await this.createSessionForRoot(webContents, root, size);
       root.sessionIds.push(session.id);
       root.activeSessionId = session.id;
     }
     return this.snapshotRoot(root);
   }
 
-  createSession(
+  async createSession(
     webContents: WebContents,
     workspaceId: string,
     terminalScopeId: string,
     size?: Partial<TerminalSize>,
-  ): TerminalPanelSnapshot {
+  ): Promise<TerminalPanelSnapshot> {
     const root = this.ensureRoot(webContents, workspaceId, terminalScopeId);
     if (root.sessionIds.length >= MAX_TERMINAL_SESSIONS_PER_ROOT) {
       throw new Error(
         `A workspace can have up to ${MAX_TERMINAL_SESSIONS_PER_ROOT} terminal tabs.`,
       );
     }
-    const session = this.createSessionForRoot(webContents, root, size);
+    const session = await this.createSessionForRoot(webContents, root, size);
     root.sessionIds.push(session.id);
     root.activeSessionId = session.id;
     return this.snapshotRoot(root);
@@ -148,14 +149,14 @@ export class TerminalService {
     session.pty?.resize(normalizedSize.cols, normalizedSize.rows);
   }
 
-  restart(
+  async restart(
     webContents: WebContents,
     terminalId: string,
     size?: Partial<TerminalSize>,
-  ): TerminalPanelSnapshot {
+  ): Promise<TerminalPanelSnapshot> {
     const session = this.requireOwnedSession(webContents, terminalId);
     this.disposePty(session);
-    session.shell = this.resolveShell();
+    session.shell = (await this.resolveShell()).executable;
     session.title = this.defaultTitle(session);
     session.status = "running";
     session.replay = "";
@@ -271,11 +272,11 @@ export class TerminalService {
     return root;
   }
 
-  private createSessionForRoot(
+  private async createSessionForRoot(
     webContents: WebContents,
     root: TerminalRoot,
     size?: Partial<TerminalSize>,
-  ): TerminalSession {
+  ): Promise<TerminalSession> {
     const session: TerminalSession = {
       id: `terminal-${Date.now().toString(36)}-${this.nextSessionNumber++}`,
       workspaceId: root.workspaceId,
@@ -283,7 +284,7 @@ export class TerminalService {
       rootKey: root.rootKey,
       cwd: root.cwd,
       ownerWebContentsId: webContents.id,
-      shell: this.resolveShell(),
+      shell: (await this.resolveShell()).executable,
       title: "",
       status: "running",
       replay: "",
@@ -438,14 +439,9 @@ export class TerminalService {
     return `Terminal ${session.id.split("-").at(-1) ?? ""}`.trim();
   }
 
-  private resolveShell(): string {
+  private async resolveShell(): Promise<Awaited<ReturnType<typeof resolveShell>>> {
     const configuredShell = this.options.getIntegratedTerminalShell()?.trim();
-    const shellPath = configuredShell || process.env.SHELL || defaultShellForPlatform();
-    if (process.platform !== "win32" && !path.isAbsolute(shellPath)) {
-      throw new Error(`Integrated terminal shell must be an absolute path: ${shellPath}`);
-    }
-    ensureExecutable(shellPath);
-    return shellPath;
+    return resolveShell(configuredShell || undefined);
   }
 }
 
@@ -481,23 +477,6 @@ function ensureDirectory(directoryPath: string): void {
   if (!stats.isDirectory()) {
     throw new Error(`Workspace is not a directory: ${directoryPath}`);
   }
-}
-
-function ensureExecutable(shellPath: string): void {
-  if (process.platform === "win32") {
-    return;
-  }
-  accessSync(shellPath, constants.X_OK);
-}
-
-function defaultShellForPlatform(): string {
-  if (process.platform === "win32") {
-    return process.env.ComSpec || "cmd.exe";
-  }
-  if (process.platform === "darwin") {
-    return "/bin/zsh";
-  }
-  return "/bin/bash";
 }
 
 function buildTerminalEnv(): Record<string, string> {

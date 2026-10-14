@@ -1,4 +1,3 @@
-import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmod,
@@ -26,6 +25,7 @@ import type {
 } from "../../../contracts/review";
 import { isWorkingReviewScope, reviewStageActions } from "../../../contracts/review";
 import { isolatedGitEnvironment } from "./git-environment";
+import { runProcess } from "@pi-gui/platform";
 
 const MAX_FILES = 2_000;
 const MAX_CONTENT_BYTES = 8 * 1024 * 1024;
@@ -106,30 +106,29 @@ interface GitResult {
 }
 
 function git(cwd: string, args: readonly string[], maxBuffer = MAX_GIT_BYTES): Promise<GitResult> {
-  return new Promise((done, reject) => {
-    execFile(
-      "git",
-      ["--literal-pathspecs", "-c", "core.fsmonitor=false", "-c", "core.quotepath=false", ...args],
-      {
-        cwd,
-        encoding: "buffer",
-        maxBuffer,
-        timeout: 15_000,
-        env: isolatedGitEnvironment(),
-      },
-      (error, stdout, stderr) => {
-        if (error && error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") {
-          done({ stdout, code: 1, truncated: true });
-        } else if (error && typeof error.code !== "number") {
-          reject(error);
-        } else {
-          const code = typeof error?.code === "number" ? error.code : 0;
-          if (code > 1) reject(new Error(stderr.toString("utf8").trim() || "Git command failed."));
-          else done({ stdout, code, truncated: false });
-        }
-      },
-    );
-  });
+  return runProcess(
+    "git",
+    ["--literal-pathspecs", "-c", "core.fsmonitor=false", "-c", "core.quotepath=false", ...args],
+    {
+      cwd,
+      env: isolatedGitEnvironment(),
+      maxOutputBytes: maxBuffer,
+      timeoutMs: 15_000,
+    },
+  )
+    .then((result) => {
+      if (result.exitCode > 1)
+        throw new Error(result.stderr.toString("utf8").trim() || "Git command failed.");
+      return { stdout: result.stdout, code: result.exitCode, truncated: false };
+    })
+    .catch((error) => {
+      if (error instanceof Error && "code" in error && error.code === "output-limit-exceeded") {
+        const partial =
+          "stdout" in error && Buffer.isBuffer(error.stdout) ? error.stdout : Buffer.alloc(0);
+        return { stdout: partial, code: 1, truncated: true };
+      }
+      throw error;
+    });
 }
 
 async function gitText(

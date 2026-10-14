@@ -1,15 +1,12 @@
-import { execFile } from "node:child_process";
 import { mkdir, readdir, realpath } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
-import { promisify } from "node:util";
+import { runProcess, resolveExistingPath } from "@pi-gui/platform";
 import type {
   CatalogStorage,
   WorktreeCatalogEntry,
   WorktreeCatalogSnapshot,
 } from "@pi-gui/catalogs";
 import type { WorkspaceRef } from "@pi-gui/session-driver";
-
-const execFileAsync = promisify(execFile);
 
 export interface GitWorktreeManagerOptions {
   readonly catalogStorage: CatalogStorage;
@@ -578,11 +575,12 @@ function normalizeBranchName(value: string): string | undefined {
 }
 
 async function runGit(args: readonly string[]): Promise<string> {
-  const { stdout } = await execFileAsync("git", [...args], {
-    encoding: "utf8",
-    maxBuffer: 10 * 1024 * 1024,
+  const result = await runProcess("git", [...args], {
+    cwd: process.cwd(),
+    maxOutputBytes: 10 * 1024 * 1024,
   });
-  return stdout;
+  if (result.exitCode !== 0) throw new Error(result.stderr.toString("utf8"));
+  return result.stdout.toString("utf8");
 }
 
 function nowIso(): string {
@@ -592,7 +590,7 @@ function nowIso(): string {
 async function canonicalPath(pathValue: string): Promise<string> {
   const resolved = resolve(pathValue);
   try {
-    return await realpath(resolved);
+    return await resolveExistingPath(resolved);
   } catch {
     return resolved;
   }

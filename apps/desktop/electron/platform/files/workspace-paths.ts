@@ -1,4 +1,4 @@
-import { realpath } from "node:fs/promises";
+import { resolveExistingPath } from "@pi-gui/platform";
 import path from "node:path";
 
 export function resolveWorkspacePath(workspacePath: string, filePath: string): string {
@@ -14,8 +14,8 @@ export async function resolveExistingWorkspacePath(
 ): Promise<string> {
   const resolved = resolveWorkspacePath(workspacePath, filePath);
   const [realWorkspaceRoot, realTarget] = await Promise.all([
-    realpath(path.resolve(workspacePath)),
-    realpath(resolved),
+    resolveExistingPath(path.resolve(workspacePath)),
+    resolveExistingPath(resolved),
   ]);
   assertInsideWorkspace(realWorkspaceRoot, realTarget);
   return realTarget;

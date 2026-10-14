@@ -1,11 +1,9 @@
 import { app, type BrowserWindow, shell } from "electron";
-import { execFile } from "node:child_process";
 import { appendFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { promisify } from "node:util";
+import { runProcess } from "@pi-gui/platform";
 import type { DesktopNotificationPermissionStatus } from "../../contracts/ipc";
 
-const execFileAsync = promisify(execFile);
 const TEST_STATUS_ENV = "PI_APP_TEST_NOTIFICATION_PERMISSION_STATUS";
 const TEST_REQUEST_RESULT_ENV = "PI_APP_TEST_NOTIFICATION_PERMISSION_REQUEST_RESULT";
 const TEST_REQUEST_LOG_PATH_ENV = "PI_APP_TEST_NOTIFICATION_PERMISSION_REQUEST_LOG_PATH";
@@ -249,10 +247,9 @@ async function requestPackagedMacOsNotificationPermission(): Promise<
   }
 
   try {
-    const { stdout } = await execFileAsync(helperPath, ["--request"], {
-      env: process.env,
-    });
-    const parsed = JSON.parse(stdout) as { status?: unknown };
+    const result = await runProcess(helperPath, ["--request"], { cwd: process.cwd() });
+    if (result.exitCode !== 0) return undefined;
+    const parsed = JSON.parse(result.stdout.toString("utf8")) as { status?: unknown };
     return normalizePermissionStatus(parsed.status) ?? "unknown";
   } catch {
     return undefined;
@@ -280,7 +277,8 @@ async function openSystemNotificationSettingsInternal(): Promise<void> {
 
   for (const target of targets) {
     try {
-      await execFileAsync("open", [target]);
+      const result = await runProcess("open", [target], { cwd: process.cwd() });
+      if (result.exitCode !== 0) throw new Error(result.stderr.toString("utf8"));
       return;
     } catch {
       // Try the next fallback.
@@ -316,10 +314,9 @@ async function readPackagedMacOsNotificationPermissionStatus(): Promise<
     return undefined;
   }
   try {
-    const { stdout } = await execFileAsync(helperPath, [], {
-      env: process.env,
-    });
-    const parsed = JSON.parse(stdout) as { status?: unknown };
+    const result = await runProcess(helperPath, [], { cwd: process.cwd() });
+    if (result.exitCode !== 0) return undefined;
+    const parsed = JSON.parse(result.stdout.toString("utf8")) as { status?: unknown };
     return normalizePermissionStatus(parsed.status);
   } catch {
     return undefined;
