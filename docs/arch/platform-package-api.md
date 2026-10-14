@@ -6,7 +6,7 @@
 
 ## 1. 状态和目标
 
-本文是 `@pi-gui/platform` 的设计提案，尚未实现。文中的签名是拟定的完整公开接口，不代表仓库已有这些导出，也不代表 Windows、macOS 和 Linux 验证已经通过。
+本文描述已落地的 `@pi-gui/platform` workspace package 公开接口。实现位于 `packages/platform`；Windows 已完成本地文件系统和子进程验证，macOS/Linux 需依赖对应 CI 或主机实测。
 
 包放在 `packages/platform/`，先作为 private workspace package 使用。这里的“对外”是指对调用模块公开；npm 发布不属于本次设计的完成条件。
 
@@ -402,11 +402,11 @@ export class ProcessError extends PlatformError {
 
 ## 13. 现有调用者与迁移边界
 
-以下都是实施时的迁移目标，尚未完成：
+当前迁移状态如下：
 
 | 现有位置                                                 | 计划使用能力              | 必须留在当前 owner 的行为                                  |
 | -------------------------------------------------------- | ------------------------- | ---------------------------------------------------------- |
-| `packages/catalogs/src/node/atomic-write.ts`             | 安全文件替换              | catalog schema、JSON 编码和 catalog 写入协调               |
+| `packages/catalogs/src/node/json-catalog-store.ts`       | 安全文件替换              | catalog schema、JSON 编码和 catalog 写入协调               |
 | `apps/desktop/electron/persistence/atomic-file-write.ts` | 文件替换和目录同步        | `.bak`、`.corrupt`、校验已有数据和备份恢复                 |
 | `apps/desktop/electron/platform/terminal-service.ts`     | shell 选择与交互启动配置  | node-pty、窗口/任务归属、终端大小、回放、PTY 关闭          |
 | 平台文件和 worktree adapter                              | 真实路径与目录包含性      | checkout 归属、允许访问的范围和 GC 策略                    |
@@ -439,7 +439,7 @@ export class ProcessError extends PlatformError {
 
 ## 15. 本文的验证状态
 
-本次交付仅包含接口设计文档。已对照现有 catalogs 写入、desktop persistence、TerminalService 和平台边界检查；没有创建 package、修改运行时实现或执行跨平台验收。
+本次实现包含 package、catalog/driver/desktop 持久化和有限 Git 调用迁移。Windows 平台包测试 3 项通过，shared build、catalog、driver 和 Electron 主进程类型检查通过；尚未在 macOS 上实测，终端 PTY 的生命周期仍由 Desktop owner 管理。
 
 9 个公开操作的 TypeScript 声明与 5 个调用示例已通过严格类型检查，文档通过仓库已安装 Prettier 的格式检查。检查使用 Node v24.21.0，声明和示例的检查输出保留于 `.artifacts/platform-package-doc-check.log`。这只证明声明和示例在类型上成立，不证明运行时行为。
 
@@ -447,6 +447,7 @@ export class ProcessError extends PlatformError {
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                                             |
-| ---- | -------------------- | ------------------------------------------------------------------------------------ |
-| v1   | 2026-10-14 17:50 CST | 创建平台包公开能力与接口提案，明确参数心智模型、错误语义、迁移边界和三系统验收要求。 |
+| 版本 | 修改时间             | 修改内容                                                                                            |
+| ---- | -------------------- | --------------------------------------------------------------------------------------------------- |
+| v1   | 2026-10-14 17:50 CST | 创建平台包公开能力与接口提案，明确参数心智模型、错误语义、迁移边界和三系统验收要求。                |
+| v2   | 2026-10-14 18:30 CST | 实现平台包并迁移文件、catalog、driver、持久化和有限 Git 调用，记录 Windows 验证结果与剩余平台边界。 |
