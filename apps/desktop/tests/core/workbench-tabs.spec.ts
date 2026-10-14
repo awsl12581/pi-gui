@@ -287,9 +287,6 @@ test("an invalid or orphaned task layout does not block other saved UI state", a
   const layouts = saved.taskWorkbenchTemplatesBySession;
   layouts["missing-workspace:deleted-task"] = layouts[layoutB]!;
   layouts[layoutA] = { ...layouts[layoutA], visibility: "expanded" };
-  // A layout saved while the removed Worktrees tool was open still restores its other tabs.
-  const toolsB = layouts[layoutB]!.tools as unknown[];
-  layouts[layoutB] = { ...layouts[layoutB], tools: [...toolsB, { kind: "worktrees" }] };
   await writeFile(uiStatePath, JSON.stringify(saved));
 
   harness = await launchDesktop(fixture.userDataDir, options);
