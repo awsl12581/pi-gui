@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 import {
@@ -208,9 +209,12 @@ test("rejects a server Settings cannot run and leaves mcp.json alone", async () 
     const window = await harness.firstWindow();
     await openMcpSettings(window);
     const surface = window.getByTestId("settings-surface");
-    // The copy names the file this app really uses, here the test's own agent directory.
-    await expect(surface.getByTestId("mcp-servers-empty")).toContainText(mcpPath);
-    await expect(surface).toContainText(`Saved to ${mcpPath}.`);
+    // Display abbreviates the home directory; writes still target the actual path.
+    const displayedPath = mcpPath.startsWith(`${homedir()}/`)
+      ? `~${mcpPath.slice(homedir().length)}`
+      : mcpPath;
+    await expect(surface.getByTestId("mcp-servers-empty")).toContainText(displayedPath);
+    await expect(surface).toContainText(`Saved to ${displayedPath}.`);
     await expect(surface.getByTestId("mcp-servers-empty")).toContainText("/mcp");
 
     await surface.getByLabel("Server name").fill("local-file");

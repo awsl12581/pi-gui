@@ -103,7 +103,7 @@ test("shows Git status as unavailable without losing reviewed files", async () =
     gitMoved = true;
     await diffPanel.locator('button[aria-label="Refresh"]').click();
     await expect(diffPanel.getByTestId("changed-files-unavailable")).toContainText(
-      /not a git repository|unavailable/i,
+      "Git review requires the checkout root. Open the repository root to review its changes.",
     );
     await expect(diffPanel.getByText("No changes", { exact: true })).toHaveCount(0);
     await saveProof(window, "git-status-unavailable.png");
