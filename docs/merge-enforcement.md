@@ -1,5 +1,9 @@
 # Required CI results
 
+> 最后修改时间：2026-10-14 21:10 CST
+> 文档版本：v1
+> 修改说明：将 CI 结果检查器的运行环境说明同步为 Node 24。
+
 The `CI required` job in `.github/workflows/ci.yml` waits for every top-level required job and
 uses `always()` so a failed or skipped dependency does not skip the aggregate.
 `scripts/check-ci-results.mjs` accepts only the exact required dependency set with
@@ -7,7 +11,7 @@ every result equal to `success`. Missing, skipped, cancelled, failed, and unknow
 results fail. The check prints the affected job and tells the reader to inspect
 its logs and rerun after repair.
 
-The checker is dependency-free; it runs on Node 22 without a package install.
+The checker is dependency-free; it runs on Node 24 without a package install.
 Its tests parse the workflow and require every nonaggregate job to be covered,
 prevent `continue-on-error`, and exercise failing results and the CLI exit status.
 
@@ -38,3 +42,9 @@ Whole-workflow cancellation can interrupt even an `always()` job. In that case
 the required aggregate must remain non-successful; branch rules supply the merge
 block. This mechanism does not prevent an authorized author from modifying the
 checker or workflow: review and protection of CI policy changes remain necessary.
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                       |
+| ---- | -------------------- | ---------------------------------------------- |
+| v1   | 2026-10-14 21:10 CST | 将 CI 结果检查器的运行环境说明同步为 Node 24。 |

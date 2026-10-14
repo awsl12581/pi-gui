@@ -124,8 +124,8 @@ export async function assertWorkflowActionPolicy(repoRoot) {
         if (actionId !== "actions/setup-node") {
           continue;
         }
-        if (String(step.with?.["node-version"] ?? "") !== "22") {
-          violations.push(`${location}: setup-node node-version must be 22`);
+        if (String(step.with?.["node-version"] ?? "") !== "24") {
+          violations.push(`${location}: setup-node node-version must be 24`);
         }
         const cache = step.with?.cache;
         if (hasPnpmSetup) {

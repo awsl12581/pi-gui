@@ -55,7 +55,7 @@ fi
 
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   {
-    # setup.sh pins a Node >=22.19 install at /opt/pi-node.
+    # setup.sh pins a Node >=24 <27 install at /opt/pi-node.
     [ -x /opt/pi-node/bin/node ] && echo "export PATH=/opt/pi-node/bin:\$PATH"
     echo "export DISPLAY=$display"
     echo "export PI_APP_REAL_AUTH=\${PI_APP_REAL_AUTH:-1}"

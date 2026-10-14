@@ -1,5 +1,9 @@
 # CI baseline and adoption plan
 
+> 最后修改时间：2026-10-14 21:10 CST
+> 文档版本：v1
+> 修改说明：将应用 Node 基线改为 24，明确支持 Node 24–26。
+
 The current design is renderer → narrow preload API → main-process app store →
 Pi SDK driver → Pi runtime. Desktop UI state and Pi session state have separate
 persistence owners. The first CI pass strengthens verification of this design;
@@ -62,7 +66,7 @@ provider suite establishes real-provider proof. Node-only tests, including
 local Git worktree contracts, run in the baseline unit lane.
 
 `pnpm verify:release-config` also enforces the GitHub Actions Node 24 allowlist
-for every workflow. Guard tests cover that policy. Application Node stays 22;
+for every workflow. Guard tests cover that policy. Application Node supports majors 24–26 (`>=24.0.0 <27`), with CI pinned to 24;
 action runtimes are a separate pin.
 
 The website build, Linux installation/package and
@@ -112,3 +116,9 @@ Scope: this checks first-party static module dependencies. It does not audit
 third-party package internals, arbitrary runtime code evaluation, IPC payload
 validation, or hostile changes to the guard itself. Review and repository rules
 still need to protect the checks.
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                       |
+| ---- | -------------------- | ---------------------------------------------- |
+| v1   | 2026-10-14 21:10 CST | 将应用 Node 基线改为 24，明确支持 Node 24–26。 |

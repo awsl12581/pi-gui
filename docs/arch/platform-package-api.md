@@ -1,8 +1,8 @@
 # Platform package 对外能力与接口设计
 
-> 最后修改时间：2026-10-14 17:50 CST
-> 文档版本：v1
-> 修改说明：定义平台包的公开能力、参数语义、结果与错误契约，以及跨平台验收要求。
+> 最后修改时间：2026-10-14 21:10 CST
+> 文档版本：v3
+> 修改说明：将平台包支持的 Node 范围调整为 24–26。
 
 ## 1. 状态和目标
 
@@ -33,7 +33,7 @@ Electron main ────┘
 
 包不依赖 Electron、React、catalogs、session-driver 或 pi-sdk-driver。renderer 不得运行时导入它，桌面仍通过 narrow preload API 暴露具体产品操作。若 renderer 需要显示某个能力，由 desktop contracts 定义该产品所需的快照，不转发整个 package。
 
-目标系统是 Windows、macOS 和 Linux，Node 范围与仓库基线一致：`>=22.19.0 <26`。其他系统暂不属于支持范围，调用入口返回 `unsupported-platform` 错误；不得自动按 Linux 处理。
+目标系统是 Windows、macOS 和 Linux，Node 范围与仓库基线一致：`>=24.0.0 <27`。其他系统暂不属于支持范围，调用入口返回 `unsupported-platform` 错误；不得自动按 Linux 处理。
 
 ## 3. 公开能力总表
 
@@ -451,3 +451,4 @@ export class ProcessError extends PlatformError {
 | ---- | -------------------- | --------------------------------------------------------------------------------------------------- |
 | v1   | 2026-10-14 17:50 CST | 创建平台包公开能力与接口提案，明确参数心智模型、错误语义、迁移边界和三系统验收要求。                |
 | v2   | 2026-10-14 18:30 CST | 实现平台包并迁移文件、catalog、driver、持久化和有限 Git 调用，记录 Windows 验证结果与剩余平台边界。 |
+| v3   | 2026-10-14 21:10 CST | 将平台包支持的 Node 范围调整为 24–26。                                                              |

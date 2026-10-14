@@ -60,9 +60,9 @@ test("SHA refs are not accepted", async () => {
   await assert.rejects(() => assertWorkflowActionPolicy(root), /expected actions\/checkout@v7/);
 });
 
-test("setup-node must keep application Node 22", async () => {
-  const root = await writeFixture(validWorkflow().replace("node-version: 22", "node-version: 24"));
-  await assert.rejects(() => assertWorkflowActionPolicy(root), /node-version must be 22/);
+test("setup-node must keep application Node 24", async () => {
+  const root = await writeFixture(validWorkflow().replace("node-version: 24", "node-version: 22"));
+  await assert.rejects(() => assertWorkflowActionPolicy(root), /node-version must be 24/);
 });
 
 test("jobs that install pnpm must cache pnpm and jobs that do not must omit cache", async () => {
@@ -77,7 +77,7 @@ test("jobs that install pnpm must cache pnpm and jobs that do not must omit cach
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 `,
       `  preflight:
     runs-on: ubuntu-latest
@@ -85,7 +85,7 @@ test("jobs that install pnpm must cache pnpm and jobs that do not must omit cach
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 `,
     ),
@@ -106,7 +106,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - uses: actions/upload-artifact@v7
         with:
@@ -134,7 +134,7 @@ jobs:
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
       - uses: actions/upload-artifact@v7
         with:
@@ -150,7 +150,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 `;
 }
 

@@ -7,7 +7,7 @@
 # writes auth at every session start instead.
 set -euo pipefail
 
-NODE_MIN=22.19.0
+NODE_MIN=24.0.0
 PNPM_VERSION=10.25.0
 
 # Virtual display with a minimal window manager (X11 maximize is a request only
@@ -26,18 +26,18 @@ apt-get install -y -q --no-install-recommends \
   libxdamage1 libxrandr2 libxtst6 libpango-1.0-0 libcairo2 libsecret-1-0 \
   libnotify4 ffmpeg
 
-# pi-gui requires Node >=22.19. The image has several Node installs and its
+# pi-gui supports Node >=24 <27. The image has several Node installs and its
 # /usr/local/bin/node points at Node 20, so pin one satisfying install at
 # /opt/pi-node. session-start.sh puts /opt/pi-node/bin first on PATH.
 node_ok() {
   v=$("$1" -p 'process.versions.node' 2>/dev/null) || return 1
-  [ "$(printf '%s\n%s\n' "$NODE_MIN" "$v" | sort -V | head -1)" = "$NODE_MIN" ] && [ "${v%%.*}" -lt 26 ]
+  [ "$(printf '%s\n%s\n' "$NODE_MIN" "$v" | sort -V | head -1)" = "$NODE_MIN" ] && [ "${v%%.*}" -lt 27 ]
 }
-if node_ok /opt/node22/bin/node; then
-  ln -sfn /opt/node22 /opt/pi-node
+if node_ok /opt/node24/bin/node; then
+  ln -sfn /opt/node24 /opt/pi-node
 else
   arch=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')
-  base=https://nodejs.org/dist/latest-v22.x
+  base=https://nodejs.org/dist/latest-v24.x
   tarball=$(curl -fsSL "$base/SHASUMS256.txt" | awk -v a="linux-$arch.tar.xz" '$2 ~ a"$" {print $2}')
   rm -rf /opt/pi-node && mkdir -p /opt/pi-node
   curl -fsSL "$base/$tarball" | tar -xJ -C /opt/pi-node --strip-components=1
