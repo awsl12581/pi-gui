@@ -124,9 +124,9 @@ test("an extension view opens https links and threads beside its own", async () 
     const viewLogs: string[] = [];
     window.on("console", (message) => viewLogs.push(message.text()));
     await frame.getByRole("button", { name: "Open thread" }).click();
-    await expect(window.locator(".chat-header__title")).toHaveText("Earlier thread");
-    // The view's call succeeds even though switching threads then closes the view.
+    // The Promise callback must run before switching threads closes the view.
     await expect.poll(() => viewLogs).toContain("view saw thread open");
+    await expect(window.locator(".chat-header__title")).toHaveText("Earlier thread");
     expect((await getDesktopState(window)).selectedSessionId).toBe(earlierThread);
 
     // A card button opens a thread through the same check.

@@ -21,7 +21,10 @@ export async function performExtensionViewHostAction(
     /** Saves the window's debounced composer draft; it must not run inside the window's queue. */
     readonly saveComposerDraft: (window: BrowserWindow) => Promise<void>;
   },
-  context: DesktopExtensionConnectionContext & { readonly action: DesktopHostAction },
+  context: DesktopExtensionConnectionContext & {
+    readonly action: DesktopHostAction;
+    readonly deferUntilResult?: (commit: () => Promise<void>) => void;
+  },
 ): Promise<void> {
   const contents = webContents.fromId(context.senderId);
   if (!contents || contents.isDestroyed()) throw new Error("The requesting window is closed");
@@ -47,30 +50,26 @@ export async function performExtensionViewHostAction(
       runExtensionCommand: () => Promise.reject(new Error("Views can't run commands")),
       workspaces: () => owners.store.getWorkspaceRecords(),
       // Selecting the thread closes this view, so the view's call settles once the thread is
-      // found. The switch starts after that result has gone out: `setImmediate` runs only once
-      // the awaits that send it have unwound.
+      // found. The switch is registered as a commit and starts only after the frame
+      // acknowledges that it has resolved the action Promise.
       selectThread: async (resolve) => {
-        setImmediate(() => {
+        context.deferUntilResult?.(async () => {
           // The switch drops the composer's debounced draft, so save it first.
-          void owners
-            .saveComposerDraft(window)
-            .then(() =>
-              owners.windows.runStateAction(window, async () => {
-                try {
-                  requireCurrentTask();
-                } catch {
-                  // The user already left the view's task; there is nothing to switch from.
-                  return owners.store.getState();
-                }
-                try {
-                  return await owners.store.selectSession(resolve());
-                } catch (error) {
-                  // The thread went away meanwhile: say so in the app, since the view is told ok.
-                  return owners.store.withError(error);
-                }
-              }),
-            )
-            .catch((error: unknown) => console.error("[extension-view] open thread failed", error));
+          await owners.saveComposerDraft(window);
+          await owners.windows.runStateAction(window, async () => {
+            try {
+              requireCurrentTask();
+            } catch {
+              // The user already left the view's task; there is nothing to switch from.
+              return owners.store.getState();
+            }
+            try {
+              return await owners.store.selectSession(resolve());
+            } catch (error) {
+              // The thread went away meanwhile: say so in the app, since the view is told ok.
+              return owners.store.withError(error);
+            }
+          });
         });
       },
     };

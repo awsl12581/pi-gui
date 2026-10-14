@@ -5,6 +5,8 @@ import type { WindowOwner } from "../windows/window-owner";
 import type { MainFrameHandler } from "./main-frame-ipc";
 import { expectNonEmptyString, expectRecord, expectSessionTarget } from "./request-validation";
 
+const HOST_ACTION_ACK_TIMEOUT_MS = 10_000;
+
 function decodeOpenRequest(raw: unknown) {
   const input = expectRecord(raw, "extension view request");
   return {
@@ -28,7 +30,7 @@ export function registerExtensionViewRequests(
   owner: DesktopExtensionViewOwner,
 ): void {
   const senders = new Map<number, Electron.WebContents>();
-  const pendingActions = new Map<string, Set<string>>();
+  const pendingActions = new Map<string, Map<string, () => Promise<void>>>();
   const track = (contents: Electron.WebContents) => {
     if (!senders.has(contents.id)) {
       senders.set(contents.id, contents);
@@ -83,6 +85,22 @@ export function registerExtensionViewRequests(
   handle(desktopIpc.sendExtensionViewMessage, decodeMessageRequest, async (input, request) => {
     const contents = track(request.contents);
     const { connectionId, message } = input;
+    if (message.type === "host-action-result-ack") {
+      const requestId = expectNonEmptyString(message.requestId, "requestId");
+      if (requestId.length > 200) throw new Error("Invalid host action request ID");
+      owner.getConnectionContext(connectionId, contents.id);
+      const pending = pendingActions.get(connectionId);
+      const commit = pending?.get(requestId);
+      if (!pending || !commit) return;
+      pending.delete(requestId);
+      if (pending.size === 0) pendingActions.delete(connectionId);
+      try {
+        await commit();
+      } catch (error) {
+        console.error("[extension-view] deferred host action failed", error);
+      }
+      return;
+    }
     if (message.type !== "host-action") {
       await owner.receive(connectionId, contents.id, message);
       return;
@@ -93,7 +111,7 @@ export function registerExtensionViewRequests(
     owner.getConnectionContext(connectionId, contents.id);
     let pending = pendingActions.get(connectionId);
     if (!pending) {
-      pending = new Set();
+      pending = new Map();
       pendingActions.set(connectionId, pending);
     }
     if (pending.has(requestId) || pending.size >= 32) {
@@ -108,13 +126,16 @@ export function registerExtensionViewRequests(
       });
       return;
     }
-    pending.add(requestId);
+    let commit: (() => Promise<void>) | undefined;
     let result: { type: "host-action-result"; requestId: string; ok: boolean; error?: string };
     try {
       await owner.invokeHostAction(
         connectionId,
         contents.id,
         parseDesktopHostAction(message.action),
+        (deferred) => {
+          commit = deferred;
+        },
       );
       result = { type: "host-action-result", requestId, ok: true };
     } catch (error) {
@@ -125,8 +146,14 @@ export function registerExtensionViewRequests(
         error: error instanceof Error ? error.message : "Extension action failed",
       };
     }
-    pending.delete(requestId);
-    if (pending.size === 0) pendingActions.delete(connectionId);
+    const registeredCommit = commit ?? (async () => undefined);
+    pending.set(requestId, registeredCommit);
+    setTimeout(() => {
+      if (pending?.get(requestId) !== registeredCommit) return;
+      pending.delete(requestId);
+      if (pending.size === 0 && pendingActions.get(connectionId) === pending)
+        pendingActions.delete(connectionId);
+    }, HOST_ACTION_ACK_TIMEOUT_MS);
     if (!contents.isDestroyed())
       contents.send(desktopIpc.extensionViewMessage, { connectionId, message: result });
   });
