@@ -217,9 +217,6 @@ export const desktopIpc = {
   listWorkspaceFiles: "pi-gui:list-workspace-files",
   readWorkspaceFile: "pi-gui:read-workspace-file",
   revealWorkspaceFile: "pi-gui:reveal-workspace-file",
-  getChangedFiles: "pi-gui:get-changed-files",
-  getFileDiff: "pi-gui:get-file-diff",
-  stageFile: "pi-gui:stage-file",
   getTurnChanges: "pi-gui:get-turn-changes",
   getReview: "pi-gui:get-review",
   getReviewFile: "pi-gui:get-review-file",
@@ -375,35 +372,6 @@ export type PiDesktopSelectedTranscriptListener = (
   payload: SelectedTranscriptRecord | null,
 ) => void;
 export type PiDesktopCommand = (typeof desktopCommands)[keyof typeof desktopCommands];
-
-export type ChangedFileStatus =
-  "added" | "copied" | "deleted" | "modified" | "renamed" | "untracked";
-
-export interface ChangedFileEntry {
-  readonly path: string;
-  readonly previousPath?: string;
-  readonly stagingSourcePath?: string;
-  readonly status: ChangedFileStatus;
-  readonly staged: boolean;
-}
-
-export type ChangedFilesErrorCode =
-  "git-status-failed" | "git-status-invalid" | "workspace-unavailable";
-
-export interface ChangedFilesError {
-  readonly code: ChangedFilesErrorCode;
-  readonly message: string;
-}
-
-export type ChangedFilesResult =
-  | {
-      readonly state: "available";
-      readonly files: readonly ChangedFileEntry[];
-    }
-  | {
-      readonly state: "unavailable";
-      readonly error: ChangedFilesError;
-    };
 
 export interface WorkspaceFilePreview {
   readonly path: string;
@@ -874,9 +842,6 @@ export interface PiDesktopApi {
   ): Promise<string[]>;
   readWorkspaceFile(workspaceId: string, filePath: string): Promise<WorkspaceFilePreview>;
   revealWorkspaceFile(workspaceId: string, filePath: string): Promise<void>;
-  getChangedFiles(workspaceId: string): Promise<ChangedFilesResult>;
-  getFileDiff(workspaceId: string, filePath: string): Promise<string>;
-  stageFile(workspaceId: string, filePath: string, stagingSourcePath?: string): Promise<void>;
   onExtensionViewOpenFile(listener: (event: ExtensionViewOpenFile) => void): () => void;
   /** Runs a card button's action for its thread, which must be the window's selected one. */
   runExtensionAction(request: ExtensionActionRequest): Promise<ExtensionActionEffect | null>;

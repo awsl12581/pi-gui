@@ -40,8 +40,8 @@ export interface LeaseInfo {
   readonly hostname: string;
   readonly startedAt: string;
   readonly surface: string;
-  /** Per-process owner token. Absent in leases written before tokens existed. */
-  readonly token?: string;
+  /** Per-process owner token. */
+  readonly token: string;
 }
 
 export interface LeaseSnapshot {
@@ -53,7 +53,7 @@ export interface LeaseSnapshot {
 export interface LeaseIdentity {
   readonly pid: number;
   readonly hostname: string;
-  readonly token?: string;
+  readonly token: string;
 }
 
 export interface LeaseStalenessOptions {
@@ -85,12 +85,8 @@ export function currentLeaseIdentity(): LeaseIdentity {
   return { pid: process.pid, hostname: hostname(), token: randomUUID() };
 }
 
-/** Tokens decide ownership when both sides have one; older leases fall back to pid + host. */
 export function isSameHolder(info: LeaseInfo | LeaseIdentity, self: LeaseIdentity): boolean {
-  if (info.token && self.token) {
-    return info.token === self.token;
-  }
-  return info.pid === self.pid && info.hostname === self.hostname;
+  return info.token === self.token;
 }
 
 /** Whether a running process with `pid` exists (best-effort, same-host only). */
@@ -120,17 +116,6 @@ export function isLeaseDead(snapshot: LeaseSnapshot, opts: LeaseStalenessOptions
   return opts.now - snapshot.mtimeMs > opts.ttlMs;
 }
 
-/**
- * Whether an existing lease should block us from binding a runtime. Our own
- * prior lease never blocks; a foreign lease blocks only while it is alive.
- */
-export function leaseBlocksBinding(snapshot: LeaseSnapshot, opts: LeaseStalenessOptions): boolean {
-  if (isSameHolder(snapshot.info, opts.self)) {
-    return false;
-  }
-  return !isLeaseDead(snapshot, opts);
-}
-
 /** Read a lease. Missing and corrupt leases both read as undefined. */
 export async function readLeaseSnapshot(leasePath: string): Promise<LeaseSnapshot | undefined> {
   return (await readLeaseFileState(leasePath))?.snapshot;
@@ -143,11 +128,18 @@ function parseLeaseInfo(raw: string): LeaseInfo | undefined {
   } catch {
     return undefined;
   }
+  if (parsed && typeof parsed.token !== "string") {
+    throw new Error(
+      "Unsupported session lease format: owner token is required; original file was retained.",
+    );
+  }
   if (
     typeof parsed?.pid !== "number" ||
     typeof parsed.hostname !== "string" ||
     typeof parsed.startedAt !== "string" ||
-    typeof parsed.surface !== "string"
+    typeof parsed.surface !== "string" ||
+    typeof parsed.token !== "string" ||
+    !parsed.token
   ) {
     return undefined;
   }
@@ -156,7 +148,7 @@ function parseLeaseInfo(raw: string): LeaseInfo | undefined {
     hostname: parsed.hostname,
     startedAt: parsed.startedAt,
     surface: parsed.surface,
-    ...(typeof parsed.token === "string" ? { token: parsed.token } : {}),
+    token: parsed.token,
   };
 }
 
@@ -175,7 +167,7 @@ export function buildOwnLease(self: LeaseIdentity, now: number): LeaseInfo {
     hostname: self.hostname,
     startedAt: new Date(now).toISOString(),
     surface: PI_GUI_LEASE_SURFACE,
-    ...(self.token ? { token: self.token } : {}),
+    token: self.token,
   };
 }
 

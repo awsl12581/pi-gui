@@ -9,7 +9,6 @@ import {
   isMarkdownPath,
   openFile,
   openFileAtLine,
-  pruneFiles,
 } from "../../src/features/workbench/file-workbench-state";
 
 test("openFile adds a tab and activates it", () => {
@@ -72,33 +71,6 @@ test("closeFile keeps active inside tabs", () => {
   expect(closeFile(closeFile(two, "a.ts"), "b.ts")).toEqual(EMPTY_FILE_TABS);
   expect(activateFile(two, "missing.ts")).toEqual(two);
   expect(activateFile(two, "a.ts").active).toBe("a.ts");
-});
-
-test("pruneFiles drops missing paths and repairs active", () => {
-  const state = openFile(openFile(EMPTY_FILE_TABS, "keep.ts"), "gone.ts");
-  expect(pruneFiles(state, ["keep.ts"])).toEqual({
-    tabs: ["keep.ts"],
-    active: "keep.ts",
-    line: null,
-    lineNonce: 0,
-    retained: [],
-  });
-  expect(pruneFiles(state, [])).toEqual(EMPTY_FILE_TABS);
-  expect(pruneFiles(EMPTY_FILE_TABS, ["keep.ts"])).toEqual(EMPTY_FILE_TABS);
-});
-
-test("pruneFiles keeps a readable unlisted path until the file list includes it", () => {
-  const opened = openFileAtLine(EMPTY_FILE_TABS, "secret.txt", 2, 4);
-  expect(pruneFiles(opened, ["README.md"])).toMatchObject({
-    tabs: ["secret.txt"],
-    active: "secret.txt",
-    line: { start: 2, end: 4 },
-    retained: ["secret.txt"],
-  });
-  const listed = pruneFiles(opened, ["README.md", "secret.txt"]);
-  expect(listed.retained).toEqual([]);
-  expect(listed.tabs).toEqual(["secret.txt"]);
-  expect(pruneFiles(listed, ["README.md"])).toEqual(EMPTY_FILE_TABS);
 });
 
 test("path helpers", () => {

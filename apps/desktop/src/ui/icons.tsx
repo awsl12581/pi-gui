@@ -44,36 +44,6 @@ export function TerminalIcon() {
   );
 }
 
-export function BrowserPreviewIcon() {
-  return (
-    <Icon>
-      <rect
-        x="3.1"
-        y="4.1"
-        width="13.8"
-        height="11.8"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.35"
-      />
-      <path d="M3.4 7.4h13.2" stroke="currentColor" strokeLinecap="round" strokeWidth="1.35" />
-      <path
-        d="M6 5.75h.02M8.15 5.75h.02"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.7"
-      />
-      <path
-        d="m8.1 10.1 1.8 1.8 3.5-3.6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-    </Icon>
-  );
-}
-
 export function SidebarToggleIcon() {
   return (
     <Icon>
@@ -111,41 +81,6 @@ export function SidePanelIcon() {
         strokeWidth="1.35"
       />
       <path d="M12.2 3.6v12.8" stroke="currentColor" strokeWidth="1.35" />
-    </Icon>
-  );
-}
-
-export function MaximizeIcon() {
-  return (
-    <Icon>
-      <path
-        d="M6.1 3.8H3.8v2.3M13.9 3.8h2.3v2.3M6.1 16.2H3.8v-2.3M13.9 16.2h2.3v-2.3"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-      <path d="M7 7h6v6H7z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.25" />
-    </Icon>
-  );
-}
-
-export function MinimizeIcon() {
-  return (
-    <Icon>
-      <path
-        d="M3.9 7.1h3.2V3.9M16.1 7.1h-3.2V3.9M3.9 12.9h3.2v3.2M16.1 12.9h-3.2v3.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-      <path
-        d="M7.7 7.7h4.6v4.6H7.7z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.2"
-      />
     </Icon>
   );
 }
@@ -382,22 +317,6 @@ export function SparkIcon() {
     </Icon>
   );
 }
-
-export function PiGlyphIcon() {
-  return (
-    <Icon>
-      <path d="M5 5.25h10" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-      <path d="M8 5.25v9.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-      <path
-        d="M8 10.5c0-1.55 1.15-2.8 2.6-2.8 1.05 0 1.95.5 2.45 1.45"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
 export function SettingsIcon() {
   return (
     <Icon>
@@ -570,19 +489,6 @@ export function ForkIcon() {
         strokeLinejoin="round"
         strokeWidth="1.45"
       />
-    </Icon>
-  );
-}
-
-export function GripIcon() {
-  return (
-    <Icon>
-      <circle cx="8" cy="7" r="1.2" fill="currentColor" />
-      <circle cx="12" cy="7" r="1.2" fill="currentColor" />
-      <circle cx="8" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="12" cy="10" r="1.2" fill="currentColor" />
-      <circle cx="8" cy="13" r="1.2" fill="currentColor" />
-      <circle cx="12" cy="13" r="1.2" fill="currentColor" />
     </Icon>
   );
 }

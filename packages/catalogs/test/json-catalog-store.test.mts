@@ -204,6 +204,7 @@ const validCatalog = {
 await test("invalid catalog data rejects reads and writes without dropping any saved records", async (t) => {
   const cases: Record<string, unknown> = {
     "future version": { ...validCatalog, version: 3 },
+    "unsupported prior version": { ...validCatalog, version: 1 },
     "null document": null,
     "array document": [],
     "missing v2 collection": { ...validCatalog, sessions: undefined },
@@ -236,7 +237,7 @@ await test("invalid catalog data rejects reads and writes without dropping any s
     },
     "file map array": { ...validCatalog, sessionFiles: [] },
     "file map value": { ...validCatalog, sessionFiles: { "workspace:session": null } },
-    "legacy malformed collection": { version: 1, sessions: null },
+    "null collection": { ...validCatalog, sessions: null },
   };
   for (const [name, contents] of Object.entries(cases)) {
     await t.test(name, async () => {
@@ -255,28 +256,6 @@ await test("invalid catalog data rejects reads and writes without dropping any s
       });
     });
   }
-});
-
-await test("legacy catalogs retain records and upgrade only when a mutation succeeds", async () => {
-  await withTempDir(async (dir) => {
-    const catalogFilePath = join(dir, "catalogs.json");
-    const original = JSON.stringify({
-      version: 1,
-      workspaces: [validWorkspace],
-      sessions: [validSession],
-    });
-    await writeFile(catalogFilePath, original);
-    const store = new JsonCatalogStore({ catalogFilePath });
-    assert.deepEqual((await store.sessions.listSessions()).sessions, [validSession]);
-    assert.deepEqual((await store.worktrees.listWorktrees()).worktrees, []);
-    assert.equal(await store.getSessionFile(validSession.sessionRef), undefined);
-    assert.equal(await readFile(catalogFilePath, "utf8"), original);
-    await store.setSessionFile(validSession.sessionRef, "/session.jsonl");
-    const reopened = new JsonCatalogStore({ catalogFilePath });
-    assert.deepEqual((await reopened.workspaces.listWorkspaces()).workspaces, [validWorkspace]);
-    assert.deepEqual((await reopened.sessions.listSessions()).sessions, [validSession]);
-    assert.equal(await reopened.getSessionFile(validSession.sessionRef), "/session.jsonl");
-  });
 });
 
 await test("a failed load can be retried after the original catalog is repaired", async () => {

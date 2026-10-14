@@ -53,10 +53,6 @@ export function startupSurfaceCopy(state: DesktopStartupSurfaceState): DesktopSt
   return STATE_FAILED_COPY;
 }
 
-export function rendererBoundaryCopy(): DesktopStartupCopy {
-  return CRASHED_COPY;
-}
-
 interface DesktopStartupSurfaceProps {
   readonly state: DesktopStartupSurfaceState;
   readonly onRetry: () => void;

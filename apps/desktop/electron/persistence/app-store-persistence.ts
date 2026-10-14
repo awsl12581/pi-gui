@@ -15,14 +15,10 @@ import { isThemeMode, isThemePresetId, isThreadGrouping } from "../../contracts/
 import type { ExtensionFlagValues } from "@pi-gui/session-driver";
 import type { ModelSettingsSnapshot } from "@pi-gui/session-driver/runtime-types";
 import { readJsonWithBackup, writeFileAtomicQueued } from "./atomic-file-write";
-import { decodeAttachments } from "./attachment-store";
-import { randomUUID } from "node:crypto";
-import { basename, dirname, join } from "node:path";
 import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../contracts/workbench";
 
 export interface PersistedUiState {
-  readonly version?:
-    2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19;
+  readonly version?: 19;
   readonly taskWorkbenchTemplatesBySession?: Record<string, TaskWorkbenchTemplate>;
   readonly selectedWorkspaceId?: string;
   readonly selectedSessionId?: string;
@@ -58,14 +54,7 @@ export interface PersistedUiState {
   readonly orchestrationChildren?: readonly OrchestrationChildThread[];
 }
 
-export interface LegacyPersistedUiState extends PersistedUiState {
-  readonly composerAttachmentsBySession?: Record<string, readonly unknown[]>;
-  readonly transcripts?: Record<string, readonly unknown[]>;
-}
-
-export async function readPersistedUiState(
-  uiStateFilePath: string,
-): Promise<LegacyPersistedUiState> {
+export async function readPersistedUiState(uiStateFilePath: string): Promise<PersistedUiState> {
   const result = await readJsonWithBackup(uiStateFilePath);
   if (result.corrupted && !result.recovered) {
     throw new Error(
@@ -85,11 +74,11 @@ export async function readPersistedUiState(
   return result.value === undefined ? {} : decodePersistedUiState(result.value);
 }
 
-export function decodePersistedUiState(parsed: unknown): LegacyPersistedUiState {
+export function decodePersistedUiState(parsed: unknown): PersistedUiState {
   const candidate = validateUiState(parsed);
 
   return {
-    version: toPersistedVersion(candidate.version),
+    version: 19,
     taskWorkbenchTemplatesBySession:
       candidate.taskWorkbenchTemplatesBySession === undefined
         ? undefined
@@ -134,8 +123,6 @@ export function decodePersistedUiState(parsed: unknown): LegacyPersistedUiState 
     themeMode: toThemeMode(candidate.themeMode),
     themePresetId: toThemePresetId(candidate.themePresetId),
     orchestrationChildren: toPersistedOrchestrationChildren(candidate.orchestrationChildren),
-    composerAttachmentsBySession: toObjectArrayRecord(candidate.composerAttachmentsBySession),
-    transcripts: toObjectArrayRecord(candidate.transcripts),
   };
 }
 
@@ -151,17 +138,8 @@ export async function writePersistedUiState(
     null,
     2,
   )}\n`;
-  decodePersistedUiState(payload);
-  await writeFileAtomicQueued(uiStateFilePath, serialized, decodePersistedUiState, {
-    preserveExistingAs: (validated) => {
-      const existing = validated as LegacyPersistedUiState;
-      if (existing.version === 19) return undefined;
-      return join(
-        dirname(uiStateFilePath),
-        `${basename(uiStateFilePath, ".json")}.pre-workbench-v${existing.version ?? "legacy"}.${randomUUID()}.json`,
-      );
-    },
-  });
+  decodePersistedUiState(JSON.parse(serialized));
+  await writeFileAtomicQueued(uiStateFilePath, serialized, decodePersistedUiState);
 }
 
 /** Layouts are per-task conveniences: one bad layout must not block the rest of saved UI state. */
@@ -228,8 +206,6 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "themeMode",
       "themePresetId",
       "orchestrationChildren",
-      "composerAttachmentsBySession",
-      "transcripts",
     ],
     "ui-state",
   );
@@ -248,13 +224,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
     const r = objectRecord(v);
     return !!r && Object.values(r).every(string);
   };
-  optional(root, "version", (v) => toPersistedVersion(v) !== undefined);
-  if (
-    root.taskWorkbenchTemplatesBySession !== undefined &&
-    typeof root.version === "number" &&
-    root.version < 18
-  )
-    fail("workbench templates before v18");
+  if (root.version !== 19) fail("version");
   for (const key of [
     "selectedWorkspaceId",
     "selectedSessionId",
@@ -351,19 +321,6 @@ function validateUiState(value: unknown): Record<string, unknown> {
           "extensionCommandCompatibilityByWorkspace",
         );
     }
-  }
-  for (const key of ["composerAttachmentsBySession", "transcripts"]) {
-    if (root[key] === undefined) continue;
-    const records = objectRecord(root[key]) ?? fail(key);
-    for (const [id, entries] of Object.entries(records))
-      if (
-        !id ||
-        !Array.isArray(entries) ||
-        !entries.every((entry) => objectRecord(entry) !== undefined)
-      )
-        fail(`${key}.${id}`);
-    if (key === "composerAttachmentsBySession")
-      for (const entries of Object.values(records)) decodeAttachments(entries);
   }
   if (root.orchestrationChildren !== undefined) {
     if (!Array.isArray(root.orchestrationChildren)) fail("orchestrationChildren");
@@ -529,12 +486,6 @@ function toAppView(value: unknown): AppView | undefined {
     value === "extensions" ||
     value === "settings"
     ? value
-    : undefined;
-}
-
-function toPersistedVersion(value: unknown): NonNullable<PersistedUiState["version"]> | undefined {
-  return typeof value === "number" && Number.isInteger(value) && value >= 2 && value <= 19
-    ? (value as NonNullable<PersistedUiState["version"]>)
     : undefined;
 }
 
@@ -876,22 +827,6 @@ function toPersistedCompatibilityRecord(
     capability: candidate.capability,
     updatedAt: candidate.updatedAt,
   };
-}
-
-function toObjectArrayRecord(value: unknown): Record<string, readonly unknown[]> | undefined {
-  const candidate = objectRecord(value);
-  if (!candidate) {
-    return undefined;
-  }
-
-  const entries = Object.entries(candidate).flatMap(([key, values]) => {
-    if (!key || !Array.isArray(values)) {
-      return [];
-    }
-    const objectValues = values.filter((entry) => Boolean(objectRecord(entry)));
-    return objectValues.length > 0 ? [[key, objectValues] as const] : [];
-  });
-  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
 function objectRecord(value: unknown): Record<string, unknown> | undefined {

@@ -236,7 +236,6 @@ export async function forkThread(
       ...(input.sourceMessageIndex !== undefined
         ? { sourceMessageIndex: input.sourceMessageIndex }
         : {}),
-      ...(input.userMessageIndex !== undefined ? { userMessageIndex: input.userMessageIndex } : {}),
       ...(input.position ? { position: input.position } : {}),
     };
     await store.driver.validateForkSession(sourceRef, {
@@ -403,9 +402,7 @@ function buildWorktreeOptions(
 /**
  * Startup reconcile pass (fix: worktree/branch GC). Only the active profile's
  * user-data-namespaced root is eligible for automatic collection. Cataloged
- * worktrees under the legacy shared ~/.pi/worktrees root remain usable, but are
- * intentionally never adopted or pruned because their profile ownership is
- * ambiguous.
+ * Other checkouts are outside this profile and are never collected.
  */
 export async function reconcileWorktrees(store: WorkspaceOwnerHost): Promise<void> {
   try {

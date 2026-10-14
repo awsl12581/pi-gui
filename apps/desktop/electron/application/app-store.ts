@@ -85,7 +85,6 @@ import { StreamingUiPublisher } from "../conversation/streaming-ui-publisher";
 import type { RefreshStateOptions } from "./refresh-state-options";
 import {
   readPersistedUiState,
-  type LegacyPersistedUiState,
   type PersistedUiState,
   writePersistedUiState,
 } from "../persistence/app-store-persistence";
@@ -2024,7 +2023,7 @@ export class DesktopAppStore {
 
   private async initializeInternal(): Promise<void> {
     const startupDiagnostics: StartupDiagnostic[] = [];
-    let persisted: LegacyPersistedUiState;
+    let persisted: PersistedUiState;
     try {
       persisted = await this.readUiState();
     } catch (error) {
@@ -2078,31 +2077,6 @@ export class DesktopAppStore {
       startupDiagnostics.push({
         scope: "application",
         message: `Saved attachments could not be validated: ${message}`,
-      });
-      this.state = {
-        ...this.state,
-        startupDiagnostics,
-        lastError: message,
-        revision: this.state.revision + 1,
-      };
-      this.emit();
-      return;
-    }
-    try {
-      const skippedLegacyAttachments = await this.migrateLegacyPersistence(persisted);
-      if (skippedLegacyAttachments > 0) {
-        startupDiagnostics.push({
-          scope: "application",
-          message: composerImageSavedSkipMessage(skippedLegacyAttachments),
-        });
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("[app-store] legacy UI state migration failed; startup stopped", error);
-      this.blockPersistence();
-      startupDiagnostics.push({
-        scope: "application",
-        message: `Legacy UI state could not be fully migrated: ${message}`,
       });
       this.state = {
         ...this.state,
@@ -2198,7 +2172,7 @@ export class DesktopAppStore {
     }
   }
 
-  private restorePersistedUiState(persisted: LegacyPersistedUiState): void {
+  private restorePersistedUiState(persisted: PersistedUiState): void {
     this.disabledBuiltinExtensions.clear();
     for (const name of persisted.disabledBuiltinExtensions ?? []) {
       this.disabledBuiltinExtensions.add(name);
@@ -2313,22 +2287,6 @@ export class DesktopAppStore {
       revision: this.state.revision + 1,
     };
     this.emit();
-  }
-
-  private async migrateLegacyPersistence(persisted: LegacyPersistedUiState): Promise<number> {
-    const attachmentEntries = Object.entries(persisted.composerAttachmentsBySession ?? {});
-    const skippedCounts = await Promise.all(
-      attachmentEntries.map(async ([key, attachments]) => {
-        const cloned = cloneComposerAttachments(attachments as readonly ComposerAttachment[]);
-        const quarantined = quarantinePersistedComposerAttachments(cloned);
-        if (quarantined.kept.length > 0) {
-          this.sessionState.composerAttachmentsBySession.set(key, quarantined.kept);
-          await this.attachmentStore.write(key, quarantined.kept);
-        }
-        return quarantined.skipped;
-      }),
-    );
-    return skippedCounts.reduce((total, count) => total + count, 0);
   }
 
   private async validatePersistedAttachments(): Promise<number> {
@@ -3957,7 +3915,7 @@ export class DesktopAppStore {
     }
   }
 
-  private async readUiState(): Promise<LegacyPersistedUiState> {
+  private async readUiState(): Promise<PersistedUiState> {
     return readPersistedUiState(this.uiStateFilePath);
   }
 

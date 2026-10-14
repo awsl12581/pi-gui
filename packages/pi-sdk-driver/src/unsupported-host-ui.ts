@@ -38,13 +38,6 @@ export function genericUnsupportedCapabilityMessage(capability: string): string 
   return `Terminal-only ${labelForCapability(capability)} is not supported in pi-gui. Use pi in the terminal for that workflow.`;
 }
 
-export function commandUnsupportedCapabilityMessage(
-  commandName: string,
-  capability: string,
-): string {
-  return `/${commandName} requires terminal-only ${labelForCapability(capability)} and is not supported in pi-gui yet. Use pi in the terminal for this command.`;
-}
-
 function labelForCapability(capability: string): string {
   switch (capability) {
     case "custom":

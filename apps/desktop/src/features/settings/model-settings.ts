@@ -4,7 +4,6 @@ import type {
   RuntimeSnapshot,
 } from "@pi-gui/session-driver/runtime-types";
 import type { DesktopAppState, WorkspaceRecord } from "../../../contracts/desktop-state";
-import { resolveRepoWorkspaceId } from "../../../contracts/workspace-roots";
 
 export function toModelSettingsSnapshot(
   settings: RuntimeSettingsSnapshot | ModelSettingsSnapshot,
@@ -45,19 +44,6 @@ export function applyModelSettings(
       enabledModelPatterns: [...modelSettings.enabledModelPatterns],
     },
   };
-}
-
-export function resolveModelSettingsOwnerId(
-  state: Pick<DesktopAppState, "modelSettingsScopeMode" | "workspaces">,
-  workspaceId: string | undefined,
-): string | undefined {
-  if (!workspaceId) {
-    return undefined;
-  }
-  if (state.modelSettingsScopeMode !== "per-repo") {
-    return workspaceId;
-  }
-  return resolveRepoWorkspaceId(state.workspaces, workspaceId) ?? workspaceId;
 }
 
 export function getEffectiveModelRuntime(

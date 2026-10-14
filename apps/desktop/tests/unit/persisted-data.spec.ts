@@ -10,17 +10,19 @@ import { AttachmentStore } from "../../electron/persistence/attachment-store";
 
 for (const invalid of [
   { version: 99, composerDraft: "future data" },
-  { version: 15, composerDraftsBySession: { one: 42 } },
-  { version: 15, workspaceOrder: ["valid", null] },
-  { version: 15, orchestrationChildren: [null] },
-  { version: 15, appGlobalModelSettings: { defaultThinkingLevel: "unknown" } },
-  { version: 15, futureData: "retain" },
-  { version: 15, notificationPreferences: { futureSetting: true } },
-  { version: 16, lastInteractedAtBySession: { one: 42 } },
-  { version: 17, threadGrouping: "priority" },
+  { version: 19, composerDraftsBySession: { one: 42 } },
+  { version: 19, workspaceOrder: ["valid", null] },
+  { version: 19, orchestrationChildren: [null] },
+  { version: 19, appGlobalModelSettings: { defaultThinkingLevel: "unknown" } },
+  { version: 19, futureData: "retain" },
+  { version: 19, notificationPreferences: { futureSetting: true } },
+  { version: 19, lastInteractedAtBySession: { one: 42 } },
+  { version: 19, threadGrouping: "priority" },
   { version: 19, extensionFlagsByWorkspace: { ws: { retries: 3 } } },
   { version: 19, extensionFlagsBySession: { "ws:sess": ["plan"] } },
   { version: 19, collapsedWorkspaceIds: ["alpha", 42] },
+  { version: 19, composerAttachmentsBySession: {} },
+  { version: 19, transcripts: {} },
   [],
 ]) {
   test(`preserves invalid UI state ${JSON.stringify(invalid)}`, async () => {
@@ -34,42 +36,6 @@ for (const invalid of [
     expect(await readFile(path, "utf8")).toBe(original);
   });
 }
-
-test("reads v15 ui-state without lastInteractedAt and writes v18", async () => {
-  const path = join(await mkdtemp(join(tmpdir(), "ui-state-recency-")), "ui-state.json");
-  await writeFile(path, JSON.stringify({ version: 15, composerDraft: "kept" }));
-  const decoded = await readPersistedUiState(path);
-  expect(decoded.version).toBe(15);
-  expect(decoded.lastInteractedAtBySession).toBeUndefined();
-  await writePersistedUiState(path, {
-    composerDraft: "kept",
-    lastInteractedAtBySession: { "ws:sess": "2026-09-21T12:00:00.000Z" },
-  });
-  const written = JSON.parse(await readFile(path, "utf8")) as {
-    version: number;
-    lastInteractedAtBySession: Record<string, string>;
-  };
-  expect(written.version).toBe(19);
-  expect(written.lastInteractedAtBySession).toEqual({ "ws:sess": "2026-09-21T12:00:00.000Z" });
-});
-
-test("reads v16 ui-state without threadGrouping and writes the saved choice as v18", async () => {
-  const path = join(await mkdtemp(join(tmpdir(), "ui-state-grouping-")), "ui-state.json");
-  await writeFile(path, JSON.stringify({ version: 16, composerDraft: "kept" }));
-  const decoded = await readPersistedUiState(path);
-  expect(decoded.version).toBe(16);
-  expect(decoded.threadGrouping).toBeUndefined();
-  await writePersistedUiState(path, {
-    composerDraft: "kept",
-    threadGrouping: "workspace",
-  });
-  const written = JSON.parse(await readFile(path, "utf8")) as {
-    version: number;
-    threadGrouping: string;
-  };
-  expect(written.version).toBe(19);
-  expect(written.threadGrouping).toBe("workspace");
-});
 
 test("extension flag defaults and per-thread flags round-trip through ui-state", async () => {
   const path = join(await mkdtemp(join(tmpdir(), "ui-state-flags-")), "ui-state.json");
@@ -86,7 +52,7 @@ test("extension flag defaults and per-thread flags round-trip through ui-state",
 
 test("reads ui-state without folded folders and writes the collapsed ids", async () => {
   const path = join(await mkdtemp(join(tmpdir(), "ui-state-collapsed-")), "ui-state.json");
-  await writeFile(path, JSON.stringify({ version: 15, composerDraft: "kept" }));
+  await writeFile(path, JSON.stringify({ version: 19, composerDraft: "kept" }));
   expect((await readPersistedUiState(path)).collapsedWorkspaceIds).toBeUndefined();
   await writePersistedUiState(path, { composerDraft: "kept", collapsedWorkspaceIds: ["alpha"] });
   const written = JSON.parse(await readFile(path, "utf8")) as {
@@ -101,7 +67,7 @@ test("reads ui-state without folded folders and writes the collapsed ids", async
 test("backup recovery retains damaged bytes and the good backup", async () => {
   const dir = await mkdtemp(join(tmpdir(), "ui-state-backup-"));
   const path = join(dir, "ui-state.json");
-  const good = JSON.stringify({ version: 15, composerDraft: "retained draft" });
+  const good = JSON.stringify({ version: 19, composerDraft: "retained draft" });
   await writeFile(`${path}.bak`, good);
   await writeFile(path, "{damaged");
   expect((await readPersistedUiState(path)).composerDraft).toBe("retained draft");

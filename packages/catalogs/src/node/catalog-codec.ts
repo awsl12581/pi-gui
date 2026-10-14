@@ -20,19 +20,11 @@ export function createEmptyState(): CatalogFileState {
 
 export function parseState(raw: string, filePath: string): CatalogFileState {
   const parsed: unknown = JSON.parse(raw);
-  if (!isRecord(parsed) || (parsed.version !== 1 && parsed.version !== 2)) {
+  if (!isRecord(parsed) || parsed.version !== 2) {
     throw new Error(`Unsupported catalog file format in ${filePath}.`);
   }
 
-  // Version 1 predates worktrees; omitted collections were historically empty.
-  // Never recover a malformed collection by dropping entries: callers use the
-  // catalog to decide which session attachments are still referenced.
-  const workspaces =
-    parsed.version === 1 && parsed.workspaces === undefined ? [] : parsed.workspaces;
-  const sessions = parsed.version === 1 && parsed.sessions === undefined ? [] : parsed.sessions;
-  const worktrees = parsed.version === 1 && parsed.worktrees === undefined ? [] : parsed.worktrees;
-  const sessionFiles =
-    parsed.version === 1 && parsed.sessionFiles === undefined ? {} : parsed.sessionFiles;
+  const { workspaces, sessions, worktrees, sessionFiles } = parsed;
   if (
     !isEntryArray(workspaces, isWorkspaceEntry) ||
     !isEntryArray(sessions, isSessionEntry) ||

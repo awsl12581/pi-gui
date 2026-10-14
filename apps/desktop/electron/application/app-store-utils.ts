@@ -249,16 +249,6 @@ export function makeTranscriptMessageWithAttachments(
   };
 }
 
-export function cloneTranscriptMessage(message: TranscriptMessage): TranscriptMessage {
-  if (message.kind === "message" && message.attachments) {
-    return {
-      ...message,
-      attachments: message.attachments.map((attachment) => ({ ...attachment })),
-    };
-  }
-  return { ...message };
-}
-
 export function cloneComposerAttachment(attachment: ComposerAttachment): ComposerAttachment {
   if (attachment.kind === "file") {
     return { ...attachment };

@@ -11,6 +11,18 @@ import { WorkbenchRequests, type WorkbenchOwner } from "../../electron/ipc/workb
 const firstTask = { workspaceId: "repo", sessionId: "first" };
 const secondTask = { workspaceId: "repo", sessionId: "second" };
 
+test("current workbench templates reject missing scopes and unsupported tools", () => {
+  expect(() =>
+    decodeTaskWorkbenchTemplate({
+      ...template(),
+      changes: { workspaceId: "repo", selectedPath: null },
+    }),
+  ).toThrow();
+  expect(() =>
+    decodeTaskWorkbenchTemplate({ ...template(), tools: [{ kind: "worktrees" }] }),
+  ).toThrow("tool kind");
+});
+
 function template(kind: "files" | "changes" | "terminal" = "changes"): TaskWorkbenchTemplate {
   return {
     visibility: "visible",
@@ -197,22 +209,4 @@ test("workbench boundary accepts unavailable extension references but rejects co
     }),
   ).toThrow(/oversized reference/);
   expect(await requests.get(firstTask)).toBeNull();
-});
-
-test("a saved layout with the removed Worktrees tool keeps its other tabs", () => {
-  const legacy = { ...template("files"), tools: [{ kind: "files" }, { kind: "worktrees" }] };
-  expect(decodeTaskWorkbenchTemplate(legacy)).toEqual(template("files"));
-  expect(
-    decodeTaskWorkbenchTemplate({ ...legacy, selection: { kind: "tool", toolId: "worktrees" } }),
-  ).toEqual(template("files"));
-  expect(
-    decodeTaskWorkbenchTemplate({
-      ...legacy,
-      tools: [{ kind: "worktrees" }],
-      selection: { kind: "tool", toolId: "worktrees" },
-    }),
-  ).toEqual({ ...template("files"), tools: [], selection: { kind: "chooser" } });
-  expect(() =>
-    decodeTaskWorkbenchTemplate({ ...legacy, tools: [{ kind: "worktrees", viewId: "x" }] }),
-  ).toThrow(/builtin tool fields/);
 });

@@ -163,7 +163,7 @@ export async function launchDesktop(
         }
       : {};
   const electronApp = await electron.launch({
-    args: electronCliArgs(desktopDir),
+    args: electronCliArgs(process.env.PI_APP_TEST_ENTRY ?? desktopDir),
     cwd: desktopDir,
     env,
     ...recordVideo,
@@ -179,11 +179,15 @@ export async function spawnDesktopProcess(
   const normalized = normalizeLaunchOptions(options);
   const agentDir = await prepareAgentDir(userDataDir, normalized);
   const env = buildDesktopLaunchEnv(userDataDir, agentDir, normalized);
-  return spawn(electronExecutablePath, electronCliArgs(desktopDir), {
-    cwd: desktopDir,
-    env,
-    stdio: "ignore",
-  });
+  return spawn(
+    electronExecutablePath,
+    electronCliArgs(process.env.PI_APP_TEST_ENTRY ?? desktopDir),
+    {
+      cwd: desktopDir,
+      env,
+      stdio: "ignore",
+    },
+  );
 }
 
 export async function launchPackagedDesktop(

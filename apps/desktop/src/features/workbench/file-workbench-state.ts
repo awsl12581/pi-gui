@@ -94,28 +94,6 @@ export function activateFile(state: FileWorkbenchTabs, path: string): FileWorkbe
   };
 }
 
-export function pruneFiles(
-  state: FileWorkbenchTabs,
-  availablePaths: readonly string[],
-): FileWorkbenchTabs {
-  const allowed = new Set(availablePaths);
-  const retained = state.retained.filter((path) => state.tabs.includes(path) && !allowed.has(path));
-  const keep = new Set<string>([...allowed, ...retained]);
-  const tabs = state.tabs.filter((tab) => keep.has(tab));
-  if (tabs.length === 0) {
-    return EMPTY_FILE_TABS;
-  }
-  const active =
-    state.active && tabs.includes(state.active) ? state.active : (tabs[tabs.length - 1] ?? null);
-  return {
-    tabs,
-    active,
-    line: active === state.active ? state.line : null,
-    lineNonce: state.lineNonce,
-    retained: retained.filter((path) => tabs.includes(path)),
-  };
-}
-
 export function isMarkdownPath(path: string): boolean {
   return /\.(md|markdown|mdx)$/i.test(path);
 }

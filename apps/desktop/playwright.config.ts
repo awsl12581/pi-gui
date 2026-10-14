@@ -4,6 +4,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   forbidOnly: Boolean(process.env.CI),
   testDir: resolve(__dirname, "tests"),
+  outputDir: process.env.PI_APP_TEST_OUTPUT_DIR ?? "test-results",
   // Demo specs record marketing videos on demand; keep them out of default/CI discovery.
   testIgnore: "**/demo/**",
   timeout: 60_000,

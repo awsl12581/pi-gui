@@ -94,7 +94,7 @@ await test("model context edits preserve original desktop history and fork targe
   });
   await supervisor.validateForkSession(snapshot.ref, {
     targetWorkspace: workspace,
-    userMessageIndex: 0,
+    sourceMessageIndex: 0,
   });
   const fork = await supervisor.forkSession(snapshot.ref, {
     targetWorkspace: workspace,

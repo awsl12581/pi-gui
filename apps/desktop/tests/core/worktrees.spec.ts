@@ -114,28 +114,19 @@ test("scopes worktree creation and startup collection to the active profile", as
   test.setTimeout(180_000);
   const profileA = await makeUserDataDir("pi-gui-profile-a-");
   const profileB = await makeUserDataDir("pi-gui-profile-b-");
-  const fakeHome = await makeUserDataDir("pi-gui-fake-home-");
   const workspacePath = await makeGitWorkspace("worktree-profile-isolation");
   const profileARoot = join(profileA, "worktrees");
   const profileBOrphan = join(profileB, "worktrees", "repo", "profile-b-orphan");
-  const legacyWorktree = join(fakeHome, ".pi", "worktrees", "repo", "legacy");
   let profileAWorktree: string | undefined;
 
   try {
-    await addLinkedWorktree(workspacePath, legacyWorktree, "pi/legacy");
-    const canonicalLegacyWorktree = await realpath(legacyWorktree);
     const profileAHarness = await launchDesktop(profileA, {
       initialWorkspaces: [workspacePath],
       testMode: "background",
-      envOverrides: { HOME: fakeHome },
     });
     try {
       const window = await profileAHarness.firstWindow();
       const rootWorkspace = await waitForWorkspaceByPath(window, workspacePath);
-      await addWorkspaceViaIpc(window, legacyWorktree);
-      const legacyWorkspace = await waitForWorkspaceByPath(window, canonicalLegacyWorktree);
-      expect(legacyWorkspace.kind).toBe("worktree");
-
       await window
         .getByRole("button", { name: `Workspace actions for ${rootWorkspace.name}` })
         .click();
@@ -147,7 +138,7 @@ test("scopes worktree creation and startup collection to the active profile", as
           const selected = state.workspaces.find(
             (workspace) => workspace.id === state.selectedWorkspaceId,
           );
-          return selected?.kind === "worktree" && selected.path !== canonicalLegacyWorktree;
+          return selected?.kind === "worktree";
         })
         .toBe(true);
 
@@ -168,54 +159,41 @@ test("scopes worktree creation and startup collection to the active profile", as
     const profileBHarness = await launchDesktop(profileB, {
       initialWorkspaces: [],
       testMode: "background",
-      envOverrides: { HOME: fakeHome },
     });
     try {
       await profileBHarness.firstWindow();
       await expect.poll(() => pathExists(profileBOrphan)).toBe(false);
       expect(await pathExists(profileAWorktree)).toBe(true);
-      expect(await pathExists(legacyWorktree)).toBe(true);
     } finally {
       await profileBHarness.close();
     }
 
-    const profileACompatibilityHarness = await launchDesktop(profileA, {
+    const profileARestoreHarness = await launchDesktop(profileA, {
       initialWorkspaces: [],
       testMode: "background",
-      envOverrides: { HOME: fakeHome },
     });
     try {
-      const window = await profileACompatibilityHarness.firstWindow();
+      const window = await profileARestoreHarness.firstWindow();
       const rememberedProfileAWorktree = await waitForWorkspaceByPath(window, profileAWorktree);
-      const legacyWorkspace = await waitForWorkspaceByPath(window, canonicalLegacyWorktree);
       expect(rememberedProfileAWorktree.kind).toBe("worktree");
       expect(await pathExists(rememberedProfileAWorktree.path)).toBe(true);
-      expect(legacyWorkspace.kind).toBe("worktree");
-      await window.evaluate(async (workspaceId) => {
-        await globalThis.window.piApp.selectWorkspace(workspaceId);
-      }, legacyWorkspace.id);
-      const state = await getDesktopState(window);
-      expect(state.selectedWorkspaceId).toBe(legacyWorkspace.id);
-      expect(await pathExists(canonicalLegacyWorktree)).toBe(true);
     } finally {
-      await profileACompatibilityHarness.close();
+      await profileARestoreHarness.close();
     }
 
     await rm(join(profileA, "catalogs.json"), { force: true });
     const profileAReconcileHarness = await launchDesktop(profileA, {
       initialWorkspaces: [],
       testMode: "background",
-      envOverrides: { HOME: fakeHome },
     });
     try {
       await profileAReconcileHarness.firstWindow();
       await expect.poll(() => pathExists(profileAWorktree)).toBe(false);
-      expect(await pathExists(legacyWorktree)).toBe(true);
     } finally {
       await profileAReconcileHarness.close();
     }
   } finally {
-    for (const worktreePath of [profileAWorktree, profileBOrphan, legacyWorktree]) {
+    for (const worktreePath of [profileAWorktree, profileBOrphan]) {
       if (worktreePath) {
         await git(workspacePath, "worktree", "remove", "--force", worktreePath).catch(
           () => undefined,
@@ -224,7 +202,6 @@ test("scopes worktree creation and startup collection to the active profile", as
     }
     await rm(profileA, { recursive: true, force: true });
     await rm(profileB, { recursive: true, force: true });
-    await rm(fakeHome, { recursive: true, force: true });
     await rm(dirname(workspacePath), { recursive: true, force: true });
   }
 });

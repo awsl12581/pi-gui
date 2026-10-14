@@ -1,9 +1,5 @@
 import { expect, test } from "@playwright/test";
-import {
-  RendererErrorBoundary,
-  rendererBoundaryCopy,
-  startupSurfaceCopy,
-} from "../../src/app/desktop-recovery";
+import { RendererErrorBoundary, startupSurfaceCopy } from "../../src/app/desktop-recovery";
 
 const SENTINEL = "secret-token=/private/path";
 
@@ -42,7 +38,7 @@ test("error boundary derived state stores no thrown details", () => {
 });
 
 test("crash fallback copy stays generic", () => {
-  const copy = rendererBoundaryCopy();
+  const copy = startupSurfaceCopy({ kind: "crashed" });
   expect(copy.title).toBe("Something went wrong");
   expect(copy.status).toBe("crashed");
   expect(JSON.stringify(copy)).not.toContain(SENTINEL);

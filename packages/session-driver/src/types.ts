@@ -155,8 +155,6 @@ export interface ForkSessionOptions {
   readonly sourceMessageId?: string;
   /** 0-based index of the rendered source message selected as the fork point. */
   readonly sourceMessageIndex?: number;
-  /** 0-based rendered user-message index kept as a fallback for older callers. */
-  readonly userMessageIndex?: number;
   /**
    * "before" (default) forks before the selected user message so it can be edited and
    * re-sent; "at" keeps the selected user message in the forked history.

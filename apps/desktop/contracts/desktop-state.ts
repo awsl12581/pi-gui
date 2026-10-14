@@ -321,8 +321,6 @@ export type ForkThreadInput = {
   readonly sourceMessageId?: string;
   /** 0-based index of the rendered transcript message selected as the fork point. */
   readonly sourceMessageIndex?: number;
-  /** 0-based rendered user-message index kept as a fallback for older callers. */
-  readonly userMessageIndex?: number;
   readonly position?: ForkThreadPosition;
 };
 

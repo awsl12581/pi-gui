@@ -1,20 +1,15 @@
 import { realpath } from "node:fs/promises";
-import { homedir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 /**
  * Worktrees pi-gui creates live under the active profile's `<userData>/worktrees`
- * or the legacy shared `~/.pi/worktrees`. Only those nest under the folder that
+ * only. Those nest under the folder that
  * created them; any other checkout the user opens is its own sidebar folder.
  */
 export function appWorktreeRootMatcher(profileRoot: string): (path: string) => Promise<boolean> {
   return async (path) => {
     const candidate = await canonicalize(path);
-    // Read HOME per call so tests that point HOME elsewhere see their legacy root.
-    const roots = await Promise.all(
-      [profileRoot, join(homedir(), ".pi", "worktrees")].map(canonicalize),
-    );
-    return roots.some((root) => isStrictlyWithin(root, candidate));
+    return isStrictlyWithin(await canonicalize(profileRoot), candidate);
   };
 }
 

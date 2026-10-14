@@ -928,7 +928,7 @@ export class SessionSupervisor {
           ? `message ${options.sourceMessageId}`
           : options.sourceMessageIndex !== undefined
             ? `rendered message index ${options.sourceMessageIndex}`
-            : `user message index ${options.userMessageIndex}`;
+            : "unspecified fork point";
       throw new Error(`Cannot fork session ${sessionKey(sourceRef)}: no ${selector}.`);
     }
 
@@ -3140,25 +3140,7 @@ function resolveForkSourceEntry(
     );
   }
 
-  if (options.userMessageIndex === undefined) {
-    return undefined;
-  }
-
-  let userMessageIndex = -1;
-  const renderedSourceMessageIndex = renderedMessageItems.findIndex((item) => {
-    if (item.role !== "user") {
-      return false;
-    }
-    userMessageIndex += 1;
-    return userMessageIndex === options.userMessageIndex;
-  });
-  return renderedSourceMessageIndex === -1
-    ? undefined
-    : findBranchEntryForRenderedMessageIndex(
-        branch,
-        renderedMessageItems,
-        renderedSourceMessageIndex,
-      );
+  return undefined;
 }
 
 function findBranchEntryForRenderedMessageIndex(

@@ -33,15 +33,6 @@ export function isPathWithin(root: string, candidate: string): boolean {
   );
 }
 
-/** Match a declaration to Pi's selected extension; never load another backend entry. */
-export async function validateDesktopExtensionSource(
-  declaration: { readonly source: string; readonly frontend: string | URL },
-  loadedExtensions: readonly LoadedDesktopExtensionSource[],
-): Promise<ValidatedDesktopExtensionSource> {
-  const identity = await validateDesktopExtensionIdentity(declaration.source, loadedExtensions);
-  return validateDesktopExtensionFrontend(identity, declaration.frontend);
-}
-
 export async function validateDesktopExtensionIdentity(
   source: string,
   loadedExtensions: readonly LoadedDesktopExtensionSource[],

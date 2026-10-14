@@ -2,7 +2,7 @@ import test from "node:test";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -11,7 +11,6 @@ import {
   defaultIsPidAlive,
   isLeaseDead,
   isSameHolder,
-  leaseBlocksBinding,
   readLeaseSnapshot,
   refreshLeaseFile,
   releaseLeaseFile,
@@ -22,7 +21,7 @@ import {
   type LeaseSnapshot,
 } from "../dist/session-lease.js";
 
-const SELF = { pid: 4242, hostname: "self-host" };
+const SELF = { pid: 4242, hostname: "self-host", token: "self-token" };
 const TTL = 60_000;
 
 function foreignSnapshot(overrides: Partial<LeaseInfo> = {}, mtimeMs = 1_000): LeaseSnapshot {
@@ -32,6 +31,7 @@ function foreignSnapshot(overrides: Partial<LeaseInfo> = {}, mtimeMs = 1_000): L
       hostname: "other-host",
       startedAt: "2026-07-03T00:00:00.000Z",
       surface: "pi-gui",
+      token: "foreign-token",
       ...overrides,
     },
     mtimeMs,
@@ -50,12 +50,6 @@ async function withTempDir(fn: (dir: string) => Promise<void>): Promise<void> {
 await test("lease path is a .lease sibling of the session file (ignored by pi's .jsonl discovery)", () => {
   assert.equal(sessionLeasePath("/x/2026_abc.jsonl"), "/x/2026_abc.jsonl.lease");
   assert.ok(!sessionLeasePath("/x/2026_abc.jsonl").endsWith(".jsonl"));
-});
-
-await test("isSameHolder matches on pid + hostname for tokenless leases", () => {
-  assert.ok(isSameHolder({ pid: 4242, hostname: "self-host" }, SELF));
-  assert.ok(!isSameHolder({ pid: 4242, hostname: "other-host" }, SELF));
-  assert.ok(!isSameHolder({ pid: 1, hostname: "self-host" }, SELF));
 });
 
 await test("same-host lease is dead when its pid is gone, alive when pid runs and mtime fresh", () => {
@@ -80,18 +74,6 @@ await test("cross-host lease falls back to TTL: fresh mtime alive, stale mtime d
     isLeaseDead(snap, { now: 10_000 + TTL + 1, ttlMs: TTL, self: SELF, isPidAlive: boom }),
     true,
   );
-});
-
-await test("leaseBlocksBinding: own lease never blocks, foreign+alive blocks, foreign+dead does not", () => {
-  const opts = { now: 20_000, ttlMs: TTL, self: SELF, isPidAlive: () => true };
-  const own: LeaseSnapshot = { info: buildOwnLease(SELF, 19_000), mtimeMs: 19_000 };
-  assert.equal(leaseBlocksBinding(own, opts), false);
-
-  const foreignAlive = foreignSnapshot({ hostname: "other-host" }, 19_500);
-  assert.equal(leaseBlocksBinding(foreignAlive, opts), true);
-
-  const foreignDead = foreignSnapshot({ hostname: "other-host" }, 20_000 - TTL - 1);
-  assert.equal(leaseBlocksBinding(foreignDead, opts), false);
 });
 
 await test("defaultIsPidAlive: current process alive, invalid pids not alive", () => {
@@ -121,35 +103,25 @@ await test("write/read/remove lease round-trips and tolerates missing + corrupt 
   });
 });
 
-await test("stale takeover: a dead foreign lease can be overwritten by our own", async () => {
+const SELF_TOKENED = { pid: 4242, hostname: "self-host", token: "token-a" };
+
+await test("a tokenless lease is rejected without takeover or rewriting", async () => {
   await withTempDir(async (dir) => {
     const leasePath = join(dir, "session.jsonl.lease");
-    await writeLeaseFile(leasePath, {
-      pid: 9999,
+    const original = JSON.stringify({
+      pid: 4242,
       hostname: "self-host",
-      startedAt: "2026-01-01T00:00:00.000Z",
+      startedAt: "2026-01-01",
       surface: "pi-gui",
     });
-
-    const stale = await readLeaseSnapshot(leasePath);
-    assert.ok(stale);
-    // Same host, pid reported dead → does not block, so we take over.
-    const blocks = leaseBlocksBinding(stale!, {
-      now: Date.now(),
-      ttlMs: TTL,
-      self: SELF,
-      isPidAlive: () => false,
-    });
-    assert.equal(blocks, false);
-
-    await writeLeaseFile(leasePath, buildOwnLease(SELF, Date.now()));
-    const ours = await readLeaseSnapshot(leasePath);
-    assert.equal(ours!.info.pid, SELF.pid);
-    assert.equal(ours!.info.hostname, SELF.hostname);
+    await writeFile(leasePath, original);
+    await assert.rejects(
+      acquireLeaseFile(leasePath, stalenessFor(SELF_TOKENED, Date.now())),
+      /owner token is required/,
+    );
+    assert.equal(await readFile(leasePath, "utf8"), original);
   });
 });
-
-const SELF_TOKENED = { pid: 4242, hostname: "self-host", token: "token-a" };
 
 function stalenessFor(self: typeof SELF_TOKENED, now: number, isPidAlive = () => true) {
   return { now, ttlMs: TTL, self, isPidAlive };
@@ -159,8 +131,6 @@ await test("isSameHolder compares owner tokens when both sides have one", () => 
   assert.ok(isSameHolder(buildOwnLease(SELF_TOKENED, 0), SELF_TOKENED));
   // Same pid + host but a different token is a different process (pid reuse).
   assert.ok(!isSameHolder({ ...SELF_TOKENED, token: "token-b" }, SELF_TOKENED));
-  // Leases written before tokens existed still match on pid + host.
-  assert.ok(isSameHolder({ pid: 4242, hostname: "self-host" }, SELF_TOKENED));
 });
 
 await test("acquireLeaseFile: absent → acquired, own → acquired, live foreign → held", async () => {
@@ -191,6 +161,7 @@ await test("acquireLeaseFile takes over dead and corrupt leases", async () => {
       hostname: "self-host",
       startedAt: "2026-01-01T00:00:00.000Z",
       surface: "pi-gui",
+      token: "dead-holder",
     });
     const result = await acquireLeaseFile(
       leasePath,

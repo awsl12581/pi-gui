@@ -292,10 +292,6 @@ export function expectForkThreadInput(value: unknown): ForkThreadInput {
       record.sourceMessageIndex,
       "input.sourceMessageIndex",
     ),
-    userMessageIndex: expectOptionalNonNegativeInteger(
-      record.userMessageIndex,
-      "input.userMessageIndex",
-    ),
     position,
   };
 }

@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { crc32, deflateSync } from "node:zlib";
 import { expect, test, type Page } from "@playwright/test";
@@ -264,82 +264,6 @@ test("relaunch skips oversize-pixel saved images without rewriting the attachmen
     await second.close();
   }
   expect(await readFile(attachmentPath, "utf8")).toBe(original);
-});
-
-test("legacy migration skips oversize-pixel images before the composer map", async () => {
-  test.setTimeout(90_000);
-  const userDataDir = await makeUserDataDir();
-  const workspacePath = await makeWorkspace("composer-image-legacy-pixels");
-  const first = await launchDesktop(userDataDir, {
-    initialWorkspaces: [workspacePath],
-    testMode: "background",
-  });
-  let sessionKey = "";
-  const wideData = createRgbPng(COMPOSER_IMAGE_MAX_DIMENSION + 1, 1).toString("base64");
-  try {
-    const window = await first.firstWindow();
-    await createNamedThread(window, "Legacy pixel limits");
-    const state = await getDesktopState(window);
-    sessionKey = `${state.selectedWorkspaceId}:${state.selectedSessionId}`;
-  } finally {
-    await first.close();
-  }
-
-  const attachmentPath = join(userDataDir, "attachments", `${encodeURIComponent(sessionKey)}.json`);
-  try {
-    await unlink(attachmentPath);
-  } catch (error) {
-    if (
-      typeof error !== "object" ||
-      error === null ||
-      !("code" in error) ||
-      error.code !== "ENOENT"
-    ) {
-      throw error;
-    }
-  }
-
-  const uiStatePath = join(userDataDir, "ui-state.json");
-  const saved = JSON.parse(await readFile(uiStatePath, "utf8")) as Record<string, unknown>;
-  saved.composerAttachmentsBySession = {
-    [sessionKey]: [
-      {
-        id: "tiny",
-        kind: "image",
-        name: "tiny.png",
-        mimeType: "image/png",
-        data: TINY_PNG_BASE64,
-      },
-      {
-        id: "wide",
-        kind: "image",
-        name: "wide.png",
-        mimeType: "image/png",
-        data: wideData,
-      },
-    ],
-  };
-  await writeFile(uiStatePath, `${JSON.stringify(saved, null, 2)}\n`);
-
-  const second = await launchDesktop(userDataDir, { testMode: "background" });
-  try {
-    const window = await second.firstWindow();
-    await expect(window.getByTestId("startup-diagnostics")).toContainText(
-      composerImageSavedSkipMessage(1),
-    );
-    await expect(window.locator(".composer-attachment")).toHaveCount(1);
-    await expect(window.locator(".composer-attachment__preview")).toHaveAttribute(
-      "title",
-      "tiny.png",
-    );
-    await expect(window.getByRole("button", { name: "View wide.png" })).toHaveCount(0);
-    const migrated = JSON.parse(await readFile(attachmentPath, "utf8")) as Array<{
-      readonly id: string;
-    }>;
-    expect(migrated.map((attachment) => attachment.id)).toEqual(["tiny"]);
-  } finally {
-    await second.close();
-  }
 });
 
 test("startThread rejects oversize-pixel images without clearing the new-thread draft", async () => {

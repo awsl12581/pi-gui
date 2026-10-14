@@ -12,7 +12,6 @@ import {
 } from "../../contracts/composer-attachments";
 import {
   desktopIpc,
-  type ChangedFilesResult,
   type CustomProviderProbeInput,
   type CustomProviderProbeResult,
 } from "../../contracts/ipc";
@@ -211,13 +210,6 @@ export interface DesktopIpcCapabilities {
   ) => Promise<readonly unknown[]>;
   readonly readWorkspaceFile: (workspacePath: string, filePath: string) => Promise<unknown>;
   readonly revealWorkspaceFile: (workspacePath: string, filePath: string) => Promise<void>;
-  readonly getChangedFiles: (workspacePath: string) => Promise<ChangedFilesResult>;
-  readonly getFileDiff: (workspacePath: string, filePath: string) => Promise<string>;
-  readonly stageFile: (
-    workspacePath: string,
-    filePath: string,
-    options: { readonly sourcePath?: string },
-  ) => Promise<void>;
   readonly relaunchApplication: () => void;
 }
 
@@ -1097,48 +1089,6 @@ function registerWorkspaceFileIpc(
         throw new Error(`Unknown workspace: ${workspaceId}`);
       }
       await capabilities.revealWorkspaceFile(workspacePath, expectString(rawFilePath, "filePath"));
-    },
-  );
-  ipcMain.handle(desktopIpc.getChangedFiles, async (event, rawWorkspaceId: unknown) => {
-    windows.windowForSender(event.sender);
-    const workspacePath = workspace.getWorkspacePath(
-      expectNonEmptyString(rawWorkspaceId, "workspaceId"),
-    );
-    if (!workspacePath) {
-      return {
-        state: "unavailable",
-        error: {
-          code: "workspace-unavailable",
-          message: "Changed files are unavailable because this workspace could not be found.",
-        },
-      } satisfies ChangedFilesResult;
-    }
-    return capabilities.getChangedFiles(workspacePath);
-  });
-  ipcMain.handle(
-    desktopIpc.getFileDiff,
-    async (event, rawWorkspaceId: unknown, rawFilePath: unknown) => {
-      windows.windowForSender(event.sender);
-      const workspacePath = workspace.getWorkspacePath(
-        expectNonEmptyString(rawWorkspaceId, "workspaceId"),
-      );
-      return workspacePath
-        ? capabilities.getFileDiff(workspacePath, expectString(rawFilePath, "filePath"))
-        : "";
-    },
-  );
-  ipcMain.handle(
-    desktopIpc.stageFile,
-    async (event, rawWorkspaceId: unknown, rawFilePath: unknown, rawStagingSourcePath: unknown) => {
-      windows.windowForSender(event.sender);
-      const workspaceId = expectNonEmptyString(rawWorkspaceId, "workspaceId");
-      const workspacePath = workspace.getWorkspacePath(workspaceId);
-      if (!workspacePath) {
-        throw new Error(`Unknown workspace: ${workspaceId}`);
-      }
-      await capabilities.stageFile(workspacePath, expectString(rawFilePath, "filePath"), {
-        sourcePath: expectOptionalString(rawStagingSourcePath, "stagingSourcePath"),
-      });
     },
   );
 }
