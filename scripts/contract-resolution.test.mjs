@@ -55,7 +55,7 @@ test("desktop runtime resolves its catalog backend without TypeScript aliases", 
   const require = createRequire(path.join(root, "apps/desktop/package.json"));
   for (const [specifier, relative] of [
     ["@pi-gui/catalogs/node", "packages/catalogs/dist/node/index.js"],
-    ["@pi-gui/catalogs/node/atomic-write", "packages/catalogs/dist/node/atomic-write.js"],
+    ["@pi-gui/platform", "packages/platform/dist/index.js"],
   ]) {
     let resolved;
     assert.doesNotThrow(() => {

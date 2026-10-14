@@ -43,6 +43,7 @@ export default [
         ].map((directory) => `${root}${directory}/**`),
       ),
       "**/*.d.{ts,mts,cts}",
+      "records/**",
       ".pnpm-store/**",
       ".cursor/**",
       ".worktrees/**",

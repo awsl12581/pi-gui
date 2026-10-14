@@ -12,6 +12,8 @@ const require = createRequire(import.meta.url);
 
 test("format check rejects bad formatting and autofix is stable", () => {
   const fixture = path.join(mkdtempSync(path.join(os.tmpdir(), "pi-gui-format-")), "fixture.ts");
+  const ignorePath = path.join(path.dirname(fixture), ".prettierignore");
+  writeFileSync(ignorePath, "");
   writeFileSync(fixture, "export const config={timeout:5,label:'hello'}\n");
   const run = (mode) => {
     const result = spawnSync(
@@ -20,6 +22,8 @@ test("format check rejects bad formatting and autofix is stable", () => {
         require.resolve("prettier/bin/prettier.cjs"),
         "--config",
         path.join(root, ".prettierrc.json"),
+        "--ignore-path",
+        ignorePath,
         mode,
         fixture,
       ],

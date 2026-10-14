@@ -24,8 +24,10 @@ const paths = [
   "apps/desktop/scripts/capture-showcase.mts",
   "apps/website/app/page.tsx",
   "packages/catalogs/src/index.ts",
+  "packages/platform/src/index.ts",
+  "packages/platform/test/platform.test.mts",
   "packages/pi-sdk-driver/src/index.ts",
-  "packages/catalogs/test/atomic-write.test.mts",
+  "packages/catalogs/test/json-catalog-store.test.mts",
   "packages/pi-sdk-driver/test/session-schema.test.mts",
   "packages/session-driver/src/index.ts",
   "packages/extension-ui/src/index.ts",
@@ -180,14 +182,27 @@ test("a new workspace cannot silently receive only syntax lint", async () => {
     path.join(workspace, "package.json"),
     path.join(registeredWorkspace, "package.json"),
   );
-  const { readFileSync } = await import("node:fs");
-  const configPath = path.join(registered, "eslint.config.mjs");
+  const baseConfigPath = path.join(registered, "eslint-base.config.mjs");
+  copyFileSync(path.join(registered, "eslint.config.mjs"), baseConfigPath);
   writeFileSync(
-    configPath,
-    readFileSync(configPath, "utf8").replace(
-      '...["catalogs", "pi-sdk-driver", "session-driver", "extension-ui"]',
-      '...["catalogs", "pi-sdk-driver", "session-driver", "extension-ui", "new-feature"]',
-    ),
+    path.join(registered, "eslint.config.mjs"),
+    `import base from "./eslint-base.config.mjs";
+import { fileURLToPath } from "node:url";
+const typed = base.find((entry) => entry.files?.includes("packages/platform/**/*.{ts,tsx,mts,cts}"));
+if (!typed) throw new Error("Expected the current Platform typed configuration");
+export default [...base, {
+  ...typed,
+  files: ["packages/new-feature/**/*.{ts,tsx,mts,cts}"],
+  languageOptions: {
+    ...typed.languageOptions,
+    parserOptions: {
+      ...typed.languageOptions.parserOptions,
+      project: "packages/new-feature/tsconfig.lint.json",
+      tsconfigRootDir: fileURLToPath(new URL(".", import.meta.url)),
+    },
+  },
+}];
+`,
   );
   mkdirSync(path.join(registeredWorkspace, "src"));
   const source = path.join(registeredWorkspace, "src/index.ts");
