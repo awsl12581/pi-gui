@@ -47,7 +47,6 @@ export interface PersistedUiState {
   readonly sidebarCollapsed?: boolean;
   readonly threadGrouping?: ThreadGrouping;
   readonly collapsedWorkspaceIds?: readonly string[];
-  readonly allowMultiple?: boolean;
   readonly enableTransparency?: boolean;
   readonly themeMode?: ThemeMode;
   readonly themePresetId?: ThemePresetId;
@@ -116,8 +115,6 @@ export function decodePersistedUiState(parsed: unknown): PersistedUiState {
       ? candidate.threadGrouping
       : undefined,
     collapsedWorkspaceIds: toStringArray(candidate.collapsedWorkspaceIds),
-    allowMultiple:
-      typeof candidate.allowMultiple === "boolean" ? candidate.allowMultiple : undefined,
     enableTransparency:
       typeof candidate.enableTransparency === "boolean" ? candidate.enableTransparency : undefined,
     themeMode: toThemeMode(candidate.themeMode),
@@ -201,7 +198,6 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "sidebarCollapsed",
       "threadGrouping",
       "collapsedWorkspaceIds",
-      "allowMultiple",
       "enableTransparency",
       "themeMode",
       "themePresetId",
@@ -246,8 +242,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
     "collapsedWorkspaceIds",
   ])
     optional(root, key, strings);
-  for (const key of ["sidebarCollapsed", "allowMultiple", "enableTransparency"])
-    optional(root, key, boolean);
+  for (const key of ["sidebarCollapsed", "enableTransparency"]) optional(root, key, boolean);
   optional(root, "activeView", (v) => toAppView(v) !== undefined);
   optional(root, "threadGrouping", isThreadGrouping);
   optional(root, "themeMode", isThemeMode);

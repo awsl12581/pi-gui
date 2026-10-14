@@ -1,7 +1,5 @@
 import type { ChildProcess } from "node:child_process";
 import { once } from "node:events";
-import { readFile, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import {
   desktopShortcut,
@@ -12,14 +10,9 @@ import {
   waitForWorkspaceByPath,
 } from "../helpers/electron-app";
 
-test("ignores persisted multiple app instance opt-in and hides the setting", async () => {
+test("holds the single instance lock and exposes current General settings", async () => {
   const userDataDir = await makeUserDataDir();
-  await writeFile(
-    join(userDataDir, "ui-state.json"),
-    `${JSON.stringify({ allowMultiple: true }, null, 2)}\n`,
-    "utf8",
-  );
-  const workspacePath = await makeWorkspace("allow-multiple-instances-disabled");
+  const workspacePath = await makeWorkspace("single-instance-lock");
   const harness = await launchDesktop(userDataDir, {
     initialWorkspaces: [workspacePath],
     testMode: "background",
@@ -43,17 +36,6 @@ test("ignores persisted multiple app instance opt-in and hides the setting", asy
         harness.electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length),
       )
       .toBe(1);
-    await expect
-      .poll(async () => {
-        const persisted = JSON.parse(
-          await readFile(join(userDataDir, "ui-state.json"), "utf8"),
-        ) as {
-          readonly allowMultiple?: unknown;
-        };
-        return persisted.allowMultiple;
-      })
-      .toBeUndefined();
-
     await window.keyboard.press(desktopShortcut(","));
     await expect(window.getByTestId("settings-surface")).toBeVisible();
     await window.getByRole("button", { name: "General", exact: true }).click();
