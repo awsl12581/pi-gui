@@ -1,36 +1,184 @@
-# Repo Guidelines
+# 工作区协作规范
 
-These rules apply for the full session.
+> 最后修改时间：2026-10-14 17:27 CST
+> 文档版本：v5
+> 修改说明：要求待提交代码通过 Prettier、ESLint 和 EditorConfig 检查后才能提交 Git。
 
-## Workflow
+本文件定义工作区的根级协作规范，适用于整个会话。子目录存在自己的 `AGENTS.md` 时，同时遵循两份文件；在该子目录内，以范围更具体的规范为准。文中的目录均相对于工作区根目录。
 
-- Define success criteria before coding; if unclear, stop and clarify.
-- For non-trivial work, plan verification before editing: name the affected user flow, observable result, failure cases, and existing commands that prove them. Start with the checked-in [desktop verification skill](.agents/skills/verify-pi-gui/SKILL.md) for desktop flows and [baseline checks](docs/ci-baseline.md) for repository checks.
-- Do not create or switch to new branches to start work unless the user explicitly asks; respect the current branch or worktree as intentional.
-- Commit in small focused checkpoints; don’t batch unrelated changes.
-- Before closing non-trivial implementation work, review the diff for unnecessary abstractions, duplicate paths, unsafe escapes, and obsolete code; simplify within scope and rerun affected checks.
+本次合并以用户提供的通用协作规范为准；原有项目要求仅在不与其冲突时保留。
 
-## Product
+## 智能体协作
 
-- This repo is building a Codex-style desktop app for `pi`; preserve that product direction.
-- Desktop work is not done until it is verified on the real Electron surface, not only by unit tests.
-- Transcript/timeline behavior, session correctness, and Codex-style UX are product features, not polish.
-- Prefer clean reimplementation over patching around local complexity.
+所有任务均由当前主代理独立完成，不得创建、调用或向子代理委派工作。
 
-## Safety
+## 工作区修改边界
 
-- Never delete user session history, cached transcripts, screenshots, or temp artifacts without approval.
-- Treat files you didn’t edit as read-only when multiple agents may be working.
-- Ask before destructive commands or history rewrites.
+所有文件修改必须在当前工作区内进行。除非任务明确要求，或不修改就无法完成任务，否则不得改动第三方项目、基线实现及其配置和文档。不得以统一风格、顺手重构或预备兼容为由扩大修改范围。
 
-## Structure
+未经用户明确指示，不得读取、参考或复用其他工作区的内容。
 
-- Prefer path-scoped guidance in nested `AGENTS.md` files over growing this file.
-- Follow the ownership and migration guidance in [docs/architecture.md](docs/architecture.md); target folders are not evidence that a migration is complete.
-- Keep the desktop renderer/main/preload boundary tight; avoid broad Node exposure to the renderer.
-- Keep `pi-sdk-driver` thin over `pi-mono`; don’t fork or reimplement `pi` runtime behavior unless necessary.
+## 工作流程
 
-## Source Of Truth
+- 编码前先定义成功标准；若无法明确，停止并向用户澄清。
+- 非简单实现任务须在编辑前规划验证：明确受影响的用户流程、可观察的结果、失败场景，以及能验证这些结果的现有命令。桌面流程先阅读仓库内的 [桌面验证 skill](.agents/skills/verify-pi-gui/SKILL.md)，仓库检查参考 [基线检查](docs/ci-baseline.md)。
+- 未经用户明确要求，不得为开始任务而创建或切换分支；当前分支或工作树视为用户有意选择。
+- 按小而集中的检查点提交，不得将无关修改混入同一提交。
+- 每次 Git 提交前，待提交代码必须符合仓库的 Prettier、ESLint 和 EditorConfig 配置。执行 `pnpm format:check`、`pnpm lint`，并核验待提交文件符合 `.editorconfig`；三项检查全部通过后才能提交。任一检查失败或未完成时，不得提交，也不得跳过检查或放宽规则来绕过失败。修复后须重新检查。
+- 非简单实现任务结束前，审查差异中的多余抽象、重复路径、不安全的转义和过时代码；在任务范围内简化，并重新运行受影响的检查。
+- 仅对整体功能、高危功能和不常见案例编写测试。整体功能测试覆盖完整用户流程；高危功能包括可能导致数据丢失、敏感信息泄露或权限越界的操作；不常见案例包括边界条件和异常场景。
+- 普通功能不新增测试，静态检查通过即可；不得仅因新增分支、循环或其他实现细节而要求补充测试。
 
-- Root `AGENTS.md` is the repo instruction source of truth.
-- Root `CLAUDE.md` should remain a symlink to `AGENTS.md`.
+## 产品与架构要求
+
+- 本项目构建面向 `pi` 的 Codex 风格桌面应用，须保持这一产品方向。
+- 属于上述测试范围的桌面功能须在真实 Electron 界面上完成验证，不能仅凭单元测试判定完成；普通桌面功能按静态检查要求验收。
+- 对话记录和时间线行为、会话正确性及 Codex 风格交互均属于产品功能。
+- 在任务范围内，优先采用清晰的重新实现，避免围绕局部复杂性不断添加补丁。
+- 范围限定的规范优先放入对应子目录的 `AGENTS.md`，避免持续扩张根级规范。
+- 遵循 [架构文档](docs/architecture.md) 中的模块归属与迁移要求；目标目录已存在不代表迁移已完成。
+- 严格保持桌面 renderer、main 和 preload 的边界，避免向 renderer 广泛暴露 Node 能力。
+- `pi-sdk-driver` 应保持为 `pi-mono` 的轻量适配层；非必要不得分叉或重新实现 `pi` 的运行时行为。
+
+## 开发阶段与数据兼容
+
+本项目处于开发阶段，架构、接口和实现会随开发调整，不承诺兼容本项目旧版本的数据格式。
+
+- 只维护当前架构和数据格式，不新增或保留仅为读取、迁移或恢复旧版本数据而存在的兼容层、版本分支、转换逻辑和专属测试。
+- 在相关功能的修改或清理范围内，删除已被替代的旧数据实现；不得以旧数据仍可能存在为由保留重复路径。判定功能是否完全替代时，旧版本数据兼容不属于必须覆盖的需求。
+- 当前格式的数据校验、损坏保护和错误提示仍须保留；此约束不改变与当前 Pi 运行时及其原生会话格式的集成要求。
+- 不兼容旧数据不等于授权删除现有数据。删除用户会话历史、缓存、截图或临时产物，仍须遵循下方的数据与操作安全要求。
+
+## 数据与操作安全
+
+- 未经批准，不得删除用户会话历史、缓存的对话记录、截图或临时产物。
+- 多个执行者可能同时修改工作区时，将非本人修改的文件视为只读；此规则不授权创建或调用子代理。
+- 破坏性命令或历史重写须先征得用户批准。
+
+## 实现替代与分支淘汰
+
+当一项功能完整覆盖另一项功能的现有需求和调用场景时，以可完全替代的功能为唯一实现，删除被替代的实现、兼容层、分支路径和重复维护逻辑。不得为实现“完全替代”而扩张新功能的职责或加入无关能力。尚未完整覆盖时，不得判定为完全替代。
+
+研究中可以探索多个方案。某个方案经实验记录确认无效后，删除其实现、配置开关、调用入口、专属测试和兼容逻辑；保留对应的实验配置、日志、原始结果和分析，作为淘汰依据。
+
+## 任务方法与证据
+
+执行研究任务时，使用当前环境中与任务匹配的专项 skill，并遵守其前置流程、任务边界、证据要求和产物约定。
+
+需要保留的研究方案、调研、评审和阶段结论，应在当前任务中及时存入 `docs/` 的对应分类；单次实验的配置、过程、结果和分析存入对应的 `records/` 子目录。不得只保留在临时目录、终端输出或对话上下文中。
+
+## 实验验证与对比
+
+研究实现完成后，先进行小规模验证，再根据实测结果决定保留、删除、修正或进入完整实验。耗时较长的完整实验默认不运行；只有小规模验证已显示可信收益且需要最终确认，或无法判定关键研究结论时，才运行完整实验。
+
+对比实验中的各套技术栈必须保持内部一致，并分别使用自己的模型、运行时、动态库、适配器、编译配置和安装目录，不得交叉混用。
+
+对比各方应对齐影响结论的编译语义、运行配置和调优条件。实验变量及无法对齐的条件必须明确记录。模型或其他产物是否经过调优、使用何种调优方法，也须如实记录。
+
+每次实验都要核验并记录实际配置及产物来源，不得仅凭目录名推断构建选项或运行语义。
+
+## 网络访问与命令输出
+
+网络访问遵循当前环境的连接与代理配置，不得套用其他环境的地址或端口。
+
+命令的标准输出和标准错误必须直接显示，或完整写入路径明确的日志文件。写入文件时，应说明路径，并在命令完成后检查和报告关键结果。不得丢弃输出、通过静默选项隐藏过程和错误，或捕获输出后既不显示也不保存。命令本身没有输出不属于静默丢弃。
+
+实验命令的输出还须遵守实验记录规范。
+
+## 环境兼容与依赖管理
+
+安装、构建或升级依赖前，先阅读项目的环境基线；若尚无记录，先核实与本次操作有关的硬件、操作系统和工具链信息。
+
+- 检查依赖的体系结构、语言运行时版本、ABI 及相关驱动或加速库兼容性。
+- 使用项目指定的隔离环境和依赖来源，不得以系统环境、全局环境或其他项目环境替代。
+- 不得让通用安装命令覆盖项目依赖的专用兼容构建。
+- 未经用户明确批准，不得升级或替换宿主操作系统、内核、驱动及系统级计算组件，也不得直接运行包含这些操作的上游安装脚本。
+- 依赖要求与环境基线冲突时，停止安装并报告冲突，不得通过全局升级绕过。
+
+## 构建与发布隔离
+
+遵循项目已有的构建和安装指南。正式构建、临时验证构建和安装产物应使用独立目录；临时验证不得覆盖正式构建或更新正式安装。
+
+发布前完成正式构建及必要验证，再检查待安装产物，最后更新正式安装。正式安装目录只保存通过验证的产物，不得在其中编译或手工修改文件。
+
+未经明确授权，不得将项目依赖安装到系统目录或全局运行环境。改变构建选项、目录或安装流程时，须在同一任务中同步更新操作指南。
+
+## 文档元数据
+
+创建或实质性修改 Markdown 文档时，在一级标题正下方保留以下元数据：
+
+```markdown
+# 文档标题
+
+> 最后修改时间：YYYY-MM-DD HH:mm TZ
+> 文档版本：v1
+> 修改说明：简要说明本次新增、修订或删除的内容。
+```
+
+时间使用当前环境所在时区。新文档从 `v1` 开始；每次实质性修改时，更新修改时间和说明，并将版本严格递增一次。修改说明应准确描述变更，不得使用“更新文档”等笼统表述。
+
+只读检查不更新元数据。已有文档可在下次实质性修改时采用此格式，不得仅为补充元数据而修改。
+
+每份文档末尾须包含完整版本修改记录：
+
+```markdown
+## 版本修改记录
+
+| 版本 | 修改时间            | 修改内容                 |
+| ---- | ------------------- | ------------------------ |
+| v1   | YYYY-MM-DD HH:mm TZ | 创建文档，说明初始内容。 |
+```
+
+创建文档时添加 `v1` 记录；后续每次实质性修改追加一行，不得改写或删除已有历史。最新记录须与顶部元数据一致。
+
+## 文档质量
+
+新建或实质性修改文档后，交付前使用与文档类型匹配的专项 skill 润色，并完成其规定的前置流程；没有匹配的专项 skill 时，使用通用语言润色方法。
+
+删除重复、空泛、歧义和机械化表达。润色后复核原文，不得改变事实、数据、引用、实验结果、结论强度或不确定性，也不得删除必要的可追溯信息。
+
+## 文档存储与分类
+
+长期文档统一存入 `docs/`，按用途分类：
+
+- `docs/arch/`：系统架构、模块职责、接口、数据流和部署结构。
+- `docs/missions/`：任务说明、实施方案、执行指导、检查清单和验收标准。
+- `docs/guides/`：环境搭建、开发、使用、测试、部署和运维指南。
+- `docs/reports/`：调研、复盘、评审和阶段性总结。
+- `docs/references/`：协议说明、外部规范摘要和其他参考资料。
+
+出现新的文档类型时，按用途创建名称清晰的分类目录，不得混放。文档文件名应直接描述内容，建议使用小写 `kebab-case`，不加时间前缀；通过元数据和版本修改记录维护历史，不复制带日期的文件保存版本。
+
+工具链或社区惯例要求固定位置的文件，如根目录的 `README.md`、`AGENTS.md` 和许可证文件，可保留在规定位置。单次实验的 `config.md` 和 `analysis.md` 存入对应实验目录。
+
+架构文档必须与当前代码一致。影响架构、模块职责、接口、数据流或部署方式的代码变更，须在同一任务中检查并更新相关文档。文档中的当前实现必须可以核验；尚未实现的设计明确标记为“规划”或“提案”。
+
+## 实验记录规范
+
+实验的配置、日志、中间数据、原始结果和分析统一保存在 `records/` 下。
+
+每次启动实验前，创建一个新的独立子目录，禁止不同实验共用或覆盖运行目录。目录名须唯一且便于辨认，建议使用 `YYYYMMDD-HHMMSS-实验名称`。
+
+每个实验目录必须包含：
+
+- `config.md`：启动时创建，记录启动时间、目的、命令、代码版本、运行环境、输入数据和参数配置。配置变更、异常、重启和人工干预须及时补充。
+- `analysis.md`：整理和分析本次实验结果。每项结果须来自该目录内本次实际产生的数据，并注明原始文件、日志位置或统计命令。
+
+严禁编造、篡改数据，将估算冒充实测，或将其他实验的数据冒充本次结果。未产生、缺失或无法确认的数据，应明确记录状态和原因，不得用推测值填补。
+
+后台实验须使用环境支持的持久会话或任务管理工具，并保存启动命令、日志和运行状态。批量实验启动后，先观察前几个参数点，确认进程持续运行、结果文件非空且日志无致命错误，再停止人工监控。启动阶段失败时，先停止并排查，不得放任批量运行。
+
+## 规范来源
+
+- 根目录 `AGENTS.md` 是仓库协作规范的唯一来源。
+- 根目录 `CLAUDE.md` 应保持为指向 `AGENTS.md` 的符号链接。
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                                                                                 |
+| ---- | -------------------- | -------------------------------------------------------------------------------------------------------- |
+| v1   | 2026-09-24 10:27 CST | 抽离通用协作规范，移除项目名称、专属构建配置和环境参数。                                                 |
+| v2   | 2026-10-14 16:19 CST | 合并通用协作规范与现有项目要求，明确单代理执行、工作区边界、文档管理及实验记录规则。                     |
+| v3   | 2026-10-14 16:32 CST | 增加开发阶段不兼容旧版本数据的约束，明确旧数据兼容不属于替代验收需求，并保留当前数据保护和删除审批要求。 |
+| v4   | 2026-10-14 16:56 CST | 限定测试范围为整体功能、高危功能和不常见案例，普通功能不新增测试，并按静态检查要求验收。                 |
+| v5   | 2026-10-14 17:27 CST | 要求待提交代码通过 Prettier、ESLint 和 EditorConfig 检查后才能提交 Git。                                 |
