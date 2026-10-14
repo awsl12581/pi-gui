@@ -85,6 +85,11 @@ test("Control or Alt with 1-9 selects side panel tabs while Cmd or Ctrl keeps sw
         },
         { keyCode, modifiers },
       );
+    // Settings must also route through before-input-event from a focused shell.
+    await sendDigit(",", [isMac ? "meta" : "control"]);
+    await expect(window.getByTestId("settings-surface")).toBeVisible();
+    await window.getByRole("button", { name: "Back to app", exact: true }).click();
+    await terminal.locator(".xterm").click();
     const mainModifier = isMac ? "control" : "alt";
     await window.evaluate(() => {
       const review = document.querySelector('[data-testid="workbench-tab-changes"]');

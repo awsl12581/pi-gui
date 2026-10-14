@@ -285,7 +285,8 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
       });
       if (
         command === desktopCommands.toggleTerminal ||
-        command === desktopCommands.toggleSidePanel
+        command === desktopCommands.toggleSidePanel ||
+        command === desktopCommands.openSettings
       ) {
         event.preventDefault();
         handleCommandRef.current(command);

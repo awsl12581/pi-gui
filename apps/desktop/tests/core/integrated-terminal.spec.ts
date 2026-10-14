@@ -76,7 +76,9 @@ test("opens task terminals with persistent output and independent shell tabs", a
 
     await window.getByTestId("integrated-terminal").locator(".xterm").click();
     await window.keyboard.press(desktopShortcut(","));
-    await expect(window.getByTestId("settings-surface")).toHaveCount(0);
+    await expect(window.getByTestId("settings-surface")).toBeVisible();
+    await window.getByRole("button", { name: "Back to app", exact: true }).click();
+    await window.getByTestId("integrated-terminal").locator(".xterm").click();
     await window.keyboard.press(desktopShortcut("Shift+O"));
     await expect(window.getByTestId("new-thread-composer")).toHaveCount(0);
     await harness.electronApp.evaluate(({ clipboard, nativeImage }, pngBase64) => {

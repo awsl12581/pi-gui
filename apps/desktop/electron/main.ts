@@ -593,6 +593,9 @@ function createWindow(): BrowserWindow {
       if (process.platform === "darwin" && isSinglePressCommand(command)) {
         event.preventDefault();
         if (!input.isAutoRepeat) window.webContents.send(desktopIpc.appCommand, command);
+      } else if (command === desktopCommands.openSettings) {
+        event.preventDefault();
+        if (!input.isAutoRepeat) window.webContents.send(desktopIpc.appCommand, command);
       } else if (command === desktopCommands.toggleSidePanel) {
         event.preventDefault();
         window.webContents.send(desktopIpc.appCommand, command);

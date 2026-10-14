@@ -208,12 +208,15 @@ test("restores each task's tabs and draft through Settings, switching, and resta
     await expect(window.getByRole("tab", { name: "Files", exact: true })).toHaveCount(0);
     await addTool(window, "Terminal");
     await window.getByTestId("composer").fill("Draft for task B");
+    await expect(window.locator(".xterm-helper-textarea")).toBeVisible();
+    await expect(window.getByTestId("composer")).toBeFocused();
     await window.keyboard.press(desktopShortcut(","));
     await expect(window.getByTestId("settings-surface")).toBeVisible();
     await window.getByRole("button", { name: "Back to app", exact: true }).click();
     await expectActiveTool(window, "Terminal");
     await expect(window.getByTestId("composer")).toHaveValue("Draft for task B");
-    await window.getByTestId("composer").click();
+    await window.locator(".xterm-helper-textarea").focus();
+    await expect(window.locator(".xterm-helper-textarea")).toBeFocused();
     await window.keyboard.press(desktopShortcut(","));
     await expect(window.getByTestId("settings-surface")).toBeVisible();
     await window.keyboard.press("Escape");

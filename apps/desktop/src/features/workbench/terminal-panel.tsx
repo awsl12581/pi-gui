@@ -6,7 +6,11 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import type { WorkspaceRecord } from "../../../contracts/desktop-state";
 import { CloseIcon, PlusIcon, RefreshIcon } from "../../ui/icons";
-import { getSidePanelTabCommand } from "../../../contracts/ipc";
+import {
+  desktopCommands,
+  getDesktopCommandFromShortcut,
+  getSidePanelTabCommand,
+} from "../../../contracts/ipc";
 import type {
   TerminalPanelSnapshot,
   TerminalSessionSnapshot,
@@ -251,6 +255,14 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
         // Side panel tab chords switch tabs; the shell never sees them.
         return false;
       }
+      const command = getDesktopCommandFromShortcut({
+        modifier: api.platform === "darwin" ? event.metaKey : event.ctrlKey,
+        alt: event.altKey,
+        shift: event.shiftKey,
+        key: event.key,
+        code: event.code,
+      });
+      if (command === desktopCommands.openSettings) return false;
       const commandModifier = api.platform === "darwin" ? event.metaKey : event.ctrlKey;
       const key = event.key.toLowerCase();
       if (commandModifier && !event.shiftKey && key === "t") {
@@ -300,7 +312,12 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     if (activeSession.replay) {
       terminal.write(activeSession.replay);
     }
-    terminal.focus();
+    // Shell creation is asynchronous. Respect focus moved to the composer or
+    // another control while it was starting; terminal-local selections still focus.
+    const focused = document.activeElement;
+    if (!focused || focused === document.body || panelRef.current?.contains(focused)) {
+      terminal.focus();
+    }
     terminalRef.current = terminal;
     fitAddonRef.current = fitAddon;
     window.requestAnimationFrame(fitAndResize);
