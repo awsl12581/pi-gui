@@ -1,5 +1,9 @@
 # Architecture and ownership
 
+> 最后修改时间：2026-10-14 16:56 CST
+> 文档版本：v1
+> 修改说明：删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。
+
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
 The review/capture and custom extension-view additions are **implemented and verified within the documented macOS scope** as of September 22, 2026. The [final verification report](workspace-redesign-verification.md) separates baseline checks, Core Electron, real-provider workflows, external local-package loading and local packaged-app proof from the older [workspace foundation evidence](workspace-redesign-plan.md). It does not claim Windows/Linux validation or a notarized/published release.
@@ -41,13 +45,13 @@ Window-scoped state actions remain serialized because the shared application pro
 
 Catalog storage owns workspace, session, worktree, and session-file metadata. Desktop persistence owns UI state, composer attachments, and scheduled tasks (`scheduled-tasks.json`). The driver and worktree manager share the same catalog instance so their writes use one coordination boundary.
 
-UI-state and attachment decoders reject malformed fields, unsupported fields, and unsupported versions instead of dropping unknown data. Startup stops with a visible diagnostic when UI-state read, restoration, or legacy attachment migration fails, before workspace sync, pruning, or another persistence write can replace the saved bytes. A corrupt scheduled-tasks file is isolated: the rest of the app still starts, the runner stays off, and the original bytes are not overwritten.
+UI-state accepts only version 19, and catalogs accept only version 2. UI-state and attachment decoders reject malformed fields, unsupported fields, and unsupported versions instead of dropping unknown data. Startup stops with a visible diagnostic when UI-state read or restoration fails, before workspace sync, pruning, or another persistence write can replace the saved bytes. This development project does not migrate earlier pi-gui formats; unsupported files are retained unchanged. A corrupt scheduled-tasks file is isolated: the rest of the app still starts, the runner stays off, and the original bytes are not overwritten.
 
 Writes are serialized per path and use a synced temporary file followed by rename. The prior valid file becomes a `.bak`. If the primary JSON is corrupt and the backup is valid, reads recover from the backup and a later valid write retains the damaged primary as a `.corrupt.<id>` sibling. Invalid saved data without a usable backup is not overwritten or pruned.
 
-UI-state v19 stores validated per-task workbench templates and `changes.scope`. v18 layouts without a scope migrate to Uncommitted. Before replacing an older valid state, the atomic writer retains its exact bytes in an exclusive `ui-state.pre-workbench-v<version>.<id>.json` copy, including a v18 source file; the rotating `.bak` does not replace that copy. Templates contain tool/file/scope references and small preferences, never transcripts, file bodies, terminal replay or extension results. They are read through explicit task requests, outside live state broadcasts, so another window cannot rearrange the current window. Main serializes saves and rejects stale renderer sequence numbers; renderer navigation invalidates its old sequence and pending requests.
+UI-state v19 stores validated per-task workbench templates and requires `changes.scope`. Removed tool kinds and missing scopes reject at the decoder. There is no old-format migration or migration-specific backup. Templates contain tool/file/scope references and small preferences, never transcripts, file bodies, terminal replay or extension results. They are read through explicit task requests, outside live state broadcasts, so another window cannot rearrange the current window. Main serializes saves and rejects stale renderer sequence numbers; renderer navigation invalidates its old sequence and pending requests.
 
-Review marks use a separate validated `reviewed-files.json`, keyed by task, checkout, comparison scope and file content identity. The old renderer-local path-only marks are not reused or deleted. Captures use `turn-checkpoints/checkpoints.json` plus immutable trees and app-owned refs in `turn-checkpoints/objects.git`. Finalized records reject conflicting replay; restart records unfinished intervals as interrupted. Neither store copies Pi's transcript/history. Retention is bounded: reviewed marks keep the newest 5,000 acknowledgements; checkpoints keep the newest 50 finalized intervals per task and 500 overall; open intervals are never dropped, and records are not deleted when a task leaves the catalog, since removing a workspace is reversible.
+Review marks use a separate validated `reviewed-files.json`, keyed by task, checkout, comparison scope and file content identity. Existing renderer-local path-only marks are not read, rewritten or deleted. Captures use `turn-checkpoints/checkpoints.json` plus immutable trees and app-owned refs in `turn-checkpoints/objects.git`. Finalized records reject conflicting replay; restart records unfinished intervals as interrupted. Neither store copies Pi's transcript/history. Retention is bounded: reviewed marks keep the newest 5,000 acknowledgements; checkpoints keep the newest 50 finalized intervals per task and 500 overall; open intervals are never dropped, and records are not deleted when a task leaves the catalog, since removing a workspace is reversible.
 
 Workspace sync, rename, and removal share a per-workspace mutation queue. The queue covers the full scan and catalog replacement. Focus reconciliation rereads the current workspace inside that queue, preserves its name, and skips a removed workspace. Explicit registration can add a workspace again; background metadata touches cannot. Regression tests cover rename preservation and removal during blocked synchronization.
 
@@ -59,7 +63,7 @@ Workspace sync, rename, and removal share a per-workspace mutation queue. The qu
 
 [`packages/extension-ui`](../packages/extension-ui/README.md) is the local author helper and browser-safe Chord transport package. It owns registration, mount-context and narrow action types. The Pi adapter's [`desktop-extension-bridge.ts`](../packages/pi-sdk-driver/src/desktop-extension-bridge.ts) injects discovery before Pi loads extensions, matches against the final loaded catalog and sends runtime lifecycle notifications. It does not create frontend hosts or await authored desktop activation/cleanup on Pi's lifecycle path. The helper remains private and is not an npm release or an upstream Pi API.
 
-The Pi adapter stays thin over upstream behavior. Required access to private Pi 0.87.1 APIs is isolated in explicit compatibility seams under [`packages/pi-sdk-driver/src/compat`](../packages/pi-sdk-driver/src/compat): one forces the early session-file rewrite while maintaining Pi's flush bookkeeping, and one persists project-scoped settings. An upstream shape change should fail at these small seams instead of spreading private-runtime assumptions through the driver.
+The Pi adapter stays thin over upstream behavior. Required access to private Pi APIs is isolated in explicit compatibility seams under [`packages/pi-sdk-driver/src/compat`](../packages/pi-sdk-driver/src/compat): one forces the early session-file rewrite while maintaining Pi's flush bookkeeping, and one persists project-scoped settings. An upstream shape change should fail at these small seams instead of spreading private-runtime assumptions through the driver.
 
 Do not redeclare package-owned interfaces in ambient vendor files. Validate external data at the package or persistence boundary, then use the trusted contract internally.
 
@@ -152,3 +156,9 @@ contracts. `context-rail` covers turn timing markers. The viewport spec records 
 timing is diagnostic, not a shared-runner CI threshold. The real-provider verification recipe
 also checks reading during active streaming and retains `scroll-frames.json`. Row anchors
 preserve offsets; they do not preserve the exact word after reflow within a large message.
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                                     |
+| ---- | -------------------- | ------------------------------------------------------------ |
+| v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。 |

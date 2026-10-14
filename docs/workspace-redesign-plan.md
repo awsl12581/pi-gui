@@ -1,6 +1,10 @@
 # Workspace redesign: implementation design
 
-Status: **implemented and verified within the documented macOS scope**, September 22, 2026. P0.0–P0.2 have the historical proof below; P0.3/P0.4 review/capture and P1.1/P1.2 extension views passed the final baseline, Core Electron, real-provider and local packaged-app gates. See the [verification report](workspace-redesign-verification.md) for exact evidence and limits. This is not a published/notarized release or Windows/Linux verification. The approved tabbed prototype and installed Pi/Chord `0.87.1` are the current baseline; the earlier blocks-first protocol proposal is superseded.
+> 最后修改时间：2026-10-14 16:56 CST
+> 文档版本：v1
+> 修改说明：同步当前 Workbench、Review 和数据格式，移除旧迁移与退役工具设计说明。
+
+Status: **implemented and verified within the documented macOS scope**, September 22, 2026. P0.0–P0.2 have the historical proof below; P0.3/P0.4 review/capture and P1.1/P1.2 extension views passed the final baseline, Core Electron, real-provider and local packaged-app gates. See the [verification report](workspace-redesign-verification.md) for exact evidence and limits. This is not a published/notarized release or Windows/Linux verification. The tabbed workbench is the current design. The September verification used Pi/Chord `0.87.1`; current package manifests declare `^1.0.0`.
 
 ## Recommendation
 
@@ -8,7 +12,7 @@ The conversation remains the main surface. Files, Changes, Terminal, and optiona
 
 The composer keeps both model and reasoning level visible. The side-workspace toggle is icon-only, with an accessible name, tooltip, pressed state, and existing keyboard shortcut. Appearance and density stay in Settings. There is no local/cloud picker when only local operation exists.
 
-Chord supplies extension services, replicated state and facet lifecycle. Pi-gui supplies the desktop view host and a small registration adapter to existing Pi extensions. Authors provide browser interfaces rather than a fixed blocks schema. The [custom frontend design](chord-desktop-extension-design.md) records the implemented contract, ownership and verification scope. Its Pi EventBus bridge performs discovery only.
+Chord supplies extension services, replicated state and facet lifecycle. Pi-gui supplies the desktop view host and a small registration adapter to existing Pi extensions. Authors provide browser interfaces connected to extension services and state. The [custom frontend design](chord-desktop-extension-design.md) records the implemented contract, ownership and verification scope. Its Pi EventBus bridge performs discovery only.
 
 ## Baseline behavior before the workspace foundation
 
@@ -21,15 +25,15 @@ Chord supplies extension services, replicated state and facet lifecycle. Pi-gui 
 | Extensions   | Pi UI calls become dialogs, notifications, status, and text widgets. The app has no desktop view registration API.                | Preserve existing compatibility and add registered browser views connected through Chord to the original Pi extension.     |
 | Persistence  | Pi owns session data; catalogs own workspace/session records; desktop owns validated UI state.                                    | Add layout preferences and review metadata to desktop-owned storage; do not copy Pi history or extension findings into it. |
 
-Baseline: `f06a5501dbcf1f39e105f0375ae7646bd9841c8f`. Current source: [shell](../apps/desktop/src/app/App.tsx), [draft synchronization](../apps/desktop/src/features/conversation/hooks/use-composer-draft-sync.ts), [desktop owners](architecture.md), [UI persistence](../apps/desktop/electron/persistence/app-store-persistence.ts), [Git diff adapter](../apps/desktop/electron/platform/files/app-store-diff.ts), [extension binding](../packages/pi-sdk-driver/src/session-supervisor.ts).
+Baseline: `f06a5501dbcf1f39e105f0375ae7646bd9841c8f`. Current source: [shell](../apps/desktop/src/app/App.tsx), [draft synchronization](../apps/desktop/src/features/conversation/hooks/use-composer-draft-sync.ts), [desktop owners](architecture.md), [UI persistence](../apps/desktop/electron/persistence/app-store-persistence.ts), [Git review adapter](../apps/desktop/electron/platform/files/git-review.ts), [extension binding](../packages/pi-sdk-driver/src/session-supervisor.ts).
 
 ## Implemented workspace foundation
 
-The live layout now follows one [workbench controller](../apps/desktop/src/features/workbench/use-workbench.ts) and [reducer](../apps/desktop/src/features/workbench/workbench-state.ts). Files, Changes and Terminal share the outer tab strip and chooser. A Worktrees tool was removed (2026-09-23); new threads choose Local or Worktree in the composer, and saved layouts that listed it drop that tab. A single icon toggles visibility. Files keeps its document tabs; Terminal keeps its shell tabs and process owner. The old picker, bottom terminal drawer and independent visibility flags are removed.
+The live layout now follows one [workbench controller](../apps/desktop/src/features/workbench/use-workbench.ts) and [reducer](../apps/desktop/src/features/workbench/workbench-state.ts). Files, Changes and Terminal share the outer tab strip and chooser. New threads choose Local or Worktree in the composer. Worktrees is not a workbench tool; saved templates containing that retired kind are rejected. A single icon toggles visibility. Files keeps its document tabs; Terminal keeps its shell tabs and process owner. The old picker, bottom terminal drawer and independent visibility flags are removed.
 
 Each task retains its ordered tools, selected tool, visibility, file references and selected Changes checkout/path. Settings does not clear that layout. File refresh no longer deletes saved document tabs; a missing file remains an explicit read error. Last-shell close callbacks are invalidated when their view unmounts, so they cannot close another task's tool tab.
 
-The [browser-safe contract](../apps/desktop/contracts/workbench.ts) is also the strict persistence/IPC decoder. Main stores the last explicit layout template per task, outside broadcast snapshots. Windows restore once and keep independent live state. Early interactions are rebased onto the saved template after loading; failed restores offer Retry and do not overwrite unknown saved layout. Main serializes saves, rejects stale per-renderer sequence numbers and resets that sequence on renderer navigation. Schema v19 adds `changes.scope`; v18 layouts without it restore Uncommitted. Migration preserves a separate, immutable copy of the original validated pre-migration bytes, including a v18 source file.
+The [browser-safe contract](../apps/desktop/contracts/workbench.ts) is also the strict persistence/IPC decoder. Main stores the last explicit layout template per task, outside broadcast snapshots. Windows restore once and keep independent live state. Early interactions are rebased onto the saved template after loading; failed restores offer Retry and do not overwrite unknown saved layout. Main serializes saves, rejects stale per-renderer sequence numbers and resets that sequence on renderer navigation. Only schema v19 is accepted, with an explicit `changes.scope`. Unsupported versions and removed tool kinds fail without rewriting the saved file.
 
 Neutral Default light/dark colors, consistent spacing, a quieter sidebar and composer, and the tab styles use the existing token system. Named themes retain their own colors. Model and reasoning controls remain visible. Existing conversation controllers and the single timeline viewport owner remain in place. Registered extension views now appear in the chooser. A saved extension tab whose registration is missing or broken remains visible with an unavailable reason and recovery/close controls.
 
@@ -113,7 +117,7 @@ The reducer and saved-state decoder enforce unique tool identity and selected-to
 - Each window keeps its own live per-task layouts. Opening the same task in a second window seeds from its last-saved template; subsequent clicks do not rearrange the other window. The last explicit layout change wins the durable template. Serialize writes and reject older saves from the same renderer; async data refreshes never write layout.
 - Save only references and small preferences. File bytes, diff bodies, terminal replay, extension results and transcripts remain with their respective owners.
 
-Production clarification to the prototype: a checkout switch must not silently move a conversation's runtime or a live shell. Worktrees opens an existing task or creates a new task in the selected checkout. Files/Changes may explicitly browse another checkout. A future conversation-move feature would be a separate operation with its own proof.
+New thread offers Local or Worktree and creates a task in the chosen checkout. A checkout switch does not relocate an existing conversation runtime or live shell. Files/Changes may explicitly browse another checkout.
 
 ## Conversation behavior and visual foundation
 
@@ -237,11 +241,17 @@ The implementation followed the upgrade → workspace → review/capture → ext
 
 Use the existing [verification skill](../.agents/skills/verify-pi-gui/SKILL.md) and [baseline](ci-baseline.md). `pnpm check` is the baseline; targeted desktop specs go through the existing `test:e2e:runner` or named Core scripts. Extend the existing `workspace-files`, `changed-files`, `integrated-terminal`, `composer-draft-sync`, `multi-window`, persistence/reopen, extension-dialog/dock/reload/isolation and worktree coverage. Add deterministic checkpoint and bridge integration fixtures. Then run the real-provider conversation/maintenance recipes with an isolated profile. Packaging/native behavior has its own proof; it is not established by browser prototypes or Core fixtures.
 
-## Migration and enforcement
+## Current formats and enforcement
 
-- UI-state v19 preserves Pi sessions, catalog identities, drafts, attachments, settings and existing commands. Older layouts default missing review scope to Uncommitted; invalid scopes and unsupported versions reject before overwrite. First migration write retains exact original bytes in `ui-state.pre-workbench-v<version>.<id>.json`, including v18. The rotating `.bak` is separate. Older binaries reject the newer format; no automatic downgrade exists. Recovery must also retain the current file, which may contain newer drafts/preferences.
+- UI-state accepts v19 only and catalogs accept v2 only. Workbench templates require a review scope. Old inline attachments/transcripts and retired tools are unsupported. Current-format validation, atomic writes, backup recovery and corrupt-file preservation remain; no old-format conversion or migration copy is created. Existing user files are not deleted.
 - The workbench replaced `sidePanelMode`, terminal visibility keys and the old picker. Inner Files/Terminal resource ownership remains unchanged.
 - Host-owned revision-based reviewed marks replace renderer-local path-only persistence. Old localStorage bytes are left intact and are never applied to new scopes.
 - Keep renderer/host/contract/state-owner/timeline guards. Add focused rejected fixtures for renderer-to-Pi/Git/PTY imports, package-to-desktop imports, full-store access from new owners, and direct layout writes bypassing the workbench controller. Use bounded interfaces instead of expanding allowlists.
 - Validate external view messages and persistence formats at their entry points. Use exhaustive unions internally; no raw casts to bypass unknown payloads.
 - Keep evidence levels separate: the upgrade/workspace foundation have historical proof; the [final report](workspace-redesign-verification.md) records review/capture/custom-view unit, Core, real-provider and local macOS packaged proof. Windows/Linux behavior, notarization and release publication were not exercised.
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                                              |
+| ---- | -------------------- | --------------------------------------------------------------------- |
+| v1   | 2026-10-14 16:56 CST | 同步当前 Workbench、Review 和数据格式，移除旧迁移与退役工具设计说明。 |
