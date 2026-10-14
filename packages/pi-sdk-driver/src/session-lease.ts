@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import { link, open, readFile, rm, stat, utimes } from "node:fs/promises";
 import { hostname } from "node:os";
-import { writeJsonFileAtomic } from "@pi-gui/catalogs/node/atomic-write";
+import { writeFileAtomically } from "@pi-gui/platform";
 import { isMissingFileError } from "@pi-gui/catalogs/node";
 
 /**
@@ -153,7 +153,7 @@ function parseLeaseInfo(raw: string): LeaseInfo | undefined {
 }
 
 export async function writeLeaseFile(leasePath: string, info: LeaseInfo): Promise<void> {
-  await writeJsonFileAtomic(leasePath, info);
+  await writeFileAtomically(leasePath, `${JSON.stringify(info, null, 2)}\n`);
 }
 
 export async function removeLeaseFile(leasePath: string): Promise<void> {

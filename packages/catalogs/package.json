@@ -14,10 +14,6 @@
     "./node": {
       "types": "./dist/node/index.d.ts",
       "default": "./dist/node/index.js"
-    },
-    "./node/atomic-write": {
-      "types": "./dist/node/atomic-write.d.ts",
-      "default": "./dist/node/atomic-write.js"
     }
   },
   "files": [
@@ -29,6 +25,7 @@
     "test": "tsc -p tsconfig.json && node --test \"test/**/*.test.mts\""
   },
   "dependencies": {
-    "@pi-gui/session-driver": "workspace:*"
+    "@pi-gui/session-driver": "workspace:*",
+    "@pi-gui/platform": "workspace:*"
   }
 }

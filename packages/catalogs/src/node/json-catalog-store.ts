@@ -10,7 +10,7 @@ import { isMissingFileError } from "./file-errors.js";
 import { readFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { homedir } from "node:os";
-import { writeJsonFileAtomic } from "./atomic-write.js";
+import { writeFileAtomically } from "@pi-gui/platform";
 import type {
   SessionFileCatalogStorage,
   SessionCatalogEntry,
@@ -280,7 +280,7 @@ export class JsonCatalogStore implements SessionFileCatalogStorage {
         this.cacheState(nextState, this.coordinator.generation);
         return;
       }
-      await writeJsonFileAtomic(this.filePath, nextState);
+      await writeFileAtomically(this.filePath, `${JSON.stringify(nextState, null, 2)}\n`);
       this.coordinator.generation += 1;
       this.cacheState(nextState, this.coordinator.generation);
     });

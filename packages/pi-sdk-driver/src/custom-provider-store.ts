@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { writeJsonFileAtomic } from "@pi-gui/catalogs/node/atomic-write";
+import { writeFileAtomically } from "@pi-gui/platform";
 import {
   BUILT_IN_PROVIDER_IDS,
   CUSTOM_PROVIDER_ID_PATTERN,
@@ -238,5 +238,5 @@ async function readModelsJson(path: string): Promise<ModelsJson> {
 }
 
 async function atomicWriteJson(path: string, data: Record<string, unknown>): Promise<void> {
-  await writeJsonFileAtomic(path, data);
+  await writeFileAtomically(path, `${JSON.stringify(data, null, 2)}\n`);
 }
