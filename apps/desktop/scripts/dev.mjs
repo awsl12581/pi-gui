@@ -7,7 +7,12 @@ const desktopDir = path.resolve(__dirname, "..");
 const repoRoot = path.resolve(desktopDir, "..", "..");
 const rawArgs = process.argv.slice(2);
 const extraArgs = rawArgs[0] === "--" ? rawArgs.slice(1) : rawArgs;
-const packageFilters = ["@pi-gui/session-driver", "@pi-gui/pi-sdk-driver", "@pi-gui/catalogs"];
+const packageFilters = [
+  "@pi-gui/session-driver",
+  "@pi-gui/platform",
+  "@pi-gui/pi-sdk-driver",
+  "@pi-gui/catalogs",
+];
 const extensionUiPackage = "@pi-gui/extension-ui";
 
 async function main() {
