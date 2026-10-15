@@ -1,3 +1,6 @@
+import refreshCw from "@iconify-icons/lucide/refresh-cw";
+import chevronDown from "@iconify-icons/lucide/chevron-down";
+import { iconToHTML, iconToSVG } from "@iconify/utils";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import { Usage, type ContextKind, type UsageState } from "./contract.ts";
@@ -136,10 +139,16 @@ footer{margin-top:18px}
 }
 `;
 
-const REFRESH_ICON =
-  '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>';
-const CHEVRON_ICON =
-  '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.8 5 6.6 8 3.8"/></svg>';
+const refreshSvg = iconToSVG(refreshCw, { width: 16, height: 16 });
+const REFRESH_ICON = iconToHTML(refreshSvg.body, {
+  ...refreshSvg.attributes,
+  "aria-hidden": "true",
+});
+const chevronSvg = iconToSVG(chevronDown, { width: 10, height: 10 });
+const CHEVRON_ICON = iconToHTML(chevronSvg.body, {
+  ...chevronSvg.attributes,
+  "aria-hidden": "true",
+});
 
 type Child = Node | string | null | undefined | false;
 

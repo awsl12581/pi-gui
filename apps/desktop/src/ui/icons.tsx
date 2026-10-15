@@ -1,111 +1,200 @@
-import type { ReactNode } from "react";
-
-function Icon({ children }: { readonly children: ReactNode }) {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 20 20">
-      {children}
-    </svg>
-  );
-}
+import { Icon } from "@iconify/react/offline";
+import plusIconData from "@iconify-icons/lucide/plus";
+import terminalIconData from "@iconify-icons/lucide/terminal";
+import sidebarToggleIconData from "@iconify-icons/lucide/panel-left-close";
+import sidePanelIconData from "@iconify-icons/lucide/panel-right";
+import closeIconData from "@iconify-icons/lucide/x";
+import arrowUpIconData from "@iconify-icons/lucide/arrow-up";
+import stopSquareIconData from "@iconify-icons/lucide/square";
+import folderIconData from "@iconify-icons/lucide/folder";
+import fileIconData from "@iconify-icons/lucide/file-text";
+import archiveIconData from "@iconify-icons/lucide/archive";
+import restoreIconData from "@iconify-icons/lucide/archive-restore";
+import chevronDownIconData from "@iconify-icons/lucide/chevron-down";
+import chevronRightIconData from "@iconify-icons/lucide/chevron-right";
+import checkIconData from "@iconify-icons/lucide/check";
+import customizeSidebarIconData from "@iconify-icons/lucide/sliders-horizontal";
+import pencilIconData from "@iconify-icons/lucide/pencil";
+import copyIconData from "@iconify-icons/lucide/copy";
+import sparkIconData from "@iconify-icons/lucide/sparkles";
+import settingsIconData from "@iconify-icons/lucide/settings";
+import modelIconData from "@iconify-icons/lucide/box";
+import reasoningIconData from "@iconify-icons/lucide/brain";
+import statusIconData from "@iconify-icons/lucide/circle-plus";
+import skillIconData from "@iconify-icons/lucide/blocks";
+import extensionIconData from "@iconify-icons/lucide/puzzle";
+import clockIconData from "@iconify-icons/lucide/clock";
+import refreshIconData from "@iconify-icons/lucide/refresh-cw";
+import pinIconData from "@iconify-icons/lucide/pin";
+import worktreeIconData from "@iconify-icons/lucide/arrow-up-right";
+import forkIconData from "@iconify-icons/lucide/git-fork";
+import diffIconData from "@iconify-icons/lucide/git-compare";
+import fileDiffIconData from "@iconify-icons/lucide/file-diff";
+import chatIconData from "@iconify-icons/lucide/message-square";
+import searchIconData from "@iconify-icons/lucide/search";
+import sunIconData from "@iconify-icons/lucide/sun";
+import bellIconData from "@iconify-icons/lucide/bell";
+import keyboardIconData from "@iconify-icons/lucide/keyboard";
+import plugIconData from "@iconify-icons/lucide/plug";
+import moreIconData from "@iconify-icons/lucide/ellipsis";
+import minusIconData from "@iconify-icons/lucide/minus";
 
 export function PlusIcon() {
-  return (
-    <Icon>
-      <path
-        d="M10 4.25v11.5M4.25 10h11.5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.7"
-      />
-    </Icon>
-  );
+  return <Icon icon={plusIconData} aria-hidden="true" />;
 }
 
 export function TerminalIcon() {
-  return (
-    <Icon>
-      <rect
-        x="3.3"
-        y="4.1"
-        width="13.4"
-        height="11.8"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.35"
-      />
-      <path
-        d="m6.2 7.4 2.2 2.1-2.2 2.1M9.7 12h3.7"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
+  return <Icon icon={terminalIconData} aria-hidden="true" />;
 }
 
 export function SidebarToggleIcon() {
-  return (
-    <Icon>
-      <rect
-        x="3.4"
-        y="4.1"
-        width="13.2"
-        height="11.8"
-        rx="2.2"
-        stroke="currentColor"
-        strokeWidth="1.35"
-      />
-      <path d="M7.4 4.2v11.6" stroke="currentColor" strokeWidth="1.35" />
-      <path
-        d="M11 8.1 8.9 10l2.1 1.9"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
+  return <Icon icon={sidebarToggleIconData} aria-hidden="true" />;
 }
 
 export function SidePanelIcon() {
-  return (
-    <Icon>
-      <rect
-        x="3.2"
-        y="3.6"
-        width="13.6"
-        height="12.8"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.35"
-      />
-      <path d="M12.2 3.6v12.8" stroke="currentColor" strokeWidth="1.35" />
-    </Icon>
-  );
+  return <Icon icon={sidePanelIconData} aria-hidden="true" />;
 }
 
 export function CloseIcon() {
-  return (
-    <Icon>
-      <path d="m6 6 8 8M14 6l-8 8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-    </Icon>
-  );
+  return <Icon icon={closeIconData} aria-hidden="true" />;
 }
 
 export function ArrowUpIcon() {
+  return <Icon icon={arrowUpIconData} aria-hidden="true" />;
+}
+
+export function StopSquareIcon() {
+  return <Icon icon={stopSquareIconData} aria-hidden="true" className="icon--filled" />;
+}
+
+export function FolderIcon() {
+  return <Icon icon={folderIconData} aria-hidden="true" />;
+}
+
+export function FileIcon() {
+  return <Icon icon={fileIconData} aria-hidden="true" />;
+}
+
+export function ArchiveIcon() {
+  return <Icon icon={archiveIconData} aria-hidden="true" />;
+}
+
+export function RestoreIcon() {
+  return <Icon icon={restoreIconData} aria-hidden="true" />;
+}
+
+export function ChevronDownIcon() {
+  return <Icon icon={chevronDownIconData} aria-hidden="true" />;
+}
+
+export function ChevronRightIcon() {
+  return <Icon icon={chevronRightIconData} aria-hidden="true" />;
+}
+
+export function CheckIcon() {
+  return <Icon icon={checkIconData} aria-hidden="true" />;
+}
+
+export function CustomizeSidebarIcon() {
+  return <Icon icon={customizeSidebarIconData} aria-hidden="true" />;
+}
+
+export function PencilIcon() {
+  return <Icon icon={pencilIconData} aria-hidden="true" />;
+}
+
+export function CopyIcon() {
+  return <Icon icon={copyIconData} aria-hidden="true" />;
+}
+
+export function SparkIcon() {
+  return <Icon icon={sparkIconData} aria-hidden="true" />;
+}
+
+export function SettingsIcon() {
+  return <Icon icon={settingsIconData} aria-hidden="true" />;
+}
+
+export function ModelIcon() {
+  return <Icon icon={modelIconData} aria-hidden="true" />;
+}
+
+export function ReasoningIcon() {
+  return <Icon icon={reasoningIconData} aria-hidden="true" />;
+}
+
+export function StatusIcon() {
+  return <Icon icon={statusIconData} aria-hidden="true" />;
+}
+
+export function SkillIcon() {
+  return <Icon icon={skillIconData} aria-hidden="true" />;
+}
+
+export function ExtensionIcon() {
+  return <Icon icon={extensionIconData} aria-hidden="true" />;
+}
+
+export function ClockIcon() {
+  return <Icon icon={clockIconData} aria-hidden="true" />;
+}
+
+export function RefreshIcon() {
+  return <Icon icon={refreshIconData} aria-hidden="true" />;
+}
+
+export function PinIcon({ filled = false }: { readonly filled?: boolean }) {
   return (
-    <Icon>
-      <path d="M10 15.2V4.8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
-      <path
-        d="M5.8 9 10 4.8 14.2 9"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.8"
-      />
-    </Icon>
+    <Icon icon={pinIconData} aria-hidden="true" className={filled ? "icon--filled" : undefined} />
   );
+}
+
+export function WorktreeIcon() {
+  return <Icon icon={worktreeIconData} aria-hidden="true" />;
+}
+
+export function ForkIcon() {
+  return <Icon icon={forkIconData} aria-hidden="true" />;
+}
+
+export function DiffIcon() {
+  return <Icon icon={diffIconData} aria-hidden="true" />;
+}
+
+export function FileDiffIcon() {
+  return <Icon icon={fileDiffIconData} aria-hidden="true" />;
+}
+
+export function ChatIcon() {
+  return <Icon icon={chatIconData} aria-hidden="true" />;
+}
+
+export function SearchIcon() {
+  return <Icon icon={searchIconData} aria-hidden="true" />;
+}
+
+export function SunIcon() {
+  return <Icon icon={sunIconData} aria-hidden="true" />;
+}
+
+export function BellIcon() {
+  return <Icon icon={bellIconData} aria-hidden="true" />;
+}
+
+export function KeyboardIcon() {
+  return <Icon icon={keyboardIconData} aria-hidden="true" />;
+}
+
+export function PlugIcon() {
+  return <Icon icon={plugIconData} aria-hidden="true" />;
+}
+
+export function MoreIcon() {
+  return <Icon icon={moreIconData} aria-hidden="true" />;
+}
+
+export function MinusIcon() {
+  return <Icon icon={minusIconData} aria-hidden="true" />;
 }
 
 export function PiLogoMark() {
@@ -126,515 +215,5 @@ export function PiLogoMark() {
         π
       </text>
     </svg>
-  );
-}
-
-export function StopSquareIcon() {
-  return (
-    <Icon>
-      <rect x="5.2" y="5.2" width="9.6" height="9.6" rx="1.6" fill="currentColor" />
-    </Icon>
-  );
-}
-
-export function FolderIcon() {
-  return (
-    <Icon>
-      <path
-        d="M2.75 6.5a1.75 1.75 0 0 1 1.75-1.75h3.1l1.5 1.7h6.4a1.75 1.75 0 0 1 1.75 1.75v5.3a1.75 1.75 0 0 1-1.75 1.75H4.5a1.75 1.75 0 0 1-1.75-1.75V6.5Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
-
-export function FileIcon() {
-  return (
-    <Icon>
-      <path
-        d="M6.1 3.9h5.6l2.3 2.3v8a1.7 1.7 0 0 1-1.7 1.7H6.1a1.7 1.7 0 0 1-1.7-1.7V5.6a1.7 1.7 0 0 1 1.7-1.7Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M11.7 3.9v2.4h2.3M7.2 9.15h5.6M7.2 11.8h4.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function ArchiveIcon() {
-  return (
-    <Icon>
-      <path
-        d="M4.1 5.1h11.8l-.8 10.1a1.2 1.2 0 0 1-1.2 1.1H6.1a1.2 1.2 0 0 1-1.2-1.1L4.1 5.1Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M3.4 4.1h13.2v2.4H3.4zM7.1 9.15h5.8"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function RestoreIcon() {
-  return (
-    <Icon>
-      <path
-        d="M4.1 6.15h11.8l-.8 9.05a1.2 1.2 0 0 1-1.2 1.1H6.1a1.2 1.2 0 0 1-1.2-1.1L4.1 6.15Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path d="M3.4 5.15h13.2v2.1H3.4z" stroke="currentColor" strokeWidth="1.35" />
-      <path
-        d="M10 12.8V8.4m0 0L8.2 10.2M10 8.4l1.8 1.8"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function ChevronDownIcon() {
-  return (
-    <Icon>
-      <path
-        d="m5.7 8.1 4.3 4.1 4.3-4.1"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
-
-export function ChevronRightIcon() {
-  return (
-    <Icon>
-      <path
-        d="m8.1 5.7 4.1 4.3-4.1 4.3"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
-
-export function CheckIcon() {
-  return (
-    <Icon>
-      <path
-        d="m5.2 10.4 3.1 3.1 6.5-6.8"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.6"
-      />
-    </Icon>
-  );
-}
-
-export function CustomizeSidebarIcon() {
-  return (
-    <Icon>
-      <path
-        d="M3.2 5.2h4.4M10.6 5.2h6.2M3.2 10h7.2M13.6 10h3.2M3.2 14.8h2.2M8.6 14.8h8.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M8.8 3.6v3.2M12.4 8.4v3.2M6.6 13.2v3.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
-
-export function PencilIcon() {
-  return (
-    <Icon>
-      <path
-        d="M12.8 4.2a1.6 1.6 0 0 1 2.3 2.3L7.6 14l-3.1.8.8-3.1 7.5-7.5Z"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        strokeLinejoin="round"
-        fill="none"
-      />
-    </Icon>
-  );
-}
-
-export function CopyIcon() {
-  return (
-    <Icon>
-      <rect
-        x="6.5"
-        y="6.5"
-        width="9"
-        height="9"
-        rx="1.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        fill="none"
-      />
-      <path
-        d="M4.5 13.5V5a1.5 1.5 0 0 1 1.5-1.5h8.5"
-        stroke="currentColor"
-        strokeWidth="1.2"
-        fill="none"
-        strokeLinecap="round"
-      />
-    </Icon>
-  );
-}
-
-export function SparkIcon() {
-  return (
-    <Icon>
-      <path
-        d="m10 3.1 1.55 3.66 3.66 1.55-3.66 1.55L10 13.5l-1.55-3.64L4.8 8.3l3.65-1.55L10 3.1Zm5 8.6.72 1.58 1.58.72-1.58.72L15 16.3l-.72-1.58-1.58-.72 1.58-.72.72-1.58Z"
-        fill="currentColor"
-      />
-    </Icon>
-  );
-}
-export function SettingsIcon() {
-  return (
-    <Icon>
-      <path
-        d="M8.8 3.6h2.4l.4 1.6 1.5.62 1.42-.85 1.7 1.7-.86 1.43.63 1.5 1.6.4v2.4l-1.6.4-.63 1.5.86 1.43-1.7 1.7-1.42-.85-1.5.62-.4 1.6H8.8l-.4-1.6-1.5-.62-1.42.85-1.7-1.7.86-1.43-.63-1.5-1.6-.4v-2.4l1.6-.4.63-1.5-.86-1.43 1.7-1.7 1.42.85 1.5-.62.4-1.6Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.25"
-      />
-      <circle cx="10" cy="10" r="2.3" stroke="currentColor" strokeWidth="1.25" />
-    </Icon>
-  );
-}
-
-export function ModelIcon() {
-  return (
-    <Icon>
-      <path
-        d="M10 3.3 15.8 6.4v7.2L10 16.7 4.2 13.6V6.4L10 3.3Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.4"
-      />
-      <path d="M4.5 6.65 10 9.7l5.5-3.05M10 9.8v6.5" stroke="currentColor" strokeWidth="1.2" />
-    </Icon>
-  );
-}
-
-export function ReasoningIcon() {
-  return (
-    <Icon>
-      <path
-        d="M7.2 6.1a2.6 2.6 0 1 1 2.6 2.6v1.05M12.35 6.35a2.2 2.2 0 1 1-2.2-2.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M7.2 13.6h5.6M8.2 16h3.6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function StatusIcon() {
-  return (
-    <Icon>
-      <path d="M4.3 10h11.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
-      <path d="M10 4.3v11.4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.4" />
-      <circle cx="10" cy="10" r="6.6" stroke="currentColor" strokeWidth="1.3" />
-    </Icon>
-  );
-}
-
-export function SkillIcon() {
-  return (
-    <Icon>
-      <path
-        d="M10 2.8 15.8 6v8L10 17.2 4.2 14V6L10 2.8Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path d="M10 2.8V17.2M4.2 6 10 9.2 15.8 6" stroke="currentColor" strokeWidth="1.2" />
-    </Icon>
-  );
-}
-
-export function ExtensionIcon() {
-  return (
-    <Icon>
-      <path
-        d="M8.2 3.5 6.7 5a2.3 2.3 0 1 0 1.8 1.8L10 5.3l1.5 1.5a2.3 2.3 0 1 0 1.8-1.8l-1.5-1.5H8.2Z"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.3"
-      />
-      <path d="M10 9.1v7.1" stroke="currentColor" strokeLinecap="round" strokeWidth="1.3" />
-    </Icon>
-  );
-}
-
-export function ClockIcon() {
-  return (
-    <Icon>
-      <circle cx="10" cy="10" r="6.6" stroke="currentColor" strokeWidth="1.35" />
-      <path
-        d="M10 6.4V10l2.4 1.6"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function RefreshIcon() {
-  return (
-    <Icon>
-      <path
-        d="M15.1 8.2A5.6 5.6 0 1 0 15 12.8M15.2 4.9v3.7h-3.7"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-    </Icon>
-  );
-}
-
-export function PinIcon({ filled = false }: { readonly filled?: boolean }) {
-  return (
-    <Icon>
-      <path
-        d="M7.2 3.8h5.6l-.8 4 2.2 2.2v1.4H5.8V10l2.2-2.2-.8-4Z"
-        fill={filled ? "currentColor" : "none"}
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path d="M10 11.4v4.8" stroke="currentColor" strokeLinecap="round" strokeWidth="1.35" />
-    </Icon>
-  );
-}
-
-export function WorktreeIcon() {
-  return (
-    <Icon>
-      <path
-        d="M6 5.3h8.1v8.1"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-      <path
-        d="M13.9 5.45 5.9 13.45"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.45"
-      />
-      <path
-        d="M5.85 9.75v3.95h3.95"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-    </Icon>
-  );
-}
-
-export function ForkIcon() {
-  return (
-    <Icon>
-      <circle cx="6" cy="5" r="1.85" stroke="currentColor" strokeWidth="1.45" />
-      <circle cx="6" cy="15" r="1.85" stroke="currentColor" strokeWidth="1.45" />
-      <circle cx="14" cy="5" r="1.85" stroke="currentColor" strokeWidth="1.45" />
-      <path d="M6 6.85v6.3" stroke="currentColor" strokeLinecap="round" strokeWidth="1.45" />
-      <path
-        d="M14 6.85v1.4c0 2.1-1.6 3.4-3.6 3.7L7.8 11.7"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.45"
-      />
-    </Icon>
-  );
-}
-
-export function DiffIcon() {
-  return (
-    <Icon>
-      <path
-        d="M7 7h6M7 10h4M7 13h5"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.3"
-      />
-      <rect
-        x="4"
-        y="4"
-        width="12"
-        height="12"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.3"
-        fill="none"
-      />
-    </Icon>
-  );
-}
-
-export function FileDiffIcon() {
-  return (
-    <Icon>
-      <rect x="4" y="3.5" width="12" height="13" rx="2.5" stroke="currentColor" strokeWidth="1.3" />
-      <path
-        d="M10 6.5v4M8 8.5h4M8 13.5h4"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.3"
-      />
-    </Icon>
-  );
-}
-
-export function ChatIcon() {
-  return (
-    <Icon>
-      <path
-        d="M4.2 5.6a1.9 1.9 0 0 1 1.9-1.9h7.8a1.9 1.9 0 0 1 1.9 1.9v5.2a1.9 1.9 0 0 1-1.9 1.9H9.1l-3.2 2.7v-2.7h.2a1.9 1.9 0 0 1-1.9-1.9V5.6Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.4"
-      />
-    </Icon>
-  );
-}
-
-export function SearchIcon() {
-  return (
-    <Icon>
-      <circle cx="8.75" cy="8.75" r="4.9" stroke="currentColor" strokeWidth="1.6" />
-      <path d="m12.4 12.4 3.6 3.6" stroke="currentColor" strokeLinecap="round" strokeWidth="1.6" />
-    </Icon>
-  );
-}
-
-export function SunIcon() {
-  return (
-    <Icon>
-      <circle cx="10" cy="10" r="3" stroke="currentColor" strokeWidth="1.35" />
-      <path
-        d="M10 3.2v1.4M10 15.4v1.4M3.2 10h1.4M15.4 10h1.4M5.2 5.2l1 1M13.8 13.8l1 1M5.2 14.8l1-1M13.8 6.2l1-1"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function BellIcon() {
-  return (
-    <Icon>
-      <path
-        d="M5.6 13.6V9.2a4.4 4.4 0 0 1 8.8 0v4.4l1.1 1.4H4.5l1.1-1.4Z"
-        stroke="currentColor"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M8.4 16.6a1.7 1.7 0 0 0 3.2 0"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function KeyboardIcon() {
-  return (
-    <Icon>
-      <rect
-        x="3.2"
-        y="5.4"
-        width="13.6"
-        height="9.2"
-        rx="1.8"
-        stroke="currentColor"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M6.2 8.4h.1M8.7 8.4h.1M11.2 8.4h.1M13.7 8.4h.1M7.4 11.6h5.2"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.5"
-      />
-    </Icon>
-  );
-}
-
-export function PlugIcon() {
-  return (
-    <Icon>
-      <path
-        d="M7.4 3.6v3M12.6 3.6v3M5.6 6.6h8.8v2.6a4.4 4.4 0 0 1-8.8 0V6.6ZM10 13.6v2.8"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="1.35"
-      />
-    </Icon>
-  );
-}
-
-export function MoreIcon() {
-  return (
-    <Icon>
-      <circle cx="5" cy="10" r="1.25" fill="currentColor" />
-      <circle cx="10" cy="10" r="1.25" fill="currentColor" />
-      <circle cx="15" cy="10" r="1.25" fill="currentColor" />
-    </Icon>
-  );
-}
-
-export function MinusIcon() {
-  return (
-    <Icon>
-      <path d="M4.25 10h11.5" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
-    </Icon>
   );
 }

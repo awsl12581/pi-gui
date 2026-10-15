@@ -9,6 +9,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@iconify-icons/lucide": "^2.0.20",
+    "@iconify/react": "^6.0.2",
     "geist": "^1.7.2",
     "next": "^15.3.0",
     "react": "^19.1.0",

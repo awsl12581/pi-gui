@@ -65,6 +65,10 @@ svg {
   height: 16px;
 }
 
+.icon--filled path {
+  fill: currentColor;
+}
+
 .loading-card {
   width: min(720px, 100%);
   padding: var(--space-6);

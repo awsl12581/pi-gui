@@ -1,3 +1,5 @@
+import chevronDown from "@iconify-icons/lucide/chevron-down";
+import { iconToHTML, iconToSVG } from "@iconify/utils";
 import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import {
@@ -108,8 +110,11 @@ pre{margin:4px 0 0;padding:8px 10px;border-radius:6px;background:var(--track);fo
 }
 `;
 
-const CHEVRON_ICON =
-  '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.8 5 6.6 8 3.8"/></svg>';
+const chevronSvg = iconToSVG(chevronDown, { width: 10, height: 10 });
+const CHEVRON_ICON = iconToHTML(chevronSvg.body, {
+  ...chevronSvg.attributes,
+  "aria-hidden": "true",
+});
 
 /** Tick steps in ms; the axis uses the first that gives at most three ticks after zero. */
 const STEPS = [

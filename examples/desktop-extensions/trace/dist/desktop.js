@@ -1,3 +1,198 @@
+// node_modules/@iconify-icons/lucide/data/c/chevron-down.js
+var data = {
+  "width": 24,
+  "height": 24,
+  "body": '<path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9l6 6l6-6"/>'
+};
+var chevron_down_default = data;
+
+// node_modules/@iconify/utils/lib/icon/defaults.js
+var defaultIconDimensions = Object.freeze({
+  left: 0,
+  top: 0,
+  width: 16,
+  height: 16
+});
+var defaultIconTransformations = Object.freeze({
+  rotate: 0,
+  vFlip: false,
+  hFlip: false
+});
+var defaultIconProps = Object.freeze({
+  ...defaultIconDimensions,
+  ...defaultIconTransformations
+});
+var defaultExtendedIconProps = Object.freeze({
+  ...defaultIconProps,
+  body: "",
+  hidden: false
+});
+
+// node_modules/@iconify/utils/lib/customisations/defaults.js
+var defaultIconSizeCustomisations = Object.freeze({
+  width: null,
+  height: null
+});
+var defaultIconCustomisations = Object.freeze({
+  ...defaultIconSizeCustomisations,
+  ...defaultIconTransformations
+});
+
+// node_modules/@iconify/utils/lib/svg/size.js
+var unitsSplit = /(-?[0-9.]*[0-9]+[0-9.]*)/g;
+var unitsTest = /^-?[0-9.]*[0-9]+[0-9.]*$/g;
+function calculateSize(size, ratio, precision) {
+  if (ratio === 1) return size;
+  precision = precision || 100;
+  if (typeof size === "number") return Math.ceil(size * ratio * precision) / precision;
+  if (typeof size !== "string") return size;
+  const oldParts = size.split(unitsSplit);
+  if (oldParts === null || !oldParts.length) return size;
+  const newParts = [];
+  let code = oldParts.shift();
+  let isNumber = unitsTest.test(code);
+  while (true) {
+    if (isNumber) {
+      const num = parseFloat(code);
+      if (isNaN(num)) newParts.push(code);
+      else newParts.push(Math.ceil(num * ratio * precision) / precision);
+    } else newParts.push(code);
+    code = oldParts.shift();
+    if (code === void 0) return newParts.join("");
+    isNumber = !isNumber;
+  }
+}
+
+// node_modules/@iconify/utils/lib/svg/defs.js
+function splitSVGDefs(content, tag = "defs") {
+  let defs = "";
+  const index = content.indexOf("<" + tag);
+  while (index >= 0) {
+    const start = content.indexOf(">", index);
+    const end = content.indexOf("</" + tag);
+    if (start === -1 || end === -1) break;
+    const endEnd = content.indexOf(">", end);
+    if (endEnd === -1) break;
+    defs += content.slice(start + 1, end).trim();
+    content = content.slice(0, index).trim() + content.slice(endEnd + 1);
+  }
+  return {
+    defs,
+    content
+  };
+}
+function mergeDefsAndContent(defs, content) {
+  return defs ? "<defs>" + defs + "</defs>" + content : content;
+}
+function wrapSVGContent(body, start, end) {
+  const split = splitSVGDefs(body);
+  return mergeDefsAndContent(split.defs, start + split.content + end);
+}
+
+// node_modules/@iconify/utils/lib/svg/build.js
+var isUnsetKeyword = (value) => value === "unset" || value === "undefined" || value === "none";
+function iconToSVG(icon, customisations) {
+  const fullIcon = {
+    ...defaultIconProps,
+    ...icon
+  };
+  const fullCustomisations = {
+    ...defaultIconCustomisations,
+    ...customisations
+  };
+  const box = {
+    left: fullIcon.left,
+    top: fullIcon.top,
+    width: fullIcon.width,
+    height: fullIcon.height
+  };
+  let body = fullIcon.body;
+  [fullIcon, fullCustomisations].forEach((props) => {
+    const transformations = [];
+    const hFlip = props.hFlip;
+    const vFlip = props.vFlip;
+    let rotation = props.rotate;
+    if (hFlip) {
+      if (vFlip) rotation += 2;
+      else {
+        transformations.push("translate(" + (box.width + box.left).toString() + " " + (0 - box.top).toString() + ")");
+        transformations.push("scale(-1 1)");
+        box.top = box.left = 0;
+      }
+    } else if (vFlip) {
+      transformations.push("translate(" + (0 - box.left).toString() + " " + (box.height + box.top).toString() + ")");
+      transformations.push("scale(1 -1)");
+      box.top = box.left = 0;
+    }
+    let tempValue;
+    if (rotation < 0) rotation -= Math.floor(rotation / 4) * 4;
+    rotation = rotation % 4;
+    switch (rotation) {
+      case 1:
+        tempValue = box.height / 2 + box.top;
+        transformations.unshift("rotate(90 " + tempValue.toString() + " " + tempValue.toString() + ")");
+        break;
+      case 2:
+        transformations.unshift("rotate(180 " + (box.width / 2 + box.left).toString() + " " + (box.height / 2 + box.top).toString() + ")");
+        break;
+      case 3:
+        tempValue = box.width / 2 + box.left;
+        transformations.unshift("rotate(-90 " + tempValue.toString() + " " + tempValue.toString() + ")");
+    }
+    if (rotation % 2 === 1) {
+      if (box.left !== box.top) {
+        tempValue = box.left;
+        box.left = box.top;
+        box.top = tempValue;
+      }
+      if (box.width !== box.height) {
+        tempValue = box.width;
+        box.width = box.height;
+        box.height = tempValue;
+      }
+    }
+    if (transformations.length) body = wrapSVGContent(body, '<g transform="' + transformations.join(" ") + '">', "</g>");
+  });
+  const customisationsWidth = fullCustomisations.width;
+  const customisationsHeight = fullCustomisations.height;
+  const boxWidth = box.width;
+  const boxHeight = box.height;
+  let width;
+  let height;
+  if (customisationsWidth === null) {
+    height = customisationsHeight === null ? "1em" : customisationsHeight === "auto" ? boxHeight : customisationsHeight;
+    width = calculateSize(height, boxWidth / boxHeight);
+  } else {
+    width = customisationsWidth === "auto" ? boxWidth : customisationsWidth;
+    height = customisationsHeight === null ? calculateSize(width, boxHeight / boxWidth) : customisationsHeight === "auto" ? boxHeight : customisationsHeight;
+  }
+  const attributes = {};
+  const setAttr = (prop, value) => {
+    if (!isUnsetKeyword(value)) attributes[prop] = value.toString();
+  };
+  setAttr("width", width);
+  setAttr("height", height);
+  const viewBox = [
+    box.left,
+    box.top,
+    boxWidth,
+    boxHeight
+  ];
+  attributes.viewBox = viewBox.join(" ");
+  return {
+    attributes,
+    viewBox,
+    body
+  };
+}
+
+// node_modules/@iconify/utils/lib/svg/html.js
+function iconToHTML(body, attributes) {
+  let renderAttribsHTML = body.indexOf("xlink:") === -1 ? "" : ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+  for (const attr in attributes) renderAttribsHTML += " " + attr + '="' + attributes[attr] + '"';
+  return '<svg xmlns="http://www.w3.org/2000/svg"' + renderAttribsHTML + ">" + body + "</svg>";
+}
+
 // node_modules/@earendil-works/chord/dist/context/index.js
 var ABORT_SIGNAL_CONTEXT_KEY = Object.freeze({
   token: /* @__PURE__ */ Symbol("chord.abortSignal")
@@ -212,7 +407,11 @@ pre{margin:4px 0 0;padding:8px 10px;border-radius:6px;background:var(--track);fo
   .waterfall{--name:minmax(120px,48%);--dur:50px}
 }
 `;
-var CHEVRON_ICON = '<svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3.8 5 6.6 8 3.8"/></svg>';
+var chevronSvg = iconToSVG(chevron_down_default, { width: 10, height: 10 });
+var CHEVRON_ICON = iconToHTML(chevronSvg.body, {
+  ...chevronSvg.attributes,
+  "aria-hidden": "true"
+});
 var STEPS = [
   100,
   200,
