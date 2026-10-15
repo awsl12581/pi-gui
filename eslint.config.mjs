@@ -27,7 +27,7 @@ export default [
       "examples/desktop-extensions/*/dist/**",
       // Generated output lives at repository/workspace roots, never anywhere
       // named "release" or "build" inside product source.
-      ...["", "apps/*/", "packages/*/", "video/"].flatMap((root) =>
+      ...["", "apps/*/", "packages/*/"].flatMap((root) =>
         [
           "dist",
           "dist-electron",
@@ -56,7 +56,6 @@ export default [
       "apps/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "packages/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "examples/desktop-extensions/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
-      "video/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       ".github/scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "*.{js,mjs,cjs,ts,mts,cts}",
@@ -115,5 +114,4 @@ export default [
     "examples/desktop-extensions/tsconfig.lint.json",
   ),
   typedProject(["apps/website/**/*.{ts,tsx,mts,cts}"], "apps/website/tsconfig.json"),
-  typedProject(["video/**/*.{ts,tsx,mts,cts}"], "video/tsconfig.lint.json"),
 ];

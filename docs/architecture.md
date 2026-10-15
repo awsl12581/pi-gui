@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-14 21:20 CST
-> 文档版本：v2
-> 修改说明：记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。
+> 最后修改时间：2026-10-15 10:44 CST
+> 文档版本：v3
+> 修改说明：移除视频工程与专用录屏渲染入口，保留产品媒体职责。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -126,9 +126,9 @@ A workspace command starts in renderer `features/threads`, crosses preload and v
 
 ## Product and support tooling
 
-Desktop packaging and its test fixtures stay under `apps/desktop`; the marketing site stays under `apps/website`; repository policy and guard scripts stay at the root. Product captures are produced by desktop-owned scripts, while Remotion source and video rendering stay under `video`.
+Desktop packaging and its test fixtures stay under `apps/desktop`; the marketing site stays under `apps/website`; repository policy and guard scripts stay at the root. Desktop-owned scripts produce the README and website media.
 
-The root commands make that ownership explicit: `marketing:media` records the README and website media, `marketing:capture` produces showcase captures through the desktop app, and `marketing:render` renders the Remotion showcase. Generated historical media and user artifacts must not be removed as dependency cleanup. Packaging dependencies also require packaged-runtime verification before removal because bundling and pnpm staging can need packages that have no direct source import.
+The root command `marketing:media` records the README and website media. Generated historical media and user artifacts must not be removed as dependency cleanup. Packaging dependencies also require packaged-runtime verification before removal because bundling and pnpm staging can need packages that have no direct source import.
 
 ## Development dependency installation
 
@@ -174,3 +174,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | ---- | -------------------- | ------------------------------------------------------------ |
 | v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。 |
 | v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。 |
+| v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。           |

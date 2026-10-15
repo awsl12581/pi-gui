@@ -1,5 +1,9 @@
 # Desktop App
 
+> 最后修改时间：2026-10-15 10:44 CST
+> 文档版本：v1
+> 修改说明：移除已删除的视频工程录屏与渲染说明，保留产品媒体流程。
+
 Codex-style Electron shell for `pi`, with Playwright E2E coverage organized by test lane.
 
 macOS is the primary desktop UI verification target. Pull-request CI runs the Core suite on Linux under Xvfb and pushes to `main` run it on macOS; Windows CI validates packaging only. The Linux run does not establish native macOS behavior.
@@ -113,13 +117,6 @@ The root commands own published marketing outputs:
   token during the run, the refreshed token is not written back, so a provider that rotates refresh
   tokens may ask you to sign in again; an API key avoids that. Install Inter and
   JetBrains Mono first so Linux captures match the macOS fonts.
-- `pnpm marketing:capture` writes the three Remotion inputs in
-  `video/public/captures/`. The parallel-session capture starts two threads with initial prompts and
-  requires both sessions to report `running` before recording or publishing the clip. The command
-  submits real prompts, so it fails unless
-  `PI_GUI_MARKETING_ALLOW_PROVIDER_ENV=1`, `PI_GUI_MARKETING_PROVIDER`, and
-  `PI_GUI_MARKETING_MODEL` explicitly select the provider environment to use.
-- `pnpm marketing:render` consumes those clips and renders `video/out/pi-showcase.mp4`.
 
 [`scripts/marketing-assets.json`](../../scripts/marketing-assets.json) is the producer-to-consumer
 manifest. Preserve existing media and capture evidence. For a proof run, set
@@ -127,8 +124,6 @@ manifest. Preserve existing media and capture evidence. For a proof run, set
 there without replacing tracked media. The product media capture scrubs ambient provider
 credentials and retains its profile, workspaces and raw recording under
 `.artifacts/marketing/product-media/`.
-Showcase capture writes an empty auth file, does not copy ambient credentials, and retains its
-synthetic profiles and frames under `.artifacts/marketing/showcase-captures/`.
 
 For the macOS Core run on `main`, use:
 
@@ -237,3 +232,9 @@ That spec launches the app in development mode, edits isolated probe modules for
 - `tests/production`: opt-in higher-fidelity smokes kept out of the default lane globs
 
 Future agents should start by reading this file, `apps/desktop/tests/AGENTS.md`, and the scripts in `apps/desktop/package.json`.
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                               |
+| ---- | -------------------- | ------------------------------------------------------ |
+| v1   | 2026-10-15 10:44 CST | 移除已删除的视频工程录屏与渲染说明，保留产品媒体流程。 |

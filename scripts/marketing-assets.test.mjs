@@ -41,37 +41,14 @@ test("product build excludes media rendering and marketing commands are explicit
   assert.match(rootPackage.scripts.build, /--filter @pi-gui\/desktop run build/);
   assert.match(rootPackage.scripts.build, /--filter @pi-gui\/website run build/);
   assert.doesNotMatch(rootPackage.scripts.build, /video|render|recursive| -r(?:\s|$)/);
-  assert.match(rootPackage.scripts["marketing:render"], /@pi-app\/video run render/);
+  assert.match(rootPackage.scripts["marketing:media"], /@pi-gui\/desktop run demo:product-media/);
 });
 
-test("marketing commands delegate to scripts owned by their producer workspace", async () => {
+test("product media delegates to its desktop producer script", async () => {
   const rootPackage = await readJson("package.json");
   const desktopPackage = await readJson("apps/desktop/package.json");
-  const videoPackage = await readJson("video/package.json");
-  const delegations = [
-    [
-      "marketing:media",
-      rootPackage.scripts["marketing:media"],
-      desktopPackage,
-      "demo:product-media",
-    ],
-    [
-      "marketing:capture",
-      rootPackage.scripts["marketing:capture"],
-      desktopPackage,
-      "demo:showcase-captures",
-    ],
-    ["marketing:render", rootPackage.scripts["marketing:render"], videoPackage, "render"],
-  ];
-
-  for (const [producer, command, ownerPackage, ownerScript] of delegations) {
-    assert.match(command, new RegExp(` run ${ownerScript.replace(":", "\\:")}(?:$|\\s)`));
-    assert.equal(
-      typeof ownerPackage.scripts[ownerScript],
-      "string",
-      `${producer} delegates to missing owner script ${ownerScript}`,
-    );
-  }
+  assert.match(rootPackage.scripts["marketing:media"], / run demo:product-media$/);
+  assert.equal(typeof desktopPackage.scripts["demo:product-media"], "string");
 });
 
 test("marketing producers support staged proof and pass credentials only explicitly", async () => {
@@ -90,18 +67,6 @@ test("marketing producers support staged proof and pass credentials only explici
   assert.deepEqual(source.match(/\brm\([^)]*\)/g), [
     "rm(privateDir, { recursive: true, force: true })",
   ]);
-
-  const showcaseSource = await readFile(
-    path.join(root, "apps/desktop/scripts/capture-showcase.mts"),
-    "utf8",
-  );
-  assert.match(showcaseSource, /PI_GUI_MARKETING_STAGE_DIR/);
-  assert.match(showcaseSource, /PI_GUI_MARKETING_ALLOW_PROVIDER_ENV/);
-  assert.match(showcaseSource, /PI_GUI_MARKETING_PROVIDER/);
-  assert.match(showcaseSource, /PI_GUI_MARKETING_MODEL/);
-  assert.match(showcaseSource, /"auth\.json"\), "\{\}\\n"/);
-  assert.doesNotMatch(showcaseSource, /realAuthSourceDir/);
-  assert.doesNotMatch(showcaseSource, /\brm\(/);
 });
 
 test("failed media generation preserves the published file and partial evidence", async () => {

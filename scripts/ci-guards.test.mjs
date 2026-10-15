@@ -29,7 +29,6 @@ test("the real lint config rejects shortcuts across source and script scopes", a
     "apps/desktop/tests/core/smoke.spec.ts",
     "apps/website/app/page.tsx",
     "packages/session-driver/src/index.ts",
-    "video/src/Root.tsx",
     "scripts/guard-fixture.mjs",
     ".github/scripts/guard-fixture.mjs",
   ]) {

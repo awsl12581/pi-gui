@@ -21,7 +21,7 @@ const paths = [
   "apps/desktop/src/app/App.tsx",
   "apps/desktop/electron/main.ts",
   "apps/desktop/tests/core/smoke.spec.ts",
-  "apps/desktop/scripts/capture-showcase.mts",
+  "apps/desktop/scripts/atomic-output.mts",
   "apps/website/app/page.tsx",
   "packages/catalogs/src/index.ts",
   "packages/platform/src/index.ts",
@@ -31,7 +31,6 @@ const paths = [
   "packages/pi-sdk-driver/test/session-schema.test.mts",
   "packages/session-driver/src/index.ts",
   "packages/extension-ui/src/index.ts",
-  "video/src/Root.tsx",
 ];
 
 test("each workspace and desktop execution context rejects unsafe values and unhandled promises", async () => {

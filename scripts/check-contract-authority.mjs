@@ -54,7 +54,6 @@ export function checkContractAuthority(root) {
       "apps",
       "packages",
       "scripts",
-      "video",
     ],
     {
       cwd: root,

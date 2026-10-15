@@ -36,17 +36,6 @@
 /packages/*/.turbo/
 /packages/*/test-results/
 /packages/*/playwright-report/
-/video/dist/
-/video/dist-electron/
-/video/out/
-/video/build/
-/video/release/
-/video/release-*/
-/video/.next/
-/video/.cache/
-/video/.turbo/
-/video/test-results/
-/video/playwright-report/
 **/*.tsbuildinfo
 .artifacts/
 /records/

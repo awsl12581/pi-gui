@@ -1,8 +1,8 @@
 # CI baseline and adoption plan
 
-> 最后修改时间：2026-10-14 21:10 CST
-> 文档版本：v1
-> 修改说明：将应用 Node 基线改为 24，明确支持 Node 24–26。
+> 最后修改时间：2026-10-15 10:44 CST
+> 文档版本：v2
+> 修改说明：移除视频工程的 lint 与类型检查范围说明。
 
 The current design is renderer → narrow preload API → main-process app store →
 Pi SDK driver → Pi runtime. Desktop UI state and Pi session state have separate
@@ -18,7 +18,7 @@ Run `pnpm check` locally and in the existing CI typecheck job. It runs:
    output, lockfiles, dependencies, and local artifacts are excluded. The
    100-column print width is a wrapping target, not a hard length limit.
 2. `pnpm lint`: builds shared package declarations first so a clean checkout
-   has the same type information as a developer checkout, then runs ESLint correctness checks on app, package, video, test and helper
+   has the same type information as a developer checkout, then runs ESLint correctness checks on app, package, test and helper
    source. It rejects debugger statements, async Promise executors, duplicate
    cases/keys, unreachable code and other configured errors. It does not format
    files or ban explicit `any`. Type-aware rules also reject unhandled/misused
@@ -33,7 +33,7 @@ Run `pnpm check` locally and in the existing CI typecheck job. It runs:
    helpers. It rejects Node, Electron, Pi runtime, and main/preload implementation
    dependencies. Explicit type-only imports and pure shared helpers remain valid.
 4. `pnpm typecheck`: builds shared declarations, then checks every workspace,
-   including the website, video source, and extension helper. It also checks both
+   including the website and extension helper. It also checks both
    desktop extension examples. First, `check:workspaces` asks pnpm for
    its workspace list and rejects missing or empty typecheck scripts, so a new
    workspace cannot silently skip checking. This checks script presence, not
@@ -122,3 +122,4 @@ still need to protect the checks.
 | 版本 | 修改时间             | 修改内容                                       |
 | ---- | -------------------- | ---------------------------------------------- |
 | v1   | 2026-10-14 21:10 CST | 将应用 Node 基线改为 24，明确支持 Node 24–26。 |
+| v2   | 2026-10-15 10:44 CST | 移除视频工程的 lint 与类型检查范围说明。       |
