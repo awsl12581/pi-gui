@@ -47,7 +47,6 @@ export default [
       ".pnpm-store/**",
       ".cursor/**",
       ".worktrees/**",
-      ".claude/worktrees/**",
       ".codex/worktrees/**",
     ],
   },

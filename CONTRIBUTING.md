@@ -1,5 +1,9 @@
 # Contributing to pi-gui
 
+> 最后修改时间：2026-10-15 11:37 CST
+> 文档版本：v1
+> 修改说明：移除 Claude Code 专用规范入口说明。
+
 Thanks for your interest in improving pi-gui. This guide covers local setup, the
 test lanes, and what "done" means for a change.
 
@@ -56,8 +60,8 @@ for the full lane list and platform-specific packaging notes.
 - **Make focused commits.** One logical change per commit so the diff is easy to
   review.
 
-Repo-wide conventions live in [`AGENTS.md`](./AGENTS.md) (the root `CLAUDE.md` is a
-symlink to it). Path-scoped guidance lives in nested `AGENTS.md` files.
+Repo-wide conventions live in [`AGENTS.md`](./AGENTS.md). Path-scoped guidance lives
+in nested `AGENTS.md` files.
 
 ## Pull requests
 
@@ -69,3 +73,9 @@ symlink to it). Path-scoped guidance lives in nested `AGENTS.md` files.
 
 By contributing, you agree that your contributions are licensed under the
 [MIT License](./LICENSE).
+
+## 版本修改记录
+
+| 版本 | 修改时间             | 修改内容                                              |
+| ---- | -------------------- | ----------------------------------------------------- |
+| v1   | 2026-10-15 11:37 CST | 移除 Claude Code 专用规范入口说明，开始记录文档版本。 |

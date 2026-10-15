@@ -263,7 +263,7 @@ test("source release/build directories are linted while generated output stays i
     );
   for (const directory of ["dist", "release", "release-candidate", "out", "build"])
     assert.equal(await eslint.isPathIgnored(path.join(workspace, directory, "generated.ts")), true);
-  for (const directory of [".worktrees", ".claude/worktrees", ".codex/worktrees"])
+  for (const directory of [".worktrees", ".codex/worktrees"])
     assert.equal(
       await eslint.isPathIgnored(
         path.join(fixture, directory, "other-checkout/apps/desktop/out/generated.js"),

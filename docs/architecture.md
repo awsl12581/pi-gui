@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-15 10:44 CST
-> 文档版本：v3
-> 修改说明：移除视频工程与专用录屏渲染入口，保留产品媒体职责。
+> 最后修改时间：2026-10-15 11:37 CST
+> 文档版本：v4
+> 修改说明：移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -132,7 +132,7 @@ The root command `marketing:media` records the README and website media. Generat
 
 ## Development dependency installation
 
-Development commands support Node 24–26 (`>=24.0.0 <27`); CI and cloud setup use Node 24.
+Development commands support Node 24–26 (`>=24.0.0 <27`); CI uses Node 24.
 Electron 37 retains its bundled Node runtime independently. `pnpm-workspace.yaml` scopes a
 `yauzl 3.4.0` override to `extract-zip` to avoid incomplete extraction on Node 26.
 The root `postinstall` runs `scripts/prepare-desktop-dependencies.mjs`: it checks the Electron
@@ -175,3 +175,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。 |
 | v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。 |
 | v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。           |
+| v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。     |

@@ -19,7 +19,7 @@ test("the repository workflows match the Node 24 action policy", async () => {
   await assertWorkflowActionPolicy(repoRoot);
 });
 
-test("valid seven-action corpus passes", async () => {
+test("valid six-action corpus passes", async () => {
   await assertWorkflowActionPolicy(await writeFixture(validWorkflow()));
 });
 
@@ -115,7 +115,6 @@ jobs:
         with:
           name: out
       - uses: softprops/action-gh-release@v3
-      - uses: anthropics/claude-code-action@v1
 `);
   await assert.rejects(
     () => assertWorkflowActionPolicy(root),
@@ -143,7 +142,6 @@ jobs:
         with:
           name: out
       - uses: softprops/action-gh-release@v3
-      - uses: anthropics/claude-code-action@v1
   preflight:
     runs-on: ubuntu-latest
     steps:
