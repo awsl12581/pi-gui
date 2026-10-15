@@ -1,5 +1,9 @@
 # Desktop extension author helper
 
+> Last modified: 2026-10-15 12:05 CST
+> Document version: v2
+> Change: Document the Chord 1.2 facet and remote-contract API.
+
 The existing Pi extension owns the backend. An optional browser module owns the
 view. This package connects them through Chord without scanning or loading a
 second extension instance.
@@ -18,7 +22,7 @@ export default function extension(pi) {
       defineFacet({
         id: "review-backend",
         setup(env) {
-          // Use env.replicatedState and provide your shared service token here.
+          // Register the shared TypeBox remote contract with api.serve here.
           // Close over the same Pi extension's commands, tools, and saved state.
         },
       }),
@@ -34,11 +38,11 @@ it. The helper does not invoke the backend factory.
 
 The browser entry exports `mount(root, host)`, returning a cleanup function or a
 promise of one. `DesktopViewContext` is exported from
-`@pi-gui/extension-ui/browser`. Its `services` is a Chord `RemoteServiceSource`, so
-the frontend can create its own facet host with `serviceSources: [host.services]`.
-Use `env.use(Service)` during setup, then subscribe to state in `env.onActivate`.
-Bundle the browser's framework and Chord dependencies. Backend facets must create
-state with `env.replicatedState`, which uses the host's Chord instance.
+`@pi-gui/extension-ui/browser`. Its `host` is the browser-side Chord client host.
+Acquire a shared TypeBox contract with `host.host.get(...)`, await `ready`,
+subscribe to state, and release the handle during cleanup. Backend facets register
+the same contract with `api.serve` and use `self.state`. Bundle Chord, TypeBox and
+the contract module with the browser entry.
 
 `host.actions.openFile({ path, line?, column? })` opens a scoped file target.
 `host.actions.prepareTaskDraft({ title, prompt, files? })` prepares a task draft.

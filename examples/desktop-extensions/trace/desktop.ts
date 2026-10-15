@@ -1,6 +1,5 @@
 import chevronDown from "@iconify-icons/lucide/chevron-down";
 import { iconToHTML, iconToSVG } from "@iconify/utils";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import {
   Trace,
@@ -566,15 +565,7 @@ export async function mount(root: HTMLElement, host: DesktopViewContext): Promis
     if (run.endedAt === null) frame = requestAnimationFrame(tick);
   };
 
-  const binding = host.services.open({
-    services: [Trace],
-    assertAccess: () => host.signal.throwIfAborted(),
-    onError: (reason) => {
-      error = reason instanceof Error ? reason.message : String(reason);
-      render();
-    },
-  });
-  const service = binding.use(Trace);
+  const service = host.host.get(Trace, {}, { at: "desktop-extension" });
 
   let unsubscribe = () => {};
   const dispose = () => {
@@ -583,15 +574,16 @@ export async function mount(root: HTMLElement, host: DesktopViewContext): Promis
     cancelAnimationFrame(frame);
     unsubscribe();
     host.signal.removeEventListener("abort", dispose);
-    binding.dispose(BACKGROUND_CONTEXT).catch(() => {});
+    service.release();
     root.replaceChildren();
   };
   host.signal.addEventListener("abort", dispose, { once: true });
   render();
   try {
-    await binding.ready(BACKGROUND_CONTEXT);
+    await service.ready;
     host.signal.throwIfAborted();
     unsubscribe = service.state.subscribe((next) => {
+      if (!next) return;
       state = next;
       render();
     });

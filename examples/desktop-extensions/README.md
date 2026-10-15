@@ -1,5 +1,9 @@
 # Pi extensions with desktop views
 
+> Last modified: 2026-10-15 12:12 CST
+> Document version: v2
+> Change: Update package and Chord authoring guidance for the 1.2 protocol.
+
 These are ordinary file-based Pi extensions. Pi loads each `index.ts` once; its
 commands, tools, saved session entries, and optional desktop view share that
 extension instance. A view is custom browser code, connected to the extension's
@@ -103,9 +107,9 @@ pnpm add \
   "$extension_tarballs/pi-gui-extension-ui-0.0.0.tgz" \
   "$extension_tarballs/pi-gui-example-pr-review-0.0.0.tgz" \
   "$extension_tarballs/pi-gui-example-test-runs-0.0.0.tgz" \
-  @earendil-works/chord@1.0.0 \
-  @earendil-works/pi-ai@1.0.0 \
-  @earendil-works/pi-coding-agent@1.0.0
+  @earendil-works/chord@1.2.0 \
+  @earendil-works/pi-ai@1.2.0 \
+  @earendil-works/pi-coding-agent@1.2.0
 ```
 
 Then add the installed **package directories** to the existing Pi `extensions`
@@ -128,7 +132,7 @@ reloading the installed copy. Installing a tarball creates a separate copy; late
 source edits do not update it automatically.
 
 This path was verified with the actual packed files installed in a separate
-temporary project, using Pi/Pi AI/Chord 0.87.0 and an offline cached dependency
+temporary project, using Pi/Pi AI/Chord 1.2.0 and an offline cached dependency
 set. The normal `pnpm add` command above can obtain those released dependencies
 from the registry. The proof confirmed that every package resolved inside the
 external project's `node_modules`, both real TypeScript entry points loaded with
@@ -153,12 +157,13 @@ reconnects the browser; it does not reload backend code or recover a rejected Pi
 request.
 
 The browser exports `mount(root, host)` and returns a disposer. Wait for the scoped
-service binding's `ready()` before reading state or subscribing. Observe
+service handle's `ready` before reading state or subscribing. Observe
 `host.signal` so a closed view does not reuse stale capabilities. The host supplies
 theme colors and scoped `openFile` / `prepareTaskDraft` / `openUrl` / `openThread`
 actions; a prepared draft
-is editable and is never sent automatically. Create backend replicated state
-with `env.replicatedState` so it belongs to the host's Chord instance.
+is editable and is never sent automatically. Define a shared TypeBox `remote`
+contract in `contract.ts`; register it with `api.serve` and use `self.state` in
+the backend, then acquire it with `host.host.get(...)` in the browser.
 
 ## Verify an edit
 
@@ -204,3 +209,10 @@ reopen during a run; reload and switch tasks; run a real-provider PR review; ope
 a real finding; inspect the unsent fix draft; move the PR revision and confirm
 stale results cannot prepare a fresh fix. The example READMEs describe further
 failure cases. Offline tests alone do not establish that product proof.
+
+## Version history
+
+| Version | Date                 | Change                                                    |
+| ------- | -------------------- | --------------------------------------------------------- |
+| v2      | 2026-10-15 12:12 CST | Updated package versions and Chord 1.2 contract guidance. |
+| v1      | 2026-10-14 18:00 CST | Added the desktop extension examples guide.               |

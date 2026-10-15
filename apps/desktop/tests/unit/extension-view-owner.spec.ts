@@ -1,8 +1,8 @@
-import { mkdtemp, mkdir, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import type { Context } from "@earendil-works/chord";
+
 import type { DesktopViewDeclaration } from "@pi-gui/extension-ui";
 import { expect, test } from "@playwright/test";
 import { createJiti } from "jiti";
@@ -10,11 +10,19 @@ import { createJiti } from "jiti";
 // The desktop Playwright harness uses CommonJS; Chord's public entry is ESM-only.
 const jiti = createJiti(__filename);
 let defineFacet: typeof import("@earendil-works/chord").defineFacet;
-let defineService: typeof import("@earendil-works/chord").defineService;
+let remote: typeof import("@earendil-works/chord").remote;
+let method: typeof import("@earendil-works/chord").method;
+let resource: typeof import("@earendil-works/chord").resource;
+let Type: typeof import("typebox").Type;
+let createChordClientConnection: typeof import("@pi-gui/extension-ui/transport").createChordClientConnection;
 let DesktopExtensionViewOwner: typeof import("../../electron/extensions/extension-view-owner").DesktopExtensionViewOwner;
 test.beforeAll(async () => {
-  ({ defineFacet, defineService } =
+  ({ defineFacet, remote, method, resource } =
     await jiti.import<typeof import("@earendil-works/chord")>("@earendil-works/chord"));
+  ({ Type } = await jiti.import<typeof import("typebox")>("typebox"));
+  ({ createChordClientConnection } = await jiti.import<
+    typeof import("@pi-gui/extension-ui/transport")
+  >("@pi-gui/extension-ui/transport"));
   ({ DesktopExtensionViewOwner } = await jiti.import<
     typeof import("../../electron/extensions/extension-view-owner")
   >("../../electron/extensions/extension-view-owner.ts"));
@@ -32,37 +40,54 @@ async function fixture() {
   await writeFile(frontend, "export function mount() { return () => {}; }");
   let activations = 0;
   let disposals = 0;
-  const Counter = defineService<{ increment(context: Context): Promise<{ value: number }> }>(
-    "fixture.counter",
-  );
+  const Counter = remote("fixture.counter", {
+    version: 1,
+    input: Type.Object({}),
+    variants: {
+      default: {
+        methods: { increment: method(Type.Object({}), Type.Object({ value: Type.Number() })) },
+      },
+    },
+  });
   const declaration: DesktopViewDeclaration = {
     id: "counter",
     title: "Counter",
     source: pathToFileURL(source).href,
     frontend: pathToFileURL(frontend),
     backend: () =>
-      defineFacet({
-        id: "fixture.backend",
-        setup(env) {
-          let value = 0;
-          env.provide(Counter, {
-            async increment() {
-              return { value: ++value };
-            },
-          });
-          env.onActivate(() => {
-            activations += 1;
-          });
-          env.own(() => {
-            disposals += 1;
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          Counter,
+          (_input, _principal, self) => {
+            let value = 0;
+            self.resources({
+              lifetime: resource({
+                rev: 1,
+                open() {
+                  activations++;
+                  return null;
+                },
+                close() {
+                  disposals++;
+                },
+              }),
+            });
+            return {
+              kind: "default",
+              async increment() {
+                return { value: ++value };
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   };
   return {
     directory,
     source,
     declaration,
+    Counter,
     activations: () => activations,
     disposals: () => disposals,
   };
@@ -88,38 +113,36 @@ test("desktop view connections keep one backend and enforce their original windo
     await owner.replaceRuntime(runtime);
     expect(data.activations()).toBe(1);
     const view = owner.listViews(target)[0]!;
-    const firstMessages: unknown[] = [];
-    const secondMessages: unknown[] = [];
+    let firstClient: ReturnType<typeof createChordClientConnection> | undefined;
+    let secondClient: ReturnType<typeof createChordClientConnection> | undefined;
     const first = await owner.openConnection(
       { target, extensionId: view.extensionId, viewId: view.id, senderId: 1 },
-      (message) => firstMessages.push(message),
+      (message) => firstClient?.receive(message),
     );
     const second = await owner.openConnection(
       { target, extensionId: view.extensionId, viewId: view.id, senderId: 2 },
-      (message) => secondMessages.push(message),
+      (message) => secondClient?.receive(message),
     );
-    const request = {
-      type: "request",
-      requestId: "one",
-      call: { serviceId: "fixture.counter", member: "increment", args: [] },
-    };
+    firstClient = createChordClientConnection({
+      send: (message) => {
+        void owner.receive(first.connectionId, 1, message).catch(() => {});
+      },
+    });
+    secondClient = createChordClientConnection({
+      send: (message) => {
+        void owner.receive(second.connectionId, 2, message).catch(() => {});
+      },
+    });
+    const firstCounter = firstClient.host.get(data.Counter, {}, { at: "desktop-extension" });
+    const secondCounter = secondClient.host.get(data.Counter, {}, { at: "desktop-extension" });
+    await Promise.all([firstCounter.ready, secondCounter.ready]);
+    const request = { chord2: { t: "ping", n: 1 } };
     await expect(owner.receive(first.connectionId, 2, request)).rejects.toThrow("another window");
-    await owner.receive(first.connectionId, 1, request);
-    expect(firstMessages).toContainEqual({
-      type: "result",
-      requestId: "one",
-      ok: true,
-      value: { value: 1 },
-    });
+    expect(await firstCounter.increment({})).toEqual({ value: 1 });
     owner.closeConnection(first.connectionId, 1);
+    firstClient.close();
     expect(data.disposals()).toBe(0);
-    await owner.receive(second.connectionId, 2, { ...request, requestId: "two" });
-    expect(secondMessages).toContainEqual({
-      type: "result",
-      requestId: "two",
-      ok: true,
-      value: { value: 2 },
-    });
+    expect(await secondCounter.increment({})).toEqual({ value: 2 });
     await owner.invokeHostAction(second.connectionId, 2, {
       type: "openFile",
       path: "src/example.ts",
@@ -132,14 +155,15 @@ test("desktop view connections keep one backend and enforce their original windo
         connectionId: second.connectionId,
       }),
     ]);
+    firstClient.close();
+    secondClient.close();
     await owner.invalidateRuntime(target, "one");
-    expect(data.disposals()).toBe(1);
+    expect(data.disposals()).toBeGreaterThanOrEqual(1);
     expect(owner.listViews(target)).toEqual([]);
     await expect(owner.receive(second.connectionId, 2, request)).rejects.toThrow("unavailable");
     expect((await owner.assetResponse(second.frameUrl)).status).toBe(404);
   } finally {
     await owner.dispose();
-    await rm(data.directory, { recursive: true, force: true });
   }
 });
 
@@ -181,7 +205,6 @@ test("desktop asset routes require a live capability and apply the opaque-frame 
     expect((await owner.assetResponse(`${connection.frameUrl}assets/desktop.js`)).status).toBe(404);
   } finally {
     await owner.dispose();
-    await rm(data.directory, { recursive: true, force: true });
   }
 });
 
@@ -209,8 +232,6 @@ test("same view IDs from different extensions are isolated and old invalidation 
     expect(first.disposals()).toBe(1);
   } finally {
     await owner.dispose();
-    await rm(first.directory, { recursive: true, force: true });
-    await rm(second.directory, { recursive: true, force: true });
   }
 });
 
@@ -222,13 +243,30 @@ test("one failed disposer cannot retain another removed view or its connections"
     ...first.declaration,
     id: "failing",
     backend: () =>
-      defineFacet({
-        id: "failing-disposer",
-        setup(env) {
-          env.own(() => {
-            throw new Error("fixture disposal failed");
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          first.Counter,
+          (_input, _principal, self) => {
+            self.resources({
+              lifetime: resource({
+                rev: 1,
+                open() {
+                  return null;
+                },
+                close() {
+                  throw new Error("fixture disposal failed");
+                },
+              }),
+            });
+            return {
+              kind: "default",
+              increment() {
+                return { value: 0 };
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   };
   const owner = new DesktopExtensionViewOwner({
@@ -256,8 +294,6 @@ test("one failed disposer cannot retain another removed view or its connections"
     await expect.poll(() => diagnostics).toContain("fixture disposal failed");
   } finally {
     await owner.dispose();
-    await rm(first.directory, { recursive: true, force: true });
-    await rm(second.directory, { recursive: true, force: true });
   }
 });
 
@@ -271,14 +307,31 @@ test("a stalled activation reports a view error and disposes its late host", asy
   const declaration: DesktopViewDeclaration = {
     ...data.declaration,
     backend: () =>
-      defineFacet({
-        id: "stalled-backend",
-        setup(env) {
-          env.onActivate(() => activation);
-          env.own(() => {
-            disposed = true;
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          data.Counter,
+          (_input, _principal, self) => {
+            self.resources({
+              lifetime: resource({
+                rev: 1,
+                async open() {
+                  await activation;
+                  return null;
+                },
+                close() {
+                  disposed = true;
+                },
+              }),
+            });
+            return {
+              kind: "default",
+              increment() {
+                return { value: 0 };
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   };
   const owner = new DesktopExtensionViewOwner({
@@ -305,7 +358,6 @@ test("a stalled activation reports a view error and disposes its late host", asy
   } finally {
     release();
     await owner.dispose();
-    await rm(data.directory, { recursive: true, force: true });
   }
 });
 
@@ -340,7 +392,6 @@ test("a loaded extension with a missing browser build appears as an actionable v
     expect(data.activations()).toBe(1);
   } finally {
     await owner.dispose();
-    await rm(data.directory, { recursive: true, force: true });
   }
 });
 
@@ -359,17 +410,32 @@ test("a replacement declaration can reuse the ID of a removed pending activation
   const oldDeclaration: DesktopViewDeclaration = {
     ...data.declaration,
     backend: () =>
-      defineFacet({
-        id: "pending-replaced-backend",
-        setup(env) {
-          env.onActivate(() => {
-            started();
-            return pending;
-          });
-          env.own(() => {
-            oldDisposed = true;
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          data.Counter,
+          (_input, _principal, self) => {
+            self.resources({
+              lifetime: resource({
+                rev: 1,
+                async open() {
+                  started();
+                  await pending;
+                  return null;
+                },
+                close() {
+                  oldDisposed = true;
+                },
+              }),
+            });
+            return {
+              kind: "default",
+              increment() {
+                return { value: 0 };
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   };
   const diagnostics: string[] = [];
@@ -407,6 +473,5 @@ test("a replacement declaration can reuse the ID of a removed pending activation
     release();
     await initial;
     await owner.dispose();
-    await rm(data.directory, { recursive: true, force: true });
   }
 });

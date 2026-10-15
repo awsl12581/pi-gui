@@ -1,4 +1,5 @@
-import { defineService, type Context, type ReplicatedState } from "@earendil-works/chord";
+import { method, remote } from "@earendil-works/chord";
+import { Type } from "typebox";
 
 export interface ReviewTarget {
   checkout: string;
@@ -53,14 +54,86 @@ export interface FixDraft {
   files: { path: string; line: number }[];
 }
 
-export interface ReviewService {
-  state: ReplicatedState<ReviewState>;
-  refresh(input: Record<string, never>, context: Context): Promise<void>;
-  request(input: { requestId: string }, context: Context): Promise<{ reviewId: string }>;
-  prepareFix(input: { reviewId: string; findingId: string }, context: Context): Promise<FixDraft>;
-}
+const ReviewTargetSchema = Type.Object({
+  checkout: Type.String(),
+  repository: Type.String(),
+  number: Type.Number(),
+  url: Type.String(),
+  title: Type.String(),
+  branch: Type.String(),
+  base: Type.String(),
+  head: Type.String(),
+  mergeBase: Type.String(),
+  localHead: Type.String(),
+  dirty: Type.Boolean(),
+  files: Type.Array(Type.String()),
+});
 
-export const PRReview = defineService<ReviewService>("pi-gui.examples.pr-review.v1");
+const ReviewStatusSchema = Type.Union([
+  Type.Literal("requested"),
+  Type.Literal("running"),
+  Type.Literal("completed"),
+  Type.Literal("incomplete"),
+  Type.Literal("failed"),
+  Type.Literal("aborted"),
+  Type.Literal("interrupted"),
+]);
+
+const FindingSchema = Type.Object({
+  id: Type.String(),
+  priority: Type.Union([Type.Literal("P1"), Type.Literal("P2"), Type.Literal("P3")]),
+  title: Type.String(),
+  body: Type.String(),
+  path: Type.String(),
+  line: Type.Number(),
+});
+
+const ReviewRecordSchema = Type.Object({
+  version: Type.Literal(1),
+  id: Type.String(),
+  target: ReviewTargetSchema,
+  status: ReviewStatusSchema,
+  requestedAt: Type.Number(),
+  finishedAt: Type.Union([Type.Number(), Type.Null()]),
+  summary: Type.String(),
+  findings: Type.Array(FindingSchema),
+  recorded: Type.Boolean(),
+  detail: Type.String(),
+});
+
+const ReviewStateSchema = Type.Object({
+  target: Type.Union([ReviewTargetSchema, Type.Null()]),
+  review: Type.Union([ReviewRecordSchema, Type.Null()]),
+  refreshing: Type.Boolean(),
+  error: Type.Union([Type.String(), Type.Null()]),
+});
+
+const FixDraftSchema = Type.Object({
+  title: Type.String(),
+  prompt: Type.String(),
+  files: Type.Array(Type.Object({ path: Type.String(), line: Type.Number() })),
+});
+
+export const PRReview = remote("pi-gui.examples.pr-review.v1", {
+  version: 1,
+  input: Type.Object({}),
+  variants: {
+    default: {
+      state: { state: ReviewStateSchema },
+      methods: {
+        refresh: method(Type.Object({}), Type.Null()),
+        request: method(
+          Type.Object({ requestId: Type.String() }),
+          Type.Object({ reviewId: Type.String() }),
+        ),
+        prepareFix: method(
+          Type.Object({ reviewId: Type.String(), findingId: Type.String() }),
+          FixDraftSchema,
+        ),
+      },
+    },
+  },
+});
 
 export function staleReason(review: ReviewRecord, current: ReviewTarget | null): string | null {
   if (!current) return "The current PR could not be verified. Refresh before using these findings.";

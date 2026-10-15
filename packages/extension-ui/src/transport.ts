@@ -1,570 +1,218 @@
 import {
-  createRemoteServiceBinding,
-  createRemoteServiceEndpoint,
-  createServiceCatalogueCall,
-  createServiceStateDecoder,
-  createServiceStateEncoder,
-  createServiceSubscribeCall,
-  createServiceUnsubscribeCall,
-  decodeServiceControlCall,
+  createHost,
+  ipcLink,
   isJsonValue,
-  isRemoteServiceErrorCode,
-  parseServiceCall,
-  parseServiceCatalogue,
-  parseServiceSubscriptionSnapshot,
-  parseWireServiceProviderUpdate,
-  parseWireServiceSubscriptionSnapshot,
-  RemoteServiceError,
-  type Context,
+  type Frame,
+  type Host,
   type JsonValue,
-  type RemoteServiceBinding,
-  type RemoteServiceProvider,
-  type RemoteServiceSource,
-  type RemoteServiceTransport,
-  type ServiceCall,
-  type ServiceProviderUpdate,
-  type ServiceStateDecoder,
-  type ServiceStateEncoder,
-  type WireServiceProviderUpdate,
 } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT, withAbortSignal } from "@earendil-works/chord/context";
 
-export type ChordWireMessage =
-  | { readonly type: "request"; readonly requestId: string; readonly call: ServiceCall }
-  | {
-      readonly type: "result";
-      readonly requestId: string;
-      readonly ok: true;
-      readonly value?: JsonValue;
-    }
-  | {
-      readonly type: "result";
-      readonly requestId: string;
-      readonly ok: false;
-      readonly error: { readonly message: string; readonly code?: string };
-    }
-  | {
-      readonly type: "update";
-      readonly subscriptionId: string;
-      readonly update: WireServiceProviderUpdate;
-    }
-  | { readonly type: "cancel"; readonly requestId: string }
-  | { readonly type: "closed"; readonly reason: string };
-
+export interface ChordWireMessage {
+  readonly chord2: JsonValue;
+}
 interface ConnectionOptions {
-  /** Must deliver in order. Values are validated and detached before this callback. */
   readonly send: (message: ChordWireMessage) => void;
   readonly onError?: (error: Error) => void;
 }
-
 export interface ChordServerConnection {
   receive(message: unknown): Promise<void>;
-  /** Ends this consumer's subscriptions; already accepted backend work keeps running. */
+  /** Releases the consumer; accepted backend calls finish on their existing host. */
   close(reason?: string): void;
 }
-
 export interface ChordClientConnection {
-  readonly services: RemoteServiceSource;
+  readonly host: Pick<Host, "get" | "root">;
   readonly signal: AbortSignal;
   receive(message: unknown): void;
   close(reason?: string): void;
 }
-
 const MAX_MESSAGE_LENGTH = 2_000_000;
 const MAX_PENDING = 256;
-const MAX_BUFFERED_UPDATES = 256;
 
-interface ServerSubscription {
-  readonly encoder: ServiceStateEncoder;
-  readonly buffered: ServiceProviderUpdate[];
-  ready: boolean;
+/** Chord owns frame validation, RPC, cancellation and per-subscription state codecs. */
+function channel(options: ConnectionOptions) {
+  const listeners = new Set<(message: unknown) => void>();
+  const disconnects = new Set<() => void>();
+  const link = ipcLink({
+    get connected() {
+      return !link.closed;
+    },
+    send(message) {
+      // Chord frames may omit optional fields. Detach exactly as its JSON links do.
+      const encoded = JSON.stringify(message);
+      if (encoded.length > MAX_MESSAGE_LENGTH)
+        throw new TypeError("Desktop service message exceeds size limit");
+      const detached = parseMessage(JSON.parse(encoded));
+      queueMicrotask(() => {
+        try {
+          options.send(detached);
+        } catch (error) {
+          fail(error);
+        }
+      });
+      return true;
+    },
+    on(event: string, handler: (() => void) | ((message: unknown) => void)) {
+      if (event === "message") listeners.add(handler);
+      else disconnects.add(handler as () => void);
+    },
+    off(event: string, handler: (() => void) | ((message: unknown) => void)) {
+      if (event === "message") listeners.delete(handler);
+      else disconnects.delete(handler as () => void);
+    },
+  });
+  function fail(error: unknown) {
+    link.close("Invalid or unavailable desktop service connection");
+    options.onError?.(error instanceof Error ? error : new Error(String(error)));
+  }
+  return {
+    link,
+    fail,
+    deliver(message: unknown) {
+      for (const listener of listeners) listener(message);
+    },
+  };
 }
 
-/** One isolated view provider, one connection, one Chord endpoint. */
+/** One scoped view host accepts browser clients, never child hosts or forwarded principals. */
 export function createChordServerConnection(
-  options: ConnectionOptions & { readonly provider: RemoteServiceProvider },
+  options: ConnectionOptions & { readonly host: Host },
 ): ChordServerConnection {
-  const endpoint = createRemoteServiceEndpoint(options.provider);
-  const allowedServices = new Set(options.provider.catalogue.map((service) => service.serviceId));
-  const subscriptions = new Map<string, ServerSubscription>();
-  const requests = new Map<string, AbortController>();
-  let closed = false;
-
-  function send(message: ChordWireMessage): boolean {
-    if (closed) return false;
+  const calls = new Set<number>();
+  const holds = new Set<number>();
+  const subscriptions = new Set<number>();
+  let detached = false;
+  const wire = channel({
+    ...options,
+    send(message) {
+      const frame = message.chord2 as unknown as Frame;
+      if (frame.t === "result") calls.delete(frame.id);
+      if (frame.t === "gone") holds.delete(frame.id);
+      if (detached) {
+        if (calls.size === 0) wire.link.close();
+        // Accepted calls outlive the browser, so keep their local link alive until they settle.
+        else if (frame.t === "ping") wire.deliver({ chord2: { t: "pong", n: frame.n } });
+        return;
+      }
+      options.send(message);
+    },
+  });
+  options.host.accept(wire.link, { principal: { kind: "desktop-view" }, kind: "client" });
+  function close(reason = "Desktop view connection closed") {
+    if (detached) return;
+    detached = true;
     try {
-      options.send(copyWireMessage(message));
-      return true;
-    } catch (error) {
-      // The endpoint may already own a subscription even if its hydration
-      // response cannot be sent. Dispose it instead of losing our bookkeeping.
-      fail(error);
-      return false;
+      options.send({ chord2: { t: "bye", reason } });
+    } catch {
+      /* The browser may already be gone. */
     }
-  }
-
-  function close(reason = "Desktop view connection closed", notify = true): void {
-    if (closed) return;
-    closed = true;
-    // Closing a tab releases its consumer, not the extension's work. Explicit
-    // cancel messages may abort calls; host disposal owns backend teardown.
-    requests.clear();
+    for (const id of subscriptions) wire.deliver({ chord2: { t: "unsub", id } });
+    for (const id of holds) wire.deliver({ chord2: { t: "release", id } });
     subscriptions.clear();
-    endpoint.dispose();
-    if (notify) {
-      try {
-        options.send({ type: "closed", reason });
-      } catch {
-        /* The transport may already be gone. */
-      }
-    }
+    holds.clear();
+    if (calls.size === 0) wire.link.close(reason);
   }
-
-  function fail(error: unknown): void {
-    const failure = asError(error);
-    close("Invalid or unavailable desktop service connection");
-    options.onError?.(failure);
-  }
-
-  function publish(subscriptionId: string, update: ServiceProviderUpdate): void {
-    if (closed) return;
-    const subscription = subscriptions.get(subscriptionId);
-    if (!subscription) return;
-    try {
-      if (!subscription.ready) {
-        if (subscription.buffered.length >= MAX_BUFFERED_UPDATES)
-          throw new Error("Too many pending service updates");
-        subscription.buffered.push(update);
-      } else {
-        send({ type: "update", subscriptionId, update: subscription.encoder.encodeUpdate(update) });
-      }
-    } catch (error) {
-      fail(error);
-    }
-  }
-
   return {
     close,
     async receive(input) {
-      if (closed) return;
-      let message: ChordWireMessage;
+      if (detached || wire.link.closed) return;
       try {
-        message = copyWireMessage(input);
-        if (message.type === "closed") {
-          close(message.reason, false);
+        const message = parseMessage(input);
+        const frame = message.chord2;
+        if (!isRecord(frame) || typeof frame.t !== "string")
+          throw new TypeError("Invalid desktop service frame");
+        if (frame.t === "bye") {
+          close();
           return;
         }
-        if (message.type === "cancel") {
-          requests.get(message.requestId)?.abort();
-          return;
+        if (
+          !["hello", "hold", "release", "call", "cancel", "sub", "unsub", "ping", "pong"].includes(
+            frame.t,
+          )
+        )
+          throw new TypeError("Frame is not permitted from a desktop browser");
+        if (
+          frame.t === "hold" &&
+          (frame.at !== options.host.name ||
+            !isRecord(frame.token) ||
+            frame.token.scope !== "remote" ||
+            "principal" in frame ||
+            "client" in frame)
+        )
+          throw new TypeError("Desktop view cannot route or forward identities");
+        if (frame.t === "call" && "root" in frame)
+          throw new TypeError("Desktop browser cannot supply a root");
+        if (["hold", "call", "sub"].includes(frame.t)) {
+          const id = frame.id;
+          if (typeof id !== "number" || !Number.isSafeInteger(id) || id < 0)
+            throw new TypeError("Invalid desktop service ID");
+          const pending = frame.t === "hold" ? holds : frame.t === "call" ? calls : subscriptions;
+          if (pending.has(id) || pending.size >= MAX_PENDING)
+            throw new TypeError("Duplicate or excessive desktop service requests");
+          pending.add(id);
         }
-        if (message.type !== "request") throw new TypeError("Expected a Chord request");
-        if (requests.has(message.requestId) || requests.size >= MAX_PENDING)
-          throw new TypeError("Duplicate or excessive Chord requests");
+        if (frame.t === "release") holds.delete(Number(frame.id));
+        if (frame.t === "unsub") subscriptions.delete(Number(frame.id));
+        wire.deliver(message);
       } catch (error) {
-        fail(error);
-        return;
-      }
-      const { requestId, call } = message;
-      const controller = new AbortController();
-      requests.set(requestId, controller);
-      const context = withAbortSignal(controller.signal, BACKGROUND_CONTEXT);
-      const control = decodeServiceControlCall(call);
-      let createdSubscription = false;
-      try {
-        if (control?.type === "subscribe") {
-          if (!allowedServices.has(control.serviceId))
-            throw new RemoteServiceError(
-              "service_not_allowed",
-              "Service is not advertised by this view",
-            );
-          if (subscriptions.has(control.subscriptionId) || subscriptions.size >= MAX_PENDING)
-            throw new Error("Duplicate or excessive Chord subscriptions");
-          subscriptions.set(control.subscriptionId, {
-            encoder: createServiceStateEncoder(),
-            buffered: [],
-            ready: false,
-          });
-          createdSubscription = true;
-        } else if (!control && !allowedServices.has(call.serviceId)) {
-          throw new RemoteServiceError(
-            "service_not_allowed",
-            "Service is not advertised by this view",
-          );
-        }
-
-        let value = await endpoint.invoke(call, publish, context);
-        if (closed) return;
-        if (controller.signal.aborted) {
-          if (control?.type === "subscribe") {
-            await endpoint.invoke(
-              createServiceUnsubscribeCall(control.subscriptionId),
-              publish,
-              BACKGROUND_CONTEXT,
-            );
-            subscriptions.delete(control.subscriptionId);
-          }
-          return;
-        }
-        if (control?.type === "subscribe") {
-          const subscription = subscriptions.get(control.subscriptionId);
-          if (!subscription) throw new Error("Service subscription was closed before hydration");
-          // Endpoint activation precedes its return. Initialize this subscription's
-          // dictionary and send hydration before encoding any buffered updates.
-          try {
-            value = strictJson(
-              subscription.encoder.encodeSnapshot(parseServiceSubscriptionSnapshot(value)),
-            );
-          } catch (error) {
-            fail(error);
-            return;
-          }
-          if (!send({ type: "result", requestId, ok: true, value })) return;
-          subscription.ready = true;
-          for (const update of subscription.buffered.splice(0))
-            publish(control.subscriptionId, update);
-        } else {
-          if (control?.type === "unsubscribe") subscriptions.delete(control.subscriptionId);
-          send({
-            type: "result",
-            requestId,
-            ok: true,
-            ...(value === undefined ? {} : { value: strictJson(value) }),
-          });
-        }
-      } catch (error) {
-        if (createdSubscription && control?.type === "subscribe")
-          subscriptions.delete(control.subscriptionId);
-        if (!closed && !controller.signal.aborted) {
-          try {
-            const code = error instanceof RemoteServiceError ? error.code : undefined;
-            send({
-              type: "result",
-              requestId,
-              ok: false,
-              error: { message: asError(error).message, ...(code ? { code } : {}) },
-            });
-          } catch (sendError) {
-            fail(sendError);
-          }
-        }
-      } finally {
-        requests.delete(requestId);
+        wire.fail(error);
       }
     },
   };
 }
 
-interface PendingRequest {
-  resolve(value: JsonValue | undefined): void;
-  reject(error: Error): void;
-  cleanup(): void;
-}
-
-interface ClientSubscription {
-  readonly decoder: ServiceStateDecoder;
-  readonly buffered: WireServiceProviderUpdate[];
-  readonly listener: (update: ServiceProviderUpdate, context: Context) => void;
-  active: boolean;
-}
-
-/** Browser-safe Chord source; caller owns the actual MessagePort/IPC route. */
 export function createChordClientConnection(options: ConnectionOptions): ChordClientConnection {
   const controller = new AbortController();
-  const pending = new Map<string, PendingRequest>();
-  const subscriptions = new Map<string, ClientSubscription>();
-  const bindings = new Set<RemoteServiceBinding>();
-  let closed = false;
-  let nextId = 0;
-
-  function close(reason = "Desktop view connection closed", notify = true): void {
-    if (closed) return;
-    closed = true;
-    const failure = new Error(reason);
-    // A binding may be awaiting hydration: reject its request before disposing it.
-    for (const request of pending.values()) {
-      request.cleanup();
-      request.reject(failure);
-    }
-    pending.clear();
-    subscriptions.clear();
-    controller.abort(failure);
-    if (notify) {
-      try {
-        options.send({ type: "closed", reason });
-      } catch {
-        /* The transport may already be gone. */
-      }
-    }
-    for (const binding of bindings) binding.dispose(BACKGROUND_CONTEXT).catch(() => {});
-    bindings.clear();
-  }
-
-  function fail(error: unknown): void {
-    const failure = asError(error);
-    close("Invalid or unavailable desktop service connection");
-    options.onError?.(failure);
-  }
-
-  function request(call: ServiceCall, context: Context): Promise<JsonValue | undefined> {
-    if (closed) return Promise.reject(new Error("Desktop view connection is closed"));
-    if (context.abortSignal?.aborted)
-      return Promise.reject(new Error("Desktop service request cancelled"));
-    if (pending.size >= MAX_PENDING)
-      return Promise.reject(new Error("Too many pending desktop service requests"));
-    const requestId = `request-${++nextId}`;
-    return new Promise((resolve, reject) => {
-      const abort = () => {
-        pending.delete(requestId);
-        context.abortSignal?.removeEventListener("abort", abort);
-        reject(new Error("Desktop service request cancelled"));
-        try {
-          options.send({ type: "cancel", requestId });
-        } catch (error) {
-          fail(error);
-        }
-      };
-      pending.set(requestId, {
-        resolve,
-        reject,
-        cleanup: () => context.abortSignal?.removeEventListener("abort", abort),
+  const wire = channel(options);
+  const host = createHost({ name: "desktop-browser", kind: "client", onError: wire.fail });
+  const handles = new Set<{ release(): void }>();
+  const scoped: Pick<Host, "get" | "root"> = {
+    get(type, input, options) {
+      controller.signal.throwIfAborted();
+      const handle = host.get(type, input, options);
+      handles.add(handle);
+      return handle;
+    },
+    root(fn, options) {
+      return host.root(fn, {
+        ...options,
+        signal: options?.signal
+          ? AbortSignal.any([controller.signal, options.signal])
+          : controller.signal,
       });
-      context.abortSignal?.addEventListener("abort", abort, { once: true });
-      try {
-        options.send(copyWireMessage({ type: "request", requestId, call }));
-      } catch (error) {
-        fail(error);
-      }
-    });
-  }
-
-  function deliver(subscription: ClientSubscription, update: WireServiceProviderUpdate): void {
-    subscription.listener(subscription.decoder.decodeUpdate(update), BACKGROUND_CONTEXT);
-  }
-
-  const transport: RemoteServiceTransport = {
-    invoke: request,
-    async subscribe(serviceId, mode, listener, context) {
-      const subscriptionId = `subscription-${++nextId}`;
-      const subscription: ClientSubscription = {
-        decoder: createServiceStateDecoder(),
-        buffered: [],
-        listener,
-        active: false,
-      };
-      subscriptions.set(subscriptionId, subscription);
-      try {
-        const value = await request(
-          createServiceSubscribeCall(subscriptionId, serviceId, mode),
-          context,
-        );
-        let snapshot;
-        try {
-          snapshot = subscription.decoder.decodeSnapshot(
-            parseWireServiceSubscriptionSnapshot(value),
-          );
-          if (snapshot.serviceId !== serviceId || snapshot.mode !== mode)
-            throw new TypeError("Unexpected service subscription snapshot");
-        } catch (error) {
-          fail(error);
-          throw error;
-        }
-        let disposed = false;
-        return {
-          snapshot,
-          activate() {
-            if (disposed || closed || subscription.active) return;
-            subscription.active = true;
-            try {
-              for (const update of subscription.buffered.splice(0)) deliver(subscription, update);
-            } catch (error) {
-              fail(error);
-              throw error;
-            }
-          },
-          async close(closeContext = BACKGROUND_CONTEXT) {
-            if (disposed) return;
-            disposed = true;
-            subscriptions.delete(subscriptionId);
-            if (!closed) await request(createServiceUnsubscribeCall(subscriptionId), closeContext);
-          },
-        };
-      } catch (error) {
-        subscriptions.delete(subscriptionId);
-        if (!closed)
-          request(createServiceUnsubscribeCall(subscriptionId), BACKGROUND_CONTEXT).catch(() => {});
-        // A malformed snapshot/codec cannot be safely resumed on this connection.
-        if (error instanceof TypeError) fail(error);
-        throw error;
-      }
     },
   };
-
-  const services: RemoteServiceSource = {
-    acceptsUnavailableServices: false,
-    async catalogue(context) {
-      const value = await request(createServiceCatalogueCall(), context);
-      try {
-        return parseServiceCatalogue(value);
-      } catch (error) {
-        fail(error);
-        throw error;
-      }
-    },
-    open(bindingOptions) {
-      if (closed) throw new Error("Desktop view connection is closed");
-      const binding = createRemoteServiceBinding({
-        ...bindingOptions,
-        transport,
-        assertAccess() {
-          if (closed) throw new Error("Desktop view connection is closed");
-          bindingOptions.assertAccess();
-        },
-      });
-      bindings.add(binding);
-      return {
-        use: (service) => binding.use(service),
-        observe: (service, handler) => binding.observe(service, handler),
-        ready: (context) => binding.ready(context),
-        async dispose(context) {
-          bindings.delete(binding);
-          await binding.dispose(context);
-        },
-      };
-    },
-  };
-
+  wire.link.onClose((reason) => {
+    controller.abort(new Error(reason));
+    for (const handle of handles) handle.release();
+    handles.clear();
+    void host.close().catch(wire.fail);
+  });
+  host.connect(wire.link);
   return {
-    services,
+    host: scoped,
     signal: controller.signal,
-    close,
+    close(reason) {
+      wire.link.close(reason);
+    },
     receive(input) {
-      if (closed) return;
+      if (wire.link.closed) return;
       try {
-        const message = copyWireMessage(input);
-        if (message.type === "closed") {
-          close(message.reason, false);
-          return;
-        }
-        if (message.type === "result") {
-          const entry = pending.get(message.requestId);
-          if (!entry) return; // A cancelled request may already have completed remotely.
-          pending.delete(message.requestId);
-          entry.cleanup();
-          if (message.ok) entry.resolve(message.value);
-          else
-            entry.reject(
-              isRemoteServiceErrorCode(message.error.code)
-                ? new RemoteServiceError(message.error.code, message.error.message)
-                : new Error(message.error.message),
-            );
-          return;
-        }
-        if (message.type !== "update") throw new TypeError("Expected a Chord response or update");
-        const subscription = subscriptions.get(message.subscriptionId);
-        if (!subscription) return; // An unsubscribe can race an already queued update.
-        if (subscription.active) deliver(subscription, message.update);
-        else {
-          if (subscription.buffered.length >= MAX_BUFFERED_UPDATES)
-            throw new Error("Too many pending service updates");
-          subscription.buffered.push(message.update);
-        }
+        wire.deliver(parseMessage(input));
       } catch (error) {
-        fail(error);
+        wire.fail(error);
       }
     },
   };
 }
-
-/** Strict JSON validation precedes cloning, so serialization never silently drops values. */
-function copyWireMessage(value: unknown): ChordWireMessage {
-  strictJson(value);
+function parseMessage(value: unknown): ChordWireMessage {
+  if (!isJsonValue(value)) throw new TypeError("Desktop service messages must contain strict JSON");
   const encoded = JSON.stringify(value);
   if (encoded.length > MAX_MESSAGE_LENGTH)
     throw new TypeError("Desktop service message exceeds size limit");
-  const copy: unknown = JSON.parse(encoded);
-  if (!isRecord(copy)) throw new TypeError("Invalid desktop service envelope");
-  switch (copy.type) {
-    case "request":
-      assertKeys(copy, ["type", "requestId", "call"]);
-      return { type: "request", requestId: id(copy.requestId), call: parseServiceCall(copy.call) };
-    case "result":
-      if (copy.ok === true) {
-        assertKeys(copy, ["type", "requestId", "ok"], ["value"]);
-        return {
-          type: "result",
-          requestId: id(copy.requestId),
-          ok: true,
-          ...(Object.hasOwn(copy, "value") ? { value: strictJson(copy.value) } : {}),
-        };
-      }
-      assertKeys(copy, ["type", "requestId", "ok", "error"]);
-      if (copy.ok !== false || !isRecord(copy.error))
-        throw new TypeError("Invalid desktop service error");
-      assertKeys(copy.error, ["message"], ["code"]);
-      if (
-        typeof copy.error.message !== "string" ||
-        (copy.error.code !== undefined && typeof copy.error.code !== "string")
-      )
-        throw new TypeError("Invalid desktop service error");
-      return {
-        type: "result",
-        requestId: id(copy.requestId),
-        ok: false,
-        error: {
-          message: copy.error.message,
-          ...(typeof copy.error.code === "string" ? { code: copy.error.code } : {}),
-        },
-      };
-    case "update":
-      assertKeys(copy, ["type", "subscriptionId", "update"]);
-      return {
-        type: "update",
-        subscriptionId: id(copy.subscriptionId),
-        update: parseWireServiceProviderUpdate(copy.update),
-      };
-    case "cancel":
-      assertKeys(copy, ["type", "requestId"]);
-      return { type: "cancel", requestId: id(copy.requestId) };
-    case "closed":
-      assertKeys(copy, ["type", "reason"]);
-      if (typeof copy.reason !== "string")
-        throw new TypeError("Invalid desktop service close reason");
-      return { type: "closed", reason: copy.reason };
-    default:
-      throw new TypeError("Unknown desktop service envelope");
-  }
+  if (!isRecord(value) || Object.keys(value).length !== 1 || !("chord2" in value))
+    throw new TypeError("Invalid desktop service envelope");
+  return JSON.parse(encoded) as ChordWireMessage;
 }
-
-function strictJson(value: unknown): JsonValue {
-  if (!isJsonValue(value)) throw new TypeError("Desktop service messages must contain strict JSON");
-  return value;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, JsonValue> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function id(value: unknown): string {
-  if (typeof value !== "string" || value.length === 0 || value.length > 128)
-    throw new TypeError("Invalid desktop service request ID");
-  return value;
-}
-
-function assertKeys(
-  value: Record<string, unknown>,
-  required: string[],
-  optional: string[] = [],
-): void {
-  const allowed = new Set([...required, ...optional]);
-  if (
-    required.some((key) => !Object.hasOwn(value, key)) ||
-    Object.keys(value).some((key) => !allowed.has(key))
-  ) {
-    throw new TypeError("Unexpected desktop service envelope fields");
-  }
-}
-
-function asError(value: unknown): Error {
-  return value instanceof Error ? value : new Error(String(value));
 }

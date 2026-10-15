@@ -1,5 +1,4 @@
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { cell, defineFacet, listener } from "@earendil-works/chord";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerDesktopView } from "@pi-gui/extension-ui";
@@ -137,23 +136,41 @@ export default function githubExtension(pi: ExtensionAPI): void {
     source: import.meta.url,
     frontend: new URL("./dist/desktop.js", import.meta.url),
     backend: () =>
-      defineFacet({
-        id: "pi-gui.example.github.backend",
-        setup(env) {
-          const state = env.replicatedState(snapshot);
-          const listener = (next: GitHubState) => state.replace(BACKGROUND_CONTEXT, next);
-          listeners.add(listener);
-          env.own(() => {
-            listeners.delete(listener);
-          });
-          env.provide(GitHub, {
-            state,
-            async refresh(_request, context) {
-              context.abortSignal?.throwIfAborted();
-              await refresh();
-            },
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          GitHub,
+          (_input, _principal, self) => {
+            const { state: viewState } = self.state({
+              state: cell(GitHub.def.variants.default.state.state, snapshot),
+            });
+            self.listen({
+              updates: listener(
+                {
+                  subscribe(callback: (next: GitHubState) => void) {
+                    return (
+                      listeners.add(callback),
+                      () => {
+                        listeners.delete(callback);
+                      }
+                    );
+                  },
+                },
+                (next, context) => viewState.replace(context, next),
+              ),
+            });
+
+            return {
+              kind: "default",
+              state: viewState,
+              async refresh(_request, context) {
+                context.signal.throwIfAborted();
+                await refresh();
+                return null;
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   });
 }

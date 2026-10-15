@@ -1,4 +1,3 @@
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import { PRReview, staleReason, type ReviewState } from "./contract";
 
@@ -25,16 +24,7 @@ export async function mount(
   let hydrated = false;
   let messageIsError = false;
   let message = "";
-  const binding = host.services.open({
-    services: [PRReview],
-    assertAccess: () => host.signal.throwIfAborted(),
-    onError: (error) => {
-      message = error.message;
-      messageIsError = true;
-      queueMicrotask(render);
-    },
-  });
-  const service = binding.use(PRReview);
+  const service = host.host.get(PRReview, {}, { at: "desktop-extension" });
   const element = <K extends keyof HTMLElementTagNameMap>(tag: K, content = "", className = "") => {
     const node = doc.createElement(tag);
     node.textContent = content;
@@ -106,7 +96,7 @@ export async function mount(
     actions.append(
       button(
         state.refreshing ? "Refreshing…" : "Refresh PR",
-        () => service.refresh({}, BACKGROUND_CONTEXT),
+        () => service.refresh({}),
         state.refreshing,
       ),
     );
@@ -117,7 +107,7 @@ export async function mount(
           : pending
             ? "Pi is reviewing…"
             : "Review with Pi",
-        () => service.request({ requestId: crypto.randomUUID() }, BACKGROUND_CONTEXT),
+        () => service.request({ requestId: crypto.randomUUID() }),
         !target || pending || target.localHead !== target.head || state.refreshing,
         "primary",
       ),
@@ -170,10 +160,10 @@ export async function mount(
           button(
             "Prepare fix task",
             async () => {
-              const draft = await service.prepareFix(
-                { reviewId: review.id, findingId: finding.id },
-                BACKGROUND_CONTEXT,
-              );
+              const draft = await service.prepareFix({
+                reviewId: review.id,
+                findingId: finding.id,
+              });
               host.signal.throwIfAborted();
               await host.actions.prepareTaskDraft(draft);
               message = "Fix task prepared. Review the draft before sending it.";
@@ -192,23 +182,23 @@ export async function mount(
   };
   host.signal.addEventListener("abort", abort, { once: true });
   try {
-    await binding.ready(BACKGROUND_CONTEXT);
+    await service.ready;
     host.signal.throwIfAborted();
     hydrated = true;
     unsubscribe = service.state.subscribe(() => render());
     render();
   } catch (error) {
     unsubscribe();
-    await binding.dispose(BACKGROUND_CONTEXT);
+    service.release();
     root.replaceChildren();
     throw error;
   }
-  act(() => service.refresh({}, BACKGROUND_CONTEXT));
+  act(() => service.refresh({}));
   return async () => {
     active = false;
     unsubscribe();
     host.signal.removeEventListener("abort", abort);
-    await binding.dispose(BACKGROUND_CONTEXT);
+    service.release();
     style.remove();
     view.remove();
   };

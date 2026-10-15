@@ -1,4 +1,5 @@
-import { defineService, type ReplicatedState } from "@earendil-works/chord";
+import { method, remote } from "@earendil-works/chord";
+import { Type } from "typebox";
 
 /** How a span ended; `null` while it is still open. */
 export type Outcome = "ok" | "error" | "aborted";
@@ -76,8 +77,92 @@ export interface TraceState {
   runs: Run[];
 }
 
-export interface TraceService {
-  state: ReplicatedState<TraceState>;
-}
+const OutcomeSchema = Type.Union([
+  Type.Literal("ok"),
+  Type.Literal("error"),
+  Type.Literal("aborted"),
+]);
 
-export const Trace = defineService<TraceService>("pi-gui.example.trace.v1");
+const SpanBaseSchema = Type.Object({
+  id: Type.String(),
+  parentId: Type.Union([Type.String(), Type.Null()]),
+  startedAt: Type.Number(),
+  endedAt: Type.Union([Type.Number(), Type.Null()]),
+  outcome: Type.Union([OutcomeSchema, Type.Null()]),
+});
+
+const TurnSpanSchema = Type.Intersect([
+  SpanBaseSchema,
+  Type.Object({ kind: Type.Literal("turn"), number: Type.Number() }),
+]);
+
+const CallUsageSchema = Type.Object({
+  input: Type.Number(),
+  output: Type.Number(),
+  cacheRead: Type.Number(),
+  cacheWrite: Type.Number(),
+});
+
+const ModelSpanSchema = Type.Intersect([
+  SpanBaseSchema,
+  Type.Object({
+    kind: Type.Literal("model"),
+    model: Type.String(),
+    firstResponseAt: Type.Union([Type.Number(), Type.Null()]),
+    contextWindow: Type.Union([Type.Number(), Type.Null()]),
+    usage: Type.Union([CallUsageSchema, Type.Null()]),
+    stopReason: Type.Union([Type.String(), Type.Null()]),
+    error: Type.Union([Type.String(), Type.Null()]),
+  }),
+]);
+
+const ToolSpanSchema = Type.Intersect([
+  SpanBaseSchema,
+  Type.Object({
+    kind: Type.Literal("tool"),
+    toolCallId: Type.String(),
+    tool: Type.String(),
+    summary: Type.String(),
+    args: Type.String(),
+    result: Type.Union([Type.String(), Type.Null()]),
+  }),
+]);
+
+const CompactionSpanSchema = Type.Intersect([
+  SpanBaseSchema,
+  Type.Object({
+    kind: Type.Literal("compaction"),
+    reason: Type.Union([
+      Type.Literal("manual"),
+      Type.Literal("threshold"),
+      Type.Literal("overflow"),
+    ]),
+    error: Type.Union([Type.String(), Type.Null()]),
+  }),
+]);
+
+const SpanSchema = Type.Union([
+  TurnSpanSchema,
+  ModelSpanSchema,
+  ToolSpanSchema,
+  CompactionSpanSchema,
+]);
+
+const RunSchema = Type.Object({
+  id: Type.String(),
+  kind: Type.Union([Type.Literal("reply"), Type.Literal("compaction")]),
+  number: Type.Number(),
+  startedAt: Type.Number(),
+  endedAt: Type.Union([Type.Number(), Type.Null()]),
+  outcome: Type.Union([OutcomeSchema, Type.Null()]),
+  spans: Type.Array(SpanSchema),
+  dropped: Type.Number(),
+});
+
+const TraceStateSchema = Type.Object({ runs: Type.Array(RunSchema) });
+
+export const Trace = remote("pi-gui.example.trace.v1", {
+  version: 1,
+  input: Type.Object({}),
+  variants: { default: { state: { state: TraceStateSchema }, methods: {} } },
+});

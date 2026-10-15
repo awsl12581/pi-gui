@@ -1,5 +1,4 @@
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { cell, defineFacet, listener } from "@earendil-works/chord";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { registerDesktopView } from "@pi-gui/extension-ui";
 import { Trace, type TraceState } from "./contract.ts";
@@ -108,21 +107,37 @@ export default function traceExtension(pi: ExtensionAPI): void {
     source: import.meta.url,
     frontend: new URL("./dist/desktop.js", import.meta.url),
     backend: () =>
-      defineFacet({
-        id: "pi-gui.example.trace.backend",
-        setup(env) {
-          const replicated = env.replicatedState(recorder.snapshot());
-          const listener = (next: TraceState) => replicated.replace(BACKGROUND_CONTEXT, next);
-          listeners.add(listener);
-          env.own(() => {
-            listeners.delete(listener);
-            if (listeners.size === 0 && pending) {
-              clearTimeout(pending);
-              pending = null;
-            }
-          });
-          env.provide(Trace, { state: replicated });
-        },
+      defineFacet((api) => {
+        api.serve(
+          Trace,
+          (_input, _principal, self) => {
+            const { state: viewState } = self.state({
+              state: cell(Trace.def.variants.default.state.state, recorder.snapshot()),
+            });
+            self.listen({
+              updates: listener(
+                {
+                  subscribe(callback: (next: TraceState) => void) {
+                    return (
+                      listeners.add(callback),
+                      () => {
+                        listeners.delete(callback);
+                        if (listeners.size === 0 && pending) {
+                          clearTimeout(pending);
+                          pending = null;
+                        }
+                      }
+                    );
+                  },
+                },
+                (next, context) => viewState.replace(context, next),
+              ),
+            });
+
+            return { kind: "default", state: viewState };
+          },
+          { eager: true },
+        );
       }),
   });
 }

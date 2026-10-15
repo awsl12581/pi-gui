@@ -1,10 +1,12 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-15 11:37 CST
-> 文档版本：v4
-> 修改说明：移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。
+> 最后修改时间：2026-10-15 12:05 CST
+> 文档版本：v5
+> 修改说明：记录桌面扩展协议迁移到 Chord 1.2 的当前边界。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
+
+The Pi runtime and desktop extension adapter use Pi 1.2 and Chord 1.2. Extension facets register TypeBox remote contracts with `api.serve`; browser views acquire them through the scoped client host, subscribe to state, and release handles during cleanup. The transport uses Chord's frame, call, cancellation, and state protocols inside the existing opaque-origin frame boundary.
 
 The review/capture and custom extension-view additions are **implemented and verified within the documented macOS scope** as of September 22, 2026. The [final verification report](workspace-redesign-verification.md) separates baseline checks, Core Electron, real-provider workflows, external local-package loading and local packaged-app proof from the older [workspace foundation evidence](workspace-redesign-plan.md). It does not claim Windows/Linux validation or a notarized/published release.
 
@@ -176,3 +178,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。 |
 | v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。           |
 | v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。     |
+| v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。          |

@@ -1,5 +1,4 @@
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { cell, defineFacet, listener } from "@earendil-works/chord";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerDesktopView } from "@pi-gui/extension-ui";
 import { collectUsage, reduceThread, type CurrentThread } from "./collect.ts";
@@ -197,23 +196,41 @@ export default function usageExtension(pi: ExtensionAPI): void {
     source: import.meta.url,
     frontend: new URL("./dist/desktop.js", import.meta.url),
     backend: () =>
-      defineFacet({
-        id: "pi-gui.example.usage.backend",
-        setup(env) {
-          const replicated = env.replicatedState(state);
-          const listener = (next: UsageState) => replicated.replace(BACKGROUND_CONTEXT, next);
-          listeners.add(listener);
-          env.own(() => {
-            listeners.delete(listener);
-          });
-          env.provide(Usage, {
-            state: replicated,
-            async refresh(_request, callContext) {
-              callContext.abortSignal?.throwIfAborted();
-              await refresh();
-            },
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          Usage,
+          (_input, _principal, self) => {
+            const { state: viewState } = self.state({
+              state: cell(Usage.def.variants.default.state.state, state),
+            });
+            self.listen({
+              updates: listener(
+                {
+                  subscribe(callback: (next: UsageState) => void) {
+                    return (
+                      listeners.add(callback),
+                      () => {
+                        listeners.delete(callback);
+                      }
+                    );
+                  },
+                },
+                (next, context) => viewState.replace(context, next),
+              ),
+            });
+
+            return {
+              kind: "default",
+              state: viewState,
+              async refresh(_request, callContext) {
+                callContext.signal.throwIfAborted();
+                await refresh();
+                return null;
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   });
 }

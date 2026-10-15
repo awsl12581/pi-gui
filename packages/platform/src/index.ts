@@ -9,6 +9,8 @@ export {
 } from "./files.js";
 export type { AtomicWriteResult, CapabilitySupport, DirectoryCapabilities } from "./files.js";
 export { findExecutable, runProcess, resolveShell, runShellCommand } from "./process.js";
+export { GITHUB_CLI_VERSION, bundledGitHubCliPath, resolveGitHubCli } from "./github-cli.js";
+export type { GitHubCli, GitHubCliOptions } from "./github-cli.js";
 export type {
   ExecutableSearchOptions,
   ProcessOptions,

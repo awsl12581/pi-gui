@@ -1,5 +1,4 @@
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { cell, defineFacet, listener } from "@earendil-works/chord";
 import { Type } from "@earendil-works/pi-ai";
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { registerDesktopView } from "@pi-gui/extension-ui";
@@ -114,7 +113,11 @@ export default function prReview(pi: ExtensionAPI) {
   pi.on("before_agent_start", (event, context) => {
     ctx = context;
     const review = snapshot.review;
-    if (review?.status !== "requested" || !event.prompt.includes(`[pr-review:${review.id}]`))
+    if (
+      event.messageType !== "user" ||
+      review?.status !== "requested" ||
+      !event.prompt.includes(`[pr-review:${review.id}]`)
+    )
       return;
     outcome = "completed";
     restoreTools = pi.getActiveTools();
@@ -220,33 +223,51 @@ export default function prReview(pi: ExtensionAPI) {
     source: import.meta.url,
     frontend: new URL("./dist/desktop.js", import.meta.url),
     backend: () =>
-      defineFacet({
-        id: "pi-gui.examples.pr-review.backend",
-        setup(env) {
-          const state = env.replicatedState(snapshot);
-          const listener = (next: ReviewState) => state.replace(BACKGROUND_CONTEXT, next);
-          listeners.add(listener);
-          env.own(() => {
-            listeners.delete(listener);
-          });
-          env.provide(PRReview, {
-            state,
-            async refresh() {
-              await refresh();
-            },
-            async request(input) {
-              return request(input.requestId);
-            },
-            async prepareFix(input) {
-              if (!snapshot.review || snapshot.review.id !== input.reviewId)
-                throw new Error("This review is no longer selected.");
-              const target = await refresh();
-              if (!snapshot.review || snapshot.review.id !== input.reviewId)
-                throw new Error("The review changed while its PR was being refreshed.");
-              return prepareFix(snapshot.review, target ?? null, input.findingId);
-            },
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          PRReview,
+          (_input, _principal, self) => {
+            const { state: viewState } = self.state({
+              state: cell(PRReview.def.variants.default.state.state, snapshot),
+            });
+            self.listen({
+              updates: listener(
+                {
+                  subscribe(callback: (next: ReviewState) => void) {
+                    return (
+                      listeners.add(callback),
+                      () => {
+                        listeners.delete(callback);
+                      }
+                    );
+                  },
+                },
+                (next, context) => viewState.replace(context, next),
+              ),
+            });
+
+            return {
+              kind: "default",
+              state: viewState,
+              async refresh() {
+                await refresh();
+                return null;
+              },
+              async request(input) {
+                return request(input.requestId);
+              },
+              async prepareFix(input) {
+                if (!snapshot.review || snapshot.review.id !== input.reviewId)
+                  throw new Error("This review is no longer selected.");
+                const target = await refresh();
+                if (!snapshot.review || snapshot.review.id !== input.reviewId)
+                  throw new Error("The review changed while its PR was being refreshed.");
+                return prepareFix(snapshot.review, target ?? null, input.findingId);
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   });
 }

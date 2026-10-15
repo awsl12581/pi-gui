@@ -7,8 +7,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { createFacetHost, type FacetHost } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { createHost, type Host } from "@earendil-works/chord";
 import {
   createAgentSession,
   createEventBus,
@@ -66,7 +65,7 @@ await test(
     const probeConnection = once(probe, "connection") as Promise<[Socket]>;
     process.env.PI_TEST_RUNS_EXIT_PROBE = probePath;
     let session: AgentSession | undefined;
-    let host: FacetHost | undefined;
+    let host: Host | undefined;
     try {
       await loader.reload();
       assert.deepEqual(loader.getExtensions().errors, []);
@@ -87,12 +86,11 @@ await test(
         resourceLoader: loader,
       }));
       await session.bindExtensions({});
-      host = await createFacetHost({ facets: [declarations[0]!.backend()] });
-      const service = host.services.use(TestRuns);
-      const { runId } = await service.start(
-        { suiteId: "slow", requestId: "host-disposal" },
-        BACKGROUND_CONTEXT,
-      );
+      host = createHost({ name: "desktop-extension", principalKey: () => "view" });
+      await host.load([{ name: "fixture", ...declarations[0]!.backend() }]);
+      const service = host.get(TestRuns, {});
+      await service.ready;
+      const { runId } = await service.start({ suiteId: "slow", requestId: "host-disposal" });
       const deadline = Date.now() + 5_000;
       let pid: number | undefined;
       while (!pid) {
@@ -112,7 +110,7 @@ await test(
       process.kill(pid, 0);
       const [slowProcess] = await probeConnection;
       const slowProcessExited = new Promise((resolve) => slowProcess.once("close", resolve));
-      await host.dispose();
+      await host.close();
       const records = manager
         .getBranch()
         .filter((entry) => entry.type === "custom" && entry.customType === ENTRY_TYPE);
@@ -133,7 +131,7 @@ await test(
       );
       // The terminal fallback can still run later; repeated teardown adds no result.
       await session.extensionRunner.emit({ type: "session_shutdown", reason: "quit" });
-      await host.dispose();
+      await host.close();
       assert.equal(
         manager
           .getBranch()
@@ -141,7 +139,7 @@ await test(
         2,
       );
     } finally {
-      await host?.dispose();
+      await host?.close();
       session?.dispose();
       loader.getExtensions().runtime.invalidate();
       bus.clear();

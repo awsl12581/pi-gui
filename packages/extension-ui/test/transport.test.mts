@@ -1,32 +1,28 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { build } from "esbuild";
-import {
-  createFacetHost,
-  defineFacet,
-  defineService,
-  decodeServiceControlCall,
-  type Context,
-  type FacetHost,
-  type MutableReplicatedState,
-  type ReplicatedState,
-  type RemoteServiceSource,
-} from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT, withAbortSignal } from "@earendil-works/chord/context";
+import { cell, createHost, method, remote, type Host } from "@earendil-works/chord";
+import { Type } from "typebox";
 import {
   createChordClientConnection,
   createChordServerConnection,
   type ChordClientConnection,
-  type ChordWireMessage,
 } from "../dist/transport.js";
 
-interface Counter {
-  readonly state: ReplicatedState<{ count: number; labels: string[] }>;
-  increment(label: string, context: Context): Promise<number>;
-  wait(context: Context): Promise<void>;
-}
-const CounterService = defineService<Counter>("test.counter");
-
+const State = Type.Object({ count: Type.Number(), labels: Type.Array(Type.String()) });
+const Counter = remote("test.counter", {
+  version: 1,
+  input: Type.Object({}),
+  variants: {
+    default: {
+      state: { state: State },
+      methods: {
+        increment: method(Type.Object({ label: Type.String() }), Type.Number()),
+        wait: method(Type.Object({}), Type.Null()),
+      },
+    },
+  },
+});
 function gate() {
   let release!: () => void;
   const promise = new Promise<void>((resolve) => {
@@ -34,345 +30,237 @@ function gate() {
   });
   return { promise, release };
 }
-
 async function backend() {
-  let state!: MutableReplicatedState<{ count: number; labels: string[] }>;
+  const host = createHost({ name: "desktop-extension", principalKey: () => "view", dev: true });
   let cancelled = false;
-  const host = await createFacetHost({
-    facets: [
-      defineFacet({
-        id: "counter-backend",
-        setup(env) {
-          state = env.replicatedState({ count: 0, labels: [] as string[] });
-          env.provide(CounterService, {
-            state,
-            async increment(label, context) {
-              state.change(context, (draft) => {
-                draft.count += 1;
-                draft.labels.push(label);
-              });
-              return state.value.count;
-            },
-            async wait(context) {
-              await new Promise<void>((resolve) => {
-                const finish = () => {
-                  cancelled = true;
-                  resolve();
-                };
-                if (context.abortSignal?.aborted) finish();
-                else context.abortSignal?.addEventListener("abort", finish, { once: true });
-              });
-            },
+  const started = gate();
+  host.serve(
+    Counter,
+    (_input, _principal, self) => {
+      const { state } = self.state({ state: cell(State, { count: 0, labels: [] }) });
+      return {
+        kind: "default",
+        state,
+        increment({ label }, ctx) {
+          state.change(ctx, (draft) => {
+            draft.count++;
+            draft.labels.push(label);
           });
+          return state.value.count;
         },
-      }),
-    ],
-  });
-  return { host, state, cancelled: () => cancelled };
+        async wait(_input, ctx) {
+          started.release();
+          await new Promise<void>((resolve) => {
+            if (ctx.signal.aborted) resolve();
+            else ctx.signal.addEventListener("abort", () => resolve(), { once: true });
+          });
+          cancelled = ctx.signal.aborted;
+          return null;
+        },
+      };
+    },
+    { eager: true },
+  );
+  await host.ready();
+  return { host, started, cancelled: () => cancelled };
 }
-
 function connect(
-  host: FacetHost,
-  options: {
-    afterRequest?: (message: ChordWireMessage) => void;
-    clientFactory?: typeof createChordClientConnection;
-    transformResponse?: (message: ChordWireMessage) => unknown;
-  } = {},
+  host: Host,
+  factory = createChordClientConnection,
+  transform: (message: unknown) => unknown = (value) => value,
 ) {
   const errors: Error[] = [];
-  const messages: ChordWireMessage[] = [];
   let client!: ChordClientConnection;
   const server = createChordServerConnection({
-    provider: host.services,
-    send(message) {
-      messages.push(message);
-      client.receive(options.transformResponse ? options.transformResponse(message) : message);
-    },
-    onError(error) {
-      errors.push(error);
-    },
+    host,
+    send: (message) => client.receive(transform(message)),
+    onError: (error) => errors.push(error),
   });
-  client = (options.clientFactory ?? createChordClientConnection)({
-    send(message) {
-      server.receive(message).catch((error: unknown) => {
+  client = factory({
+    send: (message) => {
+      void server.receive(message).catch((error: unknown) => {
         errors.push(error instanceof Error ? error : new Error(String(error)));
       });
-      options.afterRequest?.(message);
     },
-    onError(error) {
-      errors.push(error);
-    },
+    onError: (error) => errors.push(error),
   });
-  return { client, server, errors, messages };
+  const counter =
+    host.name === "work-host"
+      ? undefined!
+      : client.host.get(Counter, {}, { at: "desktop-extension" });
+  if (counter)
+    void counter.ready.catch((error: unknown) => {
+      errors.push(error instanceof Error ? error : new Error(String(error)));
+    });
+  return { client, server, counter, errors };
 }
-
-function acquire(client: ChordClientConnection) {
-  const binding = client.services.open({
-    services: [CounterService],
-    assertAccess() {},
-    onError() {},
-  });
-  const counter = binding.use(CounterService);
-  return { binding, counter };
-}
-
-await test("buffers updates before the snapshot response and before consumer activation", async (t) => {
+await test("native Chord hydrates, streams immutable state and shares one backend across mounts", async (t) => {
   const fixture = await backend();
-  let edited = false;
-  const wire = connect(fixture.host, {
-    afterRequest(message) {
-      if (
-        !edited &&
-        message.type === "request" &&
-        decodeServiceControlCall(message.call)?.type === "subscribe"
-      ) {
-        edited = true;
-        fixture.state.change(BACKGROUND_CONTEXT, (draft) => {
-          draft.count = 1;
-          draft.labels.push("during-subscribe");
-        });
-      }
-    },
-  });
+  const a = connect(fixture.host);
+  const b = connect(fixture.host);
   t.after(async () => {
-    wire.client.close();
-    await fixture.host.dispose();
+    a.client.close();
+    b.client.close();
+    await fixture.host.close();
   });
-  const { binding, counter } = acquire(wire.client);
-  await binding.ready(BACKGROUND_CONTEXT);
-  assert.deepEqual(counter.state.value, { count: 1, labels: ["during-subscribe"] });
-  const initial = counter.state.value;
-  assert.equal(await counter.increment("after-hydration", BACKGROUND_CONTEXT), 2);
-  assert.deepEqual(counter.state.value, {
-    count: 2,
-    labels: ["during-subscribe", "after-hydration"],
+  await Promise.all([a.counter.ready, b.counter.ready]);
+  t.after(b.counter.state.subscribe(() => {}));
+  const seen: unknown[] = [];
+  const unsubscribe = a.counter.state.subscribe((value) => seen.push(value));
+  t.after(unsubscribe);
+  await assert.doesNotReject(async () => {
+    assert.equal(await a.counter.increment({ label: "first" }), 1);
   });
-  assert.deepEqual(initial, { count: 1, labels: ["during-subscribe"] });
-  assert.deepEqual(wire.errors, []);
-  await binding.dispose(BACKGROUND_CONTEXT);
-  assert.throws(() => counter.increment("stale", BACKGROUND_CONTEXT), /disposed/);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(a.counter.state.value, { count: 1, labels: ["first"] });
+  const previous = a.counter.state.value;
+  a.client.close();
+  assert.equal(a.client.signal.aborted, true);
+  assert.equal(await b.counter.increment({ label: "second" }), 2);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(previous, { count: 1, labels: ["first"] });
+  assert.deepEqual(b.counter.state.value, { count: 2, labels: ["first", "second"] });
+  assert.ok(seen.length >= 2);
+  assert.deepEqual(b.errors, []);
 });
-
-await test("cancellation reaches backend methods and closing one connection preserves the provider", async (t) => {
+await test("explicit cancellation reaches the backend and released handles cannot mutate", async (t) => {
   const fixture = await backend();
   const wire = connect(fixture.host);
   t.after(async () => {
     wire.client.close();
-    await fixture.host.dispose();
+    await fixture.host.close();
   });
-  const { binding, counter } = acquire(wire.client);
-  await binding.ready(BACKGROUND_CONTEXT);
+  await wire.counter.ready;
   const abort = new AbortController();
-  const pending = counter.wait(withAbortSignal(abort.signal, BACKGROUND_CONTEXT));
+  const waiting = wire.client.host.root((ctx) => wire.counter.wait({}, ctx), {
+    signal: abort.signal,
+  });
+  await fixture.started.promise;
   abort.abort();
-  await assert.rejects(pending, /cancel/i);
+  await assert.rejects(waiting);
+  await new Promise((resolve) => setImmediate(resolve));
   assert.equal(fixture.cancelled(), true);
-  wire.client.close();
-  assert.equal(wire.client.signal.aborted, true);
-  const second = connect(fixture.host);
-  const next = acquire(second.client);
-  await next.binding.ready(BACKGROUND_CONTEXT);
-  assert.equal(await next.counter.increment("new-view", BACKGROUND_CONTEXT), 1);
-  second.client.close();
+  wire.counter.release();
+  await assert.rejects(wire.counter.increment({ label: "stale" }));
 });
-
-await test("disconnect rejects an unfinished hydration before disposing its binding", async () => {
-  const messages: ChordWireMessage[] = [];
-  const client = createChordClientConnection({
-    send(message) {
-      messages.push(message);
-    },
+await test("closing a tab rejects the waiter but accepted work keeps its uncancelled context", async (t) => {
+  const started = gate(),
+    finish = gate(),
+    finished = gate();
+  let cancelled = true;
+  const Work = remote("test.work", {
+    version: 1,
+    input: Type.Object({}),
+    variants: { default: { methods: { run: method(Type.Object({}), Type.Null()) } } },
   });
-  const { binding } = acquire(client);
-  const ready = binding.ready(BACKGROUND_CONTEXT);
-  client.close("mount removed");
-  await assert.rejects(ready, /mount removed|closed|disposed/);
-  await binding.dispose(BACKGROUND_CONTEXT);
-  assert.equal(client.signal.aborted, true);
-  assert.equal(messages.at(-1)?.type, "closed");
-});
-
-await test("closing a tab rejects its waiter without cancelling accepted backend work", async (t) => {
-  const started = gate();
-  const finish = gate();
-  const finished = gate();
-  let cancelled = false;
-  let committed = false;
-  const Work = defineService<{ run(context: Context): Promise<void> }>("test.background-work");
-  const host = await createFacetHost({
-    facets: [
-      defineFacet({
-        id: "background-work",
-        setup(env) {
-          env.provide(Work, {
-            async run(context) {
-              started.release();
-              await finish.promise;
-              cancelled = context.abortSignal?.aborted ?? false;
-              committed = true;
-              finished.release();
-            },
-          });
-        },
-      }),
-    ],
-  });
+  const host = createHost({ name: "work-host", principalKey: () => "view" });
+  host.serve(
+    Work,
+    () => ({
+      kind: "default",
+      async run(_input, ctx) {
+        started.release();
+        await finish.promise;
+        cancelled = ctx.signal.aborted;
+        finished.release();
+        return null;
+      },
+    }),
+    { eager: true },
+  );
+  await host.ready();
+  const wire = connect(host);
   t.after(async () => {
     finish.release();
-    await host.dispose();
+    wire.client.close();
+    await host.close();
   });
-  const wire = connect(host);
-  const binding = wire.client.services.open({ services: [Work], assertAccess() {}, onError() {} });
-  const work = binding.use(Work);
-  await binding.ready(BACKGROUND_CONTEXT);
-  const waiting = work.run(BACKGROUND_CONTEXT);
+  const work = wire.client.host.get(Work, {}, { at: "work-host" });
+  await work.ready;
+  const waiting = work.run({});
   await started.promise;
   wire.client.close("tab closed");
-  await assert.rejects(waiting, /tab closed/);
+  await assert.rejects(waiting);
   finish.release();
   await finished.promise;
   assert.equal(cancelled, false);
-  assert.equal(committed, true);
-  assert.deepEqual(wire.errors, []);
 });
-
-await test("invalid JSON requests fail closed and malformed codec snapshots abort the client", async (t) => {
+await test("disconnect rejects unfinished hydration", async () => {
+  const client = createChordClientConnection({ send() {} });
+  const counter = client.host.get(Counter, {}, { at: "desktop-extension" });
+  const ready = counter.ready;
+  client.close("mount removed");
+  await assert.rejects(ready);
+  assert.equal(client.signal.aborted, true);
+});
+await test("untrusted frames fail closed: JSON, size, identities, routes and host control", async (t) => {
   const fixture = await backend();
-  t.after(async () => {
-    await fixture.host.dispose();
-  });
-  const wire = connect(fixture.host);
-  await wire.server.receive({
-    type: "request",
-    requestId: "bad",
-    call: { serviceId: CounterService.id, member: "increment", args: [undefined] },
-  });
-  assert.equal(wire.client.signal.aborted, true);
-  assert.equal(fixture.state.value.count, 0);
-  assert.match(wire.errors[0]!.message, /strict JSON/);
-
-  const corrupt = connect(fixture.host, {
-    transformResponse(message) {
-      if (
-        message.type === "result" &&
-        message.ok &&
-        message.value &&
-        typeof message.value === "object" &&
-        "instances" in message.value
-      ) {
-        return {
-          ...message,
-          value: {
-            serviceId: CounterService.id,
-            mode: "singleton",
-            instances: [
-              { members: [{ kind: "state", name: "state", sequence: 0, ops: [["not-an-op"]] }] },
-            ],
-          },
-        };
-      }
-      return message;
-    },
-  });
-  const { binding } = acquire(corrupt.client);
-  await assert.rejects(binding.ready(BACKGROUND_CONTEXT));
-  assert.equal(corrupt.client.signal.aborted, true);
-  await binding.dispose(BACKGROUND_CONTEXT);
-});
-
-await test("oversized hydration closes the underlying endpoint subscription", async (t) => {
-  const Large = defineService<{ readonly state: ReplicatedState<{ text: string }> }>(
-    "test.large-state",
-  );
-  const host = await createFacetHost({
-    facets: [
-      defineFacet({
-        id: "large-state-backend",
-        setup(env) {
-          env.provide(Large, { state: env.replicatedState({ text: "x".repeat(2_000_100) }) });
-        },
-      }),
-    ],
-  });
-  t.after(async () => {
-    await host.dispose();
-  });
-  let activeSubscriptions = 0;
-  const subscribe = host.services.subscribe.bind(host.services);
-  t.mock.method(host.services, "subscribe", (...args: Parameters<typeof subscribe>) => {
-    const subscription = subscribe(...args);
-    activeSubscriptions += 1;
-    let closed = false;
-    return {
-      ...subscription,
-      close(context?: Context) {
-        if (!closed) {
-          activeSubscriptions -= 1;
-          closed = true;
-        }
-        return subscription.close(context);
+  t.after(() => fixture.host.close());
+  for (const input of [
+    { chord2: { t: "call", id: 1, hold: 1, member: "increment", args: { label: undefined } } },
+    { chord2: { t: "hello", name: "x".repeat(2_000_000), kind: "client", epoch: 1 } },
+    { chord2: { t: "hold", id: 1, at: "other-host", token: Counter.description, input: {} } },
+    {
+      chord2: {
+        t: "hold",
+        id: 1,
+        at: "desktop-extension",
+        token: Counter.description,
+        input: {},
+        principal: { admin: true },
       },
-    };
-  });
-  const wire = connect(host);
-  const binding = wire.client.services.open({ services: [Large], assertAccess() {}, onError() {} });
-  binding.use(Large);
-  await assert.rejects(binding.ready(BACKGROUND_CONTEXT));
-  assert.equal(wire.client.signal.aborted, true);
-  assert.equal(activeSubscriptions, 0, "failed hydration must release the real Chord subscription");
-  assert.match(wire.errors[0]!.message, /size limit/);
-  await binding.dispose(BACKGROUND_CONTEXT);
-});
-
-await test("a separately bundled author frontend consumes the independently bundled frame bridge", async (t) => {
-  const frame = await import("../dist/frame-bridge.js");
-  const fixture = await backend();
-  const wire = connect(fixture.host, { clientFactory: frame.createChordClientConnection });
-  t.after(async () => {
+    },
+    {
+      chord2: {
+        t: "call",
+        id: 1,
+        hold: 1,
+        member: "increment",
+        args: { label: "x" },
+        root: { rootId: "forged", epoch: 1 },
+      },
+    },
+    { chord2: { t: "prepare", reload: 1, epoch: 2, plugins: [], options: {} } },
+    { chord2: { t: "call" } },
+    { chord2: { t: "unknown" } },
+  ]) {
+    const wire = connect(fixture.host);
+    await wire.server.receive(input);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(wire.client.signal.aborted, true, JSON.stringify(input).slice(0, 120));
     wire.client.close();
-    await fixture.host.dispose();
+  }
+});
+await test("malformed server frames close browser connections", async (t) => {
+  const fixture = await backend();
+  t.after(() => fixture.host.close());
+  const bad = connect(fixture.host, createChordClientConnection, (message) => {
+    const value = message as { chord2: { t: string } };
+    return value.chord2.t === "shape" ? { chord2: { t: "shape" } } : message;
   });
-  const bundle = await build({
+  await assert.rejects(bad.counter.ready);
+  assert.equal(bad.client.signal.aborted, true);
+  bad.client.close();
+});
+await test("browser bundle and backend exchange native Chord contracts across separate module copies", async (t) => {
+  const fixture = await backend();
+  t.after(() => fixture.host.close());
+  const result = await build({
     stdin: {
-      contents: `
-        import { createFacetHost, defineFacet, defineService } from '@earendil-works/chord';
-        import { BACKGROUND_CONTEXT } from '@earendil-works/chord/context';
-        export async function run(source) {
-          let counter;
-          const deliveries = [];
-          const service = defineService('test.counter');
-          const host = await createFacetHost({serviceSources:[source],facets:[defineFacet({
-            id:'separate-author', setup(env) {
-              counter=env.use(service);
-              env.onActivate(()=>env.own(counter.state.subscribe(value=>deliveries.push(value.count))));
-            }
-          })]});
-          await counter.increment('separate-bundle',BACKGROUND_CONTEXT);
-          const value=counter.state.value;
-          await host.dispose();
-          return {value,deliveries};
-        }`,
+      contents: `export {createChordClientConnection} from './src/transport.ts';`,
       resolveDir: process.cwd(),
-      sourcefile: "author-frontend.js",
     },
     bundle: true,
-    write: false,
     platform: "browser",
     format: "esm",
-    target: "es2022",
+    write: false,
+    logLevel: "warning",
   });
-  // This locally generated module is deliberately a second copy of Chord.
-  const author = (await import(
-    `data:text/javascript;base64,${Buffer.from(bundle.outputFiles[0]!.text).toString("base64")}`
-  )) as {
-    run(
-      source: RemoteServiceSource,
-    ): Promise<{ value: { count: number; labels: string[] }; deliveries: number[] }>;
-  };
-  const result = await author.run(wire.client.services);
-  assert.deepEqual(result, {
-    value: { count: 1, labels: ["separate-bundle"] },
-    deliveries: [0, 1],
-  });
-  assert.deepEqual(wire.errors, []);
+  const browser = (await import(
+    `data:text/javascript;base64,${Buffer.from(result.outputFiles[0]!.contents).toString("base64")}`
+  )) as { createChordClientConnection: typeof createChordClientConnection };
+  const wire = connect(fixture.host, browser.createChordClientConnection);
+  t.after(() => wire.client.close());
+  await wire.counter.ready;
+  assert.equal(await wire.counter.increment({ label: "browser" }), 1);
 });

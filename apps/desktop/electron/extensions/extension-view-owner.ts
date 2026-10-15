@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { createFacetHost, type FacetHost } from "@earendil-works/chord";
+import { createHost, type Host } from "@earendil-works/chord";
 import type { DesktopViewDeclaration } from "@pi-gui/extension-ui";
 import type { DesktopHostAction } from "@pi-gui/extension-ui/browser";
 import { createChordServerConnection } from "@pi-gui/extension-ui/transport";
@@ -74,7 +74,7 @@ interface ViewEntry {
   readonly source: DesktopExtensionSourceIdentity;
   readonly assets?: ValidatedDesktopExtensionSource;
   readonly info: DesktopExtensionViewInfo;
-  readonly host?: FacetHost;
+  readonly host?: Host;
 }
 
 interface ConnectionEntry {
@@ -152,7 +152,7 @@ export class DesktopExtensionViewOwner {
       runtime.views.delete(registeredKey);
       this.closeViewConnections(runtime, view, "Extension view was removed");
       if (view.host)
-        view.host.dispose().catch((error: unknown) => {
+        view.host.close().catch((error: unknown) => {
           this.options.onDiagnostic?.(runtime.target, view.source.sourcePath, messageOf(error));
         });
     }
@@ -208,7 +208,7 @@ export class DesktopExtensionViewOwner {
       viewId: input.viewId,
     };
     const transport = createChordServerConnection({
-      provider: view.host.services,
+      host: view.host,
       send: (message) => {
         if (!this.connections.has(connectionId)) return;
         try {
@@ -385,23 +385,34 @@ export class DesktopExtensionViewOwner {
       reserved = true;
       const assets = await validateDesktopExtensionFrontend(source, declaration.frontend);
       if (!runtime.alive || !runtime.desired.has(declaration)) return;
-      const activation = createFacetHost({
-        facets: [declaration.backend()],
-        onError: (error) =>
-          this.options.onDiagnostic?.(runtime.target, declaration.source, messageOf(error)),
-      });
+      const activation = (async () => {
+        const host = createHost({
+          name: "desktop-extension",
+          principalKey: () => "view",
+          dev: true,
+          onError: (error) =>
+            this.options.onDiagnostic?.(runtime.target, declaration.source, messageOf(error)),
+        });
+        try {
+          await host.load([{ name: declaration.id, ...declaration.backend() }]);
+          return host;
+        } catch (error) {
+          await host.close();
+          throw error;
+        }
+      })();
       let expired = false;
       let timer: ReturnType<typeof setTimeout> | undefined;
       // Chord activation is cooperative. A late result still owns resources and must be disposed.
       void activation
         .then((host) => {
-          if (expired) return host.dispose();
+          if (expired) return host.close();
         })
         .catch((error: unknown) => {
           if (expired)
             this.options.onDiagnostic?.(runtime.target, declaration.source, messageOf(error));
         });
-      let host: FacetHost;
+      let host: Host;
       try {
         host = await Promise.race([
           activation,
@@ -419,7 +430,7 @@ export class DesktopExtensionViewOwner {
         if (timer) clearTimeout(timer);
       }
       if (!runtime.alive || !runtime.desired.has(declaration)) {
-        await host.dispose();
+        await host.close();
         return;
       }
       runtime.views.set(key, {
@@ -501,7 +512,7 @@ export class DesktopExtensionViewOwner {
     await Promise.allSettled(runtime.pending.values());
     const hosts = [...runtime.views.values()].flatMap(({ host }) => (host ? [host] : []));
     runtime.views.clear();
-    const results = await Promise.allSettled(hosts.map((host) => host.dispose()));
+    const results = await Promise.allSettled(hosts.map((host) => host.close()));
     for (const result of results) {
       if (result.status === "rejected")
         this.options.onDiagnostic?.(runtime.target, "desktop-view", messageOf(result.reason));

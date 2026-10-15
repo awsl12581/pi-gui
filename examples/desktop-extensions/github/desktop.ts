@@ -1,4 +1,3 @@
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import {
   GH_INSTALL_URL,
@@ -152,19 +151,11 @@ export async function mount(
   const drafts = new Map<string, { pending: boolean; message: string; tone: "ok" | "error" }>();
   let active = true;
 
-  const binding = host.services.open({
-    services: [GitHub],
-    assertAccess: () => host.signal.throwIfAborted(),
-    onError: (error) => {
-      actionError = error.message;
-      queueMicrotask(render);
-    },
-  });
-  const service = binding.use(GitHub);
+  const service = host.host.get(GitHub, {}, { at: "desktop-extension" });
 
   const refresh = () => {
     actionError = "";
-    service.refresh({}, BACKGROUND_CONTEXT).catch((error: unknown) => {
+    service.refresh({}).catch((error: unknown) => {
       actionError = error instanceof Error ? error.message : String(error);
       render();
     });
@@ -602,11 +593,12 @@ export async function mount(
   host.signal.addEventListener("abort", abort, { once: true });
   render();
   try {
-    await binding.ready(BACKGROUND_CONTEXT);
+    await service.ready;
     host.signal.throwIfAborted();
     hydrated = true;
     if (service.state.value) state = service.state.value;
     unsubscribe = service.state.subscribe((next) => {
+      if (!next) return;
       state = next;
       render();
     });
@@ -614,7 +606,7 @@ export async function mount(
   } catch (error) {
     abort();
     unsubscribe();
-    await binding.dispose(BACKGROUND_CONTEXT);
+    service.release();
     root.replaceChildren();
     throw error;
   }
@@ -630,7 +622,7 @@ export async function mount(
     abort();
     unsubscribe();
     host.signal.removeEventListener("abort", abort);
-    await binding.dispose(BACKGROUND_CONTEXT);
+    service.release();
     root.replaceChildren();
   };
 }

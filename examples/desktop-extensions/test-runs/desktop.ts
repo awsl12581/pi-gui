@@ -1,4 +1,3 @@
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
 import type { DesktopViewContext } from "@pi-gui/extension-ui/browser";
 import { isActive, outcomeLabel, TestRuns, type TestRunsState } from "./contract.ts";
 
@@ -130,14 +129,9 @@ export async function mount(root: HTMLElement, host: DesktopViewContext): Promis
     actionError = reason instanceof Error ? reason.message : String(reason);
     render();
   };
-  const binding = host.services.open({
-    services: [TestRuns],
-    assertAccess: () => host.signal.throwIfAborted(),
-    onError: showError,
-  });
-  const service = binding.use(TestRuns);
+  const service = host.host.get(TestRuns, {}, { at: "desktop-extension" });
   let unsubscribe = () => {};
-  const perform = async (action: () => Promise<void>) => {
+  const perform = async (action: () => Promise<unknown>) => {
     if (pending || disposed) return;
     pending = true;
     actionError = "";
@@ -157,30 +151,30 @@ export async function mount(root: HTMLElement, host: DesktopViewContext): Promis
       .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
     perform(async () => {
-      const result = await service.start({ suiteId, requestId }, BACKGROUND_CONTEXT);
+      const result = await service.start({ suiteId, requestId });
       selected = result.runId;
     }).catch(showError);
   };
   stop.onclick = () => {
     const active = state.runs.find(isActive);
-    if (active)
-      perform(() => service.cancel({ runId: active.id }, BACKGROUND_CONTEXT)).catch(showError);
+    if (active) perform(() => service.cancel({ runId: active.id })).catch(showError);
   };
   const dispose = () => {
     if (disposed) return;
     disposed = true;
     unsubscribe();
     host.signal.removeEventListener("abort", dispose);
-    binding.dispose(BACKGROUND_CONTEXT).catch(showError);
+    service.release();
     root.replaceChildren();
   };
   host.signal.addEventListener("abort", dispose, { once: true });
   render();
   try {
-    await binding.ready(BACKGROUND_CONTEXT);
+    await service.ready;
     host.signal.throwIfAborted();
     unsubscribe = service.state.subscribe((next) => {
       const lastId = state.runs.at(-1)?.id;
+      if (!next) return;
       state = next;
       if (next.runs.at(-1)?.id !== lastId) selected = next.runs.at(-1)?.id ?? null;
       render();

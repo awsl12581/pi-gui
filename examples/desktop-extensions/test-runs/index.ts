@@ -1,7 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { createHash, randomUUID } from "node:crypto";
-import { defineFacet } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { cell, defineFacet, listener, resource } from "@earendil-works/chord";
 import { Type } from "@earendil-works/pi-ai";
 import {
   createLocalBashOperations,
@@ -124,27 +123,43 @@ export default function testRunsExtension(pi: ExtensionAPI): void {
     source: import.meta.url,
     frontend: new URL("./dist/desktop.js", import.meta.url),
     backend: () =>
-      defineFacet({
-        id: "pi-gui.example.test-runs.backend",
-        setup(env) {
-          const state = env.replicatedState(owner.snapshot());
-          env.own(owner.subscribe((next) => state.replace(BACKGROUND_CONTEXT, next)));
-          // The backend host outlives tabs, but must stop processes when the
-          // extension is removed or the desktop quits without Pi shutdown.
-          env.own(() => owner.suspend());
-          env.provide(TestRuns, {
-            state,
-            async start(request, context) {
-              context.abortSignal?.throwIfAborted();
-              // The accepted run belongs to the Pi session, not this browser call.
-              return startFromDesktop(request);
-            },
-            async cancel(request, context) {
-              context.abortSignal?.throwIfAborted();
-              await owner.cancel(request);
-            },
-          });
-        },
+      defineFacet((api) => {
+        api.serve(
+          TestRuns,
+          (_input, _principal, self) => {
+            const { state: viewState } = self.state({
+              state: cell(TestRuns.def.variants.default.state.state, owner.snapshot()),
+            });
+            self.listen({
+              updates: listener(
+                {
+                  subscribe(callback: (next: ReturnType<typeof owner.snapshot>) => void) {
+                    return owner.subscribe(callback);
+                  },
+                },
+                (next, context) => viewState.replace(context, next),
+              ),
+            });
+            self.resources({
+              process: resource({ rev: 1, open: () => null, close: () => owner.suspend() }),
+            });
+            return {
+              kind: "default",
+              state: viewState,
+              async start(request, context) {
+                context.signal.throwIfAborted();
+                // The accepted run belongs to the Pi session, not this browser call.
+                return startFromDesktop(request);
+              },
+              async cancel(request, context) {
+                context.signal.throwIfAborted();
+                await owner.cancel(request);
+                return null;
+              },
+            };
+          },
+          { eager: true },
+        );
       }),
   });
 

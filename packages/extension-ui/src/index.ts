@@ -1,4 +1,4 @@
-import type { Facet } from "@earendil-works/chord";
+import type { FacetDefinition } from "@earendil-works/chord";
 
 export const DESKTOP_VIEW_REGISTER = "pi-gui:desktop-view:register";
 export const DESKTOP_VIEW_DISCOVER = "pi-gui:desktop-view:discover";
@@ -10,7 +10,7 @@ export interface DesktopViewDeclaration {
   readonly title: string;
   readonly source: string;
   readonly frontend: string | URL;
-  readonly backend: () => Facet;
+  readonly backend: () => FacetDefinition;
 }
 
 export interface DesktopViewRegistrationEvent {

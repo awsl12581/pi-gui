@@ -6,8 +6,8 @@ import { join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
-import { createFacetHost, defineService } from "@earendil-works/chord";
-import { BACKGROUND_CONTEXT } from "@earendil-works/chord/context";
+import { createHost } from "@earendil-works/chord";
+import { createJiti } from "jiti";
 import {
   createAgentSession,
   createEventBus,
@@ -130,9 +130,12 @@ test(
           if (error.event === "send_user_message") rejectPreflight(error);
         },
       });
-      facetHost = await createFacetHost({ facets: [declarations[0].backend()] });
-      const service = facetHost.services.use(defineService("pi-gui.examples.pr-review.v1"));
-      const result = await service.request({ requestId: "offline-admission" }, BACKGROUND_CONTEXT);
+      facetHost = createHost({ name: "desktop-extension", principalKey: () => "view" });
+      await facetHost.load([{ name: "review", ...declarations[0].backend() }]);
+      const { PRReview } = await createJiti(import.meta.url).import("./contract.ts");
+      const service = facetHost.get(PRReview, {});
+      await service.ready;
+      const result = await service.request({ requestId: "offline-admission" });
       assert.deepEqual(result, { reviewId: "offline-admission" });
       const error = await rejected;
       assert.match(error.error, /No API key|provider/i);
@@ -150,7 +153,7 @@ test(
       assert.equal(service.state.value.review.status, "interrupted");
       assert.equal(service.state.value.review.recorded, false);
     } finally {
-      await facetHost?.dispose();
+      await facetHost?.close();
       session?.dispose();
       loader.getExtensions().runtime.invalidate();
       bus.clear();

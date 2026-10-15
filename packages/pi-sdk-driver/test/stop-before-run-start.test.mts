@@ -134,6 +134,7 @@ await test("Stop pressed while Pi is still starting a run cancels that run", asy
     }
   });
   t.after(async () => {
+    release();
     unsubscribe();
     await driver.closeSession(ref);
   });
@@ -151,9 +152,10 @@ await test("Stop pressed while Pi is still starting a run cancels that run", asy
 
   const sent = driver.sendUserMessage(ref, { text: "first" });
   await reached;
-  assert.equal(runtime.session.isStreaming, false, "Pi has not started the run yet");
-  await driver.cancelCurrentRun(ref);
+  assert.equal(runtime.session.isStreaming, true, "Pi marks startup hooks as part of the run");
+  const cancellation = driver.cancelCurrentRun(ref);
   release();
+  await cancellation;
   await sent;
   await runtime.session.waitForIdle();
 

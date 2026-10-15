@@ -1,4 +1,4 @@
-import { isJsonValue, type RemoteServiceSource } from "@earendil-works/chord";
+import { isJsonValue, type Host } from "@earendil-works/chord";
 
 export interface DesktopFileTarget {
   readonly path: string;
@@ -19,7 +19,7 @@ export type DesktopHostAction =
   | { readonly type: "openThread"; readonly sessionId: string };
 
 export interface DesktopViewContext {
-  readonly services: RemoteServiceSource;
+  readonly host: Pick<Host, "get" | "root">;
   /** Aborted when this mount loses its connection, including reload and task closure. */
   readonly signal: AbortSignal;
   readonly theme: {
