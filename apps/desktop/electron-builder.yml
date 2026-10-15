@@ -87,6 +87,9 @@ deb:
 
 win:
   executableName: pi-gui
+  extraResources:
+    - from: resources/gh
+      to: gh
   # Keep icon/version metadata editing; signing is optional without credentials.
   signAndEditExecutable: true
   target:
