@@ -11,8 +11,7 @@ function fixture(host, extra = {}) {
     "apps/desktop/tsconfig.json": JSON.stringify({
       compilerOptions: {
         moduleResolution: "Bundler",
-        baseUrl: ".",
-        paths: { "@renderer/*": ["src/*"] },
+        paths: { "@renderer/*": ["./src/*"] },
       },
     }),
     "apps/desktop/electron/main.ts": host,

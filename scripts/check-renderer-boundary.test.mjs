@@ -13,8 +13,7 @@ function fixture(source, extra = {}) {
       compilerOptions: {
         module: "ESNext",
         moduleResolution: "Bundler",
-        baseUrl: ".",
-        paths: { "@main/*": ["electron/*"], "@shared/*": ["../../packages/shared/*"] },
+        paths: { "@main/*": ["./electron/*"], "@shared/*": ["../../packages/shared/*"] },
       },
       include: ["src"],
     }),

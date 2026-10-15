@@ -1,0 +1,6 @@
+{
+  "extends": "../tsconfig.lint.json",
+  "compilerOptions": {
+    "types": ["node"]
+  }
+}

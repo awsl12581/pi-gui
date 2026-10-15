@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@pi-gui/pi-sdk-driver": ["../../packages/pi-sdk-driver/src/index.ts"],
       "@pi-gui/pi-sdk-driver/custom-provider-types": [
