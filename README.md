@@ -1,8 +1,8 @@
 # pi-gui
 
-> 最后修改时间：2026-10-15 10:44 CST
-> 文档版本：v2
-> 修改说明：移除已删除的视频工程目录说明。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v3
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
 The desktop app for the [pi](https://github.com/earendil-works/pi) coding agent.
 
@@ -203,7 +203,7 @@ platform, and how the product media is recorded.
 - `packages/session-driver`: shared session driver types.
 - `packages/catalogs`: workspace and session catalog state.
 - `packages/extension-ui`: helpers for building desktop extension views.
-- `examples/desktop-extensions`: example extensions with their own workbench tabs.
+- `extensions`: first-party plugins maintained by pi-gui, with their own workbench tabs.
 - `docs`: architecture, CI and design notes.
 - `.agents/skills`: checked-in agent skills, including desktop verification.
 
@@ -231,7 +231,8 @@ and the [pi](https://github.com/earendil-works/pi) runtime and ecosystem.
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                              |
-| ---- | -------------------- | --------------------------------------------------------------------- |
-| v1   | 2026-10-14 21:20 CST | 明确支持 Node 24–26、CI Node 24，并说明 Electron 代理下载与安装准备。 |
-| v2   | 2026-10-15 10:44 CST | 移除已删除的视频工程目录说明。                                        |
+| 版本 | 修改时间             | 修改内容                                                                 |
+| ---- | -------------------- | ------------------------------------------------------------------------ |
+| v1   | 2026-10-14 21:20 CST | 明确支持 Node 24–26、CI Node 24，并说明 Electron 代理下载与安装准备。    |
+| v2   | 2026-10-15 10:44 CST | 移除已删除的视频工程目录说明。                                           |
+| v3   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |

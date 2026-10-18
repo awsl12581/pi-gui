@@ -16,9 +16,9 @@ import {
   seedAgentDir,
 } from "../helpers/electron-app";
 import { expectExtensionViewReady } from "../helpers/desktop-extension-fixture";
-import { desktopExtensionExamplesDirectory as examples } from "../helpers/desktop-extension-examples";
+import { firstPartyExtensionsDirectory as extensions } from "../helpers/first-party-extensions";
 
-const example = join(examples, "github");
+const example = join(extensions, "github");
 const piGuiResponses = join(example, "test", "fixtures", "pi-gui.json");
 
 /** A PATH whose `gh` answers from the pi-gui fixture and logs every call. */

@@ -5,8 +5,8 @@ import { expect, test } from "@playwright/test";
 import { getRealAuthConfig, launchDesktop, makeWorkspace } from "../helpers/electron-app";
 import {
   createExamplePrFixture,
-  desktopExtensionExamplesDirectory,
-} from "../helpers/desktop-extension-examples";
+  firstPartyExtensionsDirectory,
+} from "../helpers/first-party-extensions";
 
 test("a real provider records PR findings through the installed extension and prepares an unsent fix", async ({}, testInfo) => {
   test.setTimeout(240_000);
@@ -39,7 +39,7 @@ test("a real provider records PR findings through the installed extension and pr
       defaultModel: model,
       defaultThinkingLevel: "low",
       enabledModels: [`${provider}/${model}`],
-      extensions: [join(desktopExtensionExamplesDirectory, "pr-review/index.ts")],
+      extensions: [join(firstPartyExtensionsDirectory, "pr-review/index.ts")],
       packages: [],
       cacheWarming: "off",
       compaction: { enabled: false },

@@ -33,7 +33,7 @@
 
 - [架构与归属](../architecture.md)：已记录 Pi/Chord 1.2、当前存储格式、独立 Review scope 和 checkpoint 维护；九月验证另有明确时间范围。
 - [GitHub CLI runtime](../guides/github-cli-runtime.md)：与当前 Windows 资源版本、resolver 及尚未迁移生产调用者的情况一致。
-- [examples 删除影响评估](../reports/examples-removal-assessment.md)：五套示例、根脚本和专属 Electron 测试仍存在；文档是删除影响分析，不代表删除已经实施。
+- [examples 删除影响评估](examples-removal-assessment.md)：五套示例、根脚本和专属 Electron 测试仍存在；文档是删除影响分析，不代表删除已经实施。
 - [Pi 包与扩展架构讨论](../reports/pi-packages-and-extension-architecture.md)：已同步 1.2，现状与提案有区分，并明确旧 Chord 文档的验证限制。未重新访问上游，外部包维护状态不在本次核验结论内。
 - [CI 合并门禁](../merge-enforcement.md)：四分片、五个聚合依赖及 fail-closed 机制与当前 workflow 一致。线上规则是否已激活未查询，不能判定激活状态已过时或已完成。
 

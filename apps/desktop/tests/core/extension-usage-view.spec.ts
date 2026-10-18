@@ -11,19 +11,19 @@ import {
   writeProjectExtension,
 } from "../helpers/electron-app";
 import { expectExtensionViewReady } from "../helpers/desktop-extension-fixture";
-import { desktopExtensionExamplesDirectory as examples } from "../helpers/desktop-extension-examples";
+import { firstPartyExtensionsDirectory as extensions } from "../helpers/first-party-extensions";
 import {
   formatCost,
   formatPercent,
   formatTokens,
   periodStart,
-} from "../../../../examples/desktop-extensions/usage/model";
+} from "../../../../extensions/usage/model";
 import {
   DEMO_THREADS,
   seedUsageSessions,
   type SeededCounts,
   type SeededUsageThread,
-} from "../../../../examples/desktop-extensions/usage/test/seed-sessions";
+} from "../../../../extensions/usage/test/seed-sessions";
 
 async function openUsage(window: Page): Promise<FrameLocator> {
   const workbench = window.getByTestId("workbench");
@@ -74,7 +74,7 @@ async function launchUsageDemo(options: { folderName?: string } = {}) {
     join(agentDir, "settings.json"),
     JSON.stringify({
       packages: [],
-      extensions: [join(examples, "usage", "index.ts")],
+      extensions: [join(extensions, "usage", "index.ts")],
       cacheWarming: "off",
       compaction: { enabled: false },
     }),
@@ -285,7 +285,7 @@ test("the Usage example adds a card after each reply with its time, cost and con
       defaultModel: MODEL_ID,
       enabledModels: [`${PROVIDER_ID}/${MODEL_ID}`],
       packages: [],
-      extensions: [join(examples, "usage", "index.ts")],
+      extensions: [join(extensions, "usage", "index.ts")],
       cacheWarming: "off",
       compaction: { enabled: false },
     }),
@@ -365,7 +365,7 @@ test("the Usage example writes one card for a reply pi retried", async () => {
       defaultModel: MODEL_ID,
       enabledModels: [`${PROVIDER_ID}/${MODEL_ID}`],
       packages: [],
-      extensions: [join(examples, "usage", "index.ts")],
+      extensions: [join(extensions, "usage", "index.ts")],
       cacheWarming: "off",
       compaction: { enabled: false },
       retry: { enabled: true, maxRetries: 2, baseDelayMs: 10 },

@@ -1,8 +1,8 @@
 # Pi 包使用情况与 GUI 插件架构讨论
 
-> 最后修改时间：2026-10-18 20:18 CST
-> 文档版本：v3
-> 修改说明：将旧版 Chord 验证引用指向归档记录，补充当前设计入口。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v4
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
 本文用于讨论。标为“现状”的内容来自当前代码；标为“提案”的内容尚未实现。Pi 与 Chord 已升级到 1.2，桌面视图协议同步迁移。
 
@@ -85,7 +85,7 @@ Electron main 校验声明和资源，为对应 task/view/runtime generation 管
 
 当前 Extensions 页面用于查看、启停、刷新 Pi 扩展并检查诊断。扩展按 Pi 原有资源配置加载；该页面不是独立的桌面插件市场。
 
-已注册视图从侧面板的 Add tab (+) → Extension views 打开。前端调整后可以 Reload view；后端调整使用空闲会话的 `/reload`。仓库的 PR Review、Test Runs、GitHub、Usage、Trace 示例展示了这条接入方式，但示例存在不等于它们已被默认启用。
+已注册视图从侧面板的 Add tab (+) → Extension views 打开。前端调整后可以 Reload view；后端调整使用空闲会话的 `/reload`。仓库在 extensions/ 维护 PR Review、Test Runs、GitHub、Usage、Trace 五套第一方插件。它们当前通过 Pi 配置显式加载；打包内置属于后续规划，尚未自动包含或默认启用。
 
 `@pi-gui/extension-ui` 目前仍是私有本地 helper，尚未发布 npm。它是本项目的作者协议，不是 Pi 上游保证兼容的 API。外部作者分发前，需要解决 helper 的发布方式和构建文档，而不是另造资源扫描器。
 
@@ -151,7 +151,7 @@ Electron main 的 extension owners 负责资源校验、backend host、连接和
 | 发现与单实例后端             | [desktop-extension-bridge](../../packages/pi-sdk-driver/src/desktop-extension-bridge.ts)、[helper README](../../packages/extension-ui/README.md)                                                              |
 | 视图加载、安全和生命周期     | [architecture](../architecture.md)、[view owner](../../apps/desktop/electron/extensions/extension-view-owner.ts)、[frame bootstrap](../../apps/desktop/electron/extensions/extension-frame-document.ts)       |
 | 应用专属内置扩展             | [main](../../apps/desktop/electron/main.ts) 的 `driverOptions.builtinExtensions`、[builtin-extensions](../../packages/pi-sdk-driver/src/builtin-extensions.ts)                                                |
-| 用户操作与示例               | [示例作者说明](../../examples/desktop-extensions/README.md)、[Extensions 页面](../../apps/desktop/src/features/extensions/extensions-view.tsx)                                                                |
+| 用户操作与第一方插件         | [第一方扩展说明](../../extensions/README.md)、[Extensions 页面](../../apps/desktop/src/features/extensions/extensions-view.tsx)                                                                               |
 | 上游包目录及扩展概念         | [上游 main README](https://github.com/earendil-works/pi#packages)、[v1.0.0 README](https://github.com/earendil-works/pi/blob/v1.0.0/README.md)、当前安装包的 `docs/extensions.md`                             |
 
 本次上游快照与文档检查记录位于 `records/20261015-113454-pi-extension-review/`；升级证据位于 `records/20261015-115500-pi-1.2-upgrade/`。旧版 [Chord 探测记录](../archive/chord-feasibility.md) 和 [Workspace 验证](../archive/workspace-redesign-verification.md) 已归档，记录的是 0.87 系列及当时的 macOS 范围，不能视为当前 1.2 的验证结果；[当前 Chord 设计](../chord-desktop-extension-design.md) 已同步 1.2。
@@ -160,8 +160,9 @@ Electron main 的 extension owners 负责资源校验、backend host、连接和
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                 |
-| ---- | -------------------- | -------------------------------------------------------- |
-| v1   | 2026-10-15 11:36 CST | 创建 Pi 包盘点、GUI 扩展能力边界与桌面专属插件架构讨论。 |
-| v2   | 2026-10-15 12:05 CST | 记录 Pi/Chord 1.2 升级、桌面扩展协议迁移及验证限制。     |
-| v3   | 2026-10-18 20:18 CST | 将旧版 Chord 验证引用指向归档记录，补充当前设计入口。    |
+| 版本 | 修改时间             | 修改内容                                                                 |
+| ---- | -------------------- | ------------------------------------------------------------------------ |
+| v1   | 2026-10-15 11:36 CST | 创建 Pi 包盘点、GUI 扩展能力边界与桌面专属插件架构讨论。                 |
+| v2   | 2026-10-15 12:05 CST | 记录 Pi/Chord 1.2 升级、桌面扩展协议迁移及验证限制。                     |
+| v3   | 2026-10-18 20:18 CST | 将旧版 Chord 验证引用指向归档记录，补充当前设计入口。                    |
+| v4   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |

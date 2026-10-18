@@ -24,7 +24,7 @@ export default [
   {
     ignores: [
       "**/node_modules/**",
-      "examples/desktop-extensions/*/dist/**",
+      "extensions/*/dist/**",
       // Generated output lives at repository/workspace roots, never anywhere
       // named "release" or "build" inside product source.
       ...["", "apps/*/", "packages/*/"].flatMap((root) =>
@@ -54,7 +54,7 @@ export default [
     files: [
       "apps/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "packages/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
-      "examples/desktop-extensions/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
+      "extensions/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       ".github/scripts/**/*.{js,mjs,cjs,ts,tsx,mts,cts}",
       "*.{js,mjs,cjs,ts,mts,cts}",
@@ -107,10 +107,7 @@ export default [
   ...["catalogs", "pi-sdk-driver", "session-driver", "extension-ui", "platform"].map((name) =>
     typedProject([`packages/${name}/**/*.{ts,tsx,mts,cts}`], `packages/${name}/tsconfig.lint.json`),
   ),
-  // One program for every example: a program per example ran typed lint out of memory in CI.
-  typedProject(
-    ["examples/desktop-extensions/**/*.{ts,tsx,mts,cts}"],
-    "examples/desktop-extensions/tsconfig.lint.json",
-  ),
+  // One program for all first-party extensions: a program per extension ran typed lint out of memory in CI.
+  typedProject(["extensions/**/*.{ts,tsx,mts,cts}"], "extensions/tsconfig.lint.json"),
   typedProject(["apps/website/**/*.{ts,tsx,mts,cts}"], "apps/website/tsconfig.json"),
 ];

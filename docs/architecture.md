@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-18 20:18 CST
-> 文档版本：v6
-> 修改说明：同步归档后的历史验证入口，区分当前实现与旧阶段证据。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v7
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -89,7 +89,7 @@ The [view host](../apps/desktop/electron/extensions/extension-view-owner.ts) val
 
 Runtime invalidation revokes capabilities before asynchronous cleanup. Backend activation defaults to a 10-second timeout; late activation is disposed. The frame has a 10-second ready deadline and 128-message pre-mount buffers. The transport bounds messages at 2,000,000 encoded characters and pending calls/subscriptions/updates at 256; host actions have a separate 32-pending limit. Disconnect rejects browser waits, while explicit cancellation and backend lifetime remain separate. No unknown-outcome operation is automatically replayed.
 
-The [local author workflow](../examples/desktop-extensions/README.md) covers the file-based [PR Review](../examples/desktop-extensions/pr-review/README.md) and [Test Runs](../examples/desktop-extensions/test-runs/README.md) examples. Browser edits use a checked-in build and Reload view; backend edits use an idle Pi reload. These use Pi's ordinary discovery/trust path without a second installer or marketplace; independently installed local tarballs also passed actual Pi loading. npm publication and a dedicated extension-authoring task button are not implemented. See the [extension design](chord-desktop-extension-design.md) for example limits and the [verification report](archive/workspace-redesign-verification.md) for completed proof.
+The [local author workflow](guides/first-party-extensions.md) covers the file-based [PR Review](../extensions/pr-review/README.md) and [Test Runs](../extensions/test-runs/README.md) first-party plugins. GitHub, Usage and Trace are maintained alongside them. Packaging these plugins as built-ins is planned; current releases do not automatically include or enable this directory. Browser edits use a checked-in build and Reload view; backend edits use an idle Pi reload. These use Pi's ordinary discovery/trust path without a second installer or marketplace; independently installed local tarballs also passed actual Pi loading. npm publication and a dedicated extension-authoring task button are not implemented. See the [extension design](chord-desktop-extension-design.md) for plugin limits and the [verification report](archive/workspace-redesign-verification.md) for completed proof.
 
 ## Current placement
 
@@ -172,11 +172,12 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                     |
-| ---- | -------------------- | ------------------------------------------------------------ |
-| v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。 |
-| v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。 |
-| v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。           |
-| v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。     |
-| v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。          |
-| v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。         |
+| 版本 | 修改时间             | 修改内容                                                                 |
+| ---- | -------------------- | ------------------------------------------------------------------------ |
+| v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。             |
+| v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。             |
+| v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。                       |
+| v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。                 |
+| v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。                      |
+| v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。                     |
+| v7   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |

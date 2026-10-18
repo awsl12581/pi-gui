@@ -1,8 +1,8 @@
 # Workspace redesign: implementation design
 
-> 最后修改时间：2026-10-18 20:18 CST
-> 文档版本：v2
-> 修改说明：同步 Pi/Chord 1.2、独立 Review scope 与 checkpoint 维护，归档旧阶段验证与计划。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v3
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
 The tabbed workbench, Review/capture and optional extension views are implemented. Current manifests declare Pi/Chord `^1.2.0`. This document describes current behavior; prior macOS validation and its limits are retained in the [historical report](archive/workspace-redesign-verification.md) and [foundation record](archive/workspace-foundation-verification.md).
 
@@ -37,7 +37,7 @@ The [browser-safe contract](../apps/desktop/contracts/workbench.ts) is also the 
 
 Neutral Default light/dark colors, consistent spacing, a quieter sidebar and composer, and the tab styles use the existing token system. Named themes retain their own colors. Model and reasoning controls remain visible. Existing conversation controllers and the single timeline viewport owner remain in place. Registered extension views now appear in the chooser. A saved extension tab whose registration is missing or broken remains visible with an unavailable reason and recovery/close controls.
 
-## Implemented extension example
+## First-party extension workflow
 
 A user opens **+ → PR Review**, asks Pi to review, and creates a fix task:
 
@@ -48,7 +48,7 @@ A user opens **+ → PR Review**, asks Pi to review, and creates a fix task:
 5. **Create fix task** calls a narrow host action which prepares a draft in the PR's checkout. The user sends it through the normal composer.
 6. Closing PR Review releases its presentation and subscriptions. Findings and commands remain available. A stale connection or changed task rejects presentation; results remain with the extension and are not automatically replayed.
 
-The second example, **Test Runs**, executes fixed local `node:test` suites through Pi's released bash operations, streams bounded output, and supports explicit Stop and timeout. Both are ordinary file-based extensions using the same local helper and host; neither requires a feature-specific desktop IPC route. See the [local author workflow](../examples/desktop-extensions/README.md).
+The **Test Runs** plugin executes fixed local `node:test` suites through Pi's released bash operations, streams bounded output, and supports explicit Stop and timeout. Both are ordinary file-based extensions using the same local helper and host; neither requires a feature-specific desktop IPC route. See the [local author workflow](guides/first-party-extensions.md).
 
 ```mermaid
 flowchart LR
@@ -174,7 +174,7 @@ Pi extensions can provide custom browser interfaces for their own workflows. PR 
 
 The [implemented author contract](chord-desktop-extension-design.md) uses the released Coding Agent extension API and Chord service/state primitives. `registerDesktopView` registers from the original Pi extension closure; discovery matches its canonical source against Pi's final loaded catalog. It does not load another backend or use the unimportable experimental Pi plugin entrypoint. Each validated view has one backend facet host per task runtime generation, shared by its windows/connections.
 
-The helper is private, not an npm publication or upstream Pi API. The [author README](../examples/desktop-extensions/README.md) documents local configuration, browser builds, offline checks, terminal fallback, editing and reload. In the historical 0.87 verification, both examples passed desktop workflows, and separate locally packed helper/example tarballs loaded through actual Pi outside this repository. The [verification report](archive/workspace-redesign-verification.md) distinguishes that loader proof from Electron and provider execution.
+The helper is private, not an npm publication or upstream Pi API. The [author README](guides/first-party-extensions.md) documents local configuration, browser builds, offline checks, terminal fallback, editing and reload. In the historical 0.87 verification, both examples passed desktop workflows, and separate locally packed helper/example tarballs loaded through actual Pi outside this repository. The [verification report](archive/workspace-redesign-verification.md) distinguishes that loader proof from Electron and provider execution.
 
 Pi-gui's view host owns the connection between a registered frontend and a tool tab; the extension owns its domain data, operations and rendering. Loading, ready, unavailable and failed states must be visible. Backend operations require validated inputs, explicit outcomes, bounded pending requests and no automatic replay after an unknown outcome. Use upstream identity, cancellation and replacement behavior where it applies, while retaining explicit task targeting at the desktop boundary. Do not invent parallel lifecycle or state-replication mechanisms by default.
 
@@ -211,3 +211,4 @@ The [foundation record](archive/workspace-foundation-verification.md) preserves 
 | ---- | -------------------- | ------------------------------------------------------------------------------- |
 | v1   | 2026-10-14 16:56 CST | 同步当前 Workbench、Review 和数据格式，移除旧迁移与退役工具设计说明。           |
 | v2   | 2026-10-18 20:18 CST | 同步 Pi/Chord 1.2、独立 Review scope 与 checkpoint 维护，归档旧阶段验证与计划。 |
+| v3   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。        |

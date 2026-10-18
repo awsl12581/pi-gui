@@ -10,7 +10,7 @@ import {
   writeProjectExtension,
 } from "../helpers/electron-app";
 import { expectExtensionViewReady } from "../helpers/desktop-extension-fixture";
-import { desktopExtensionExamplesDirectory as examples } from "../helpers/desktop-extension-examples";
+import { firstPartyExtensionsDirectory as extensions } from "../helpers/first-party-extensions";
 
 const PROVIDER_ID = "trace-test";
 const MODEL_ID = "scripted";
@@ -98,7 +98,7 @@ test("the Trace example shows a live waterfall of the reply's model calls and to
       defaultModel: MODEL_ID,
       enabledModels: [`${PROVIDER_ID}/${MODEL_ID}`],
       packages: [],
-      extensions: [join(examples, "trace", "index.ts")],
+      extensions: [join(extensions, "trace", "index.ts")],
       cacheWarming: "off",
       compaction: { enabled: false },
     }),

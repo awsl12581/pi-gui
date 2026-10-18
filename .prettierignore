@@ -45,5 +45,5 @@ plans/
 pnpm-lock.yaml
 main.js
 
-# Checked-in browser builds for the installable extension examples.
-/examples/desktop-extensions/*/dist/
+# Checked-in browser builds for the first-party extensions.
+/extensions/*/dist/

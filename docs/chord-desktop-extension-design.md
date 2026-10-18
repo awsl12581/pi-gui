@@ -1,10 +1,10 @@
 # Custom desktop extension views with Chord
 
-> 最后修改时间：2026-10-18 20:18 CST
-> 文档版本：v1
-> 修改说明：同步 Chord 1.2 作者契约、传输限制和导航确认，拆出旧版探测与验收证据。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v2
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
-The current implementation uses Pi Coding Agent and Chord 1.2. The private helper registers optional desktop views from the original Pi extension instance. This document describes the current code; it does not claim a fresh Electron, real-provider or packaged-app verification. See the [author workflow](../examples/desktop-extensions/README.md) for local use and the [historical report](archive/workspace-redesign-verification.md) for the September 0.87 validation scope. The helper is not published to npm.
+The current implementation uses Pi Coding Agent and Chord 1.2. The private helper registers optional desktop views from the original Pi extension instance. This document describes the current code; it does not claim a fresh Electron, real-provider or packaged-app verification. See the [author workflow](guides/first-party-extensions.md) for local use and the [historical report](archive/workspace-redesign-verification.md) for the September 0.87 validation scope. The helper is not published to npm.
 
 ## Decision
 
@@ -41,7 +41,7 @@ export function mount(root: HTMLElement, host: DesktopViewContext): () => void {
 }
 ```
 
-[`@pi-gui/extension-ui`](../packages/extension-ui/README.md) is a private workspace package. `registerDesktopView` returns `{ available, dispose }`; terminal Pi can report no desktop host while the extension's commands/tools continue to work. Availability acknowledges discovery, not successful source validation or backend activation. `DesktopViewContext` supplies `host: Pick<Host, "get" | "root">`, theme values, an abort signal and `openFile` / `prepareTaskDraft` / `openUrl` / `openThread` actions. The backend facet calls `api.serve` with a shared TypeBox `remote` contract and owns live state through `self.state` and Chord cells. The browser calls `host.host.get(Contract, input, { at: "desktop-extension" })`, awaits `ready`, subscribes to its state and releases the handle during cleanup. Bundle Chord, TypeBox and the contract module with the browser entry. The [Test Runs contract](../examples/desktop-extensions/test-runs/contract.ts), [backend](../examples/desktop-extensions/test-runs/index.ts) and [browser entry](../examples/desktop-extensions/test-runs/desktop.ts) show the complete API.
+[`@pi-gui/extension-ui`](../packages/extension-ui/README.md) is a private workspace package. `registerDesktopView` returns `{ available, dispose }`; terminal Pi can report no desktop host while the extension's commands/tools continue to work. Availability acknowledges discovery, not successful source validation or backend activation. `DesktopViewContext` supplies `host: Pick<Host, "get" | "root">`, theme values, an abort signal and `openFile` / `prepareTaskDraft` / `openUrl` / `openThread` actions. The backend facet calls `api.serve` with a shared TypeBox `remote` contract and owns live state through `self.state` and Chord cells. The browser calls `host.host.get(Contract, input, { at: "desktop-extension" })`, awaits `ready`, subscribes to its state and releases the handle during cleanup. Bundle Chord, TypeBox and the contract module with the browser entry. The [Test Runs contract](../extensions/test-runs/contract.ts), [backend](../extensions/test-runs/index.ts) and [browser entry](../extensions/test-runs/desktop.ts) show the complete API.
 
 ## Owners and flow
 
@@ -70,7 +70,7 @@ The renderer mounts an iframe with `sandbox="allow-scripts"`, an opaque origin a
 
 Authors ship prebuilt browser ES modules and local assets beneath the canonical directory of the matched Pi entrypoint. Main resolves each asset's real path, rejects traversal/symlink escapes, and serves it through `pi-extension://<connection>/assets/…`. The route checks a live connection and rechecks it after file reads. The app supplies its own bundled frame bridge from `/_host/frame-bridge.js`; there is no general filesystem endpoint. Per-connection CSP allows only those scripts/assets and local styling, denies network fetches, workers and nested frames, and repeats the sandbox policy. Network/file/tool work runs in the extension backend. Mounting never installs packages, runs builds or supplies Node-style `require`.
 
-The helper can be consumed through local workspace resolution or locally packed packages and Pi's normal extension configuration. The [author README](../examples/desktop-extensions/README.md) explains dependency placement and project trust; the host does not install or discover packages independently. The historical Electron containment checks are recorded separately; they do not sandbox the already-trusted Pi backend or prove the current version passed a new run.
+The helper can be consumed through local workspace resolution or locally packed packages and Pi's normal extension configuration. The [author README](guides/first-party-extensions.md) explains dependency placement and project trust; the host does not install or discover packages independently. The historical Electron containment checks are recorded separately; they do not sandbox the already-trusted Pi backend or prove the current version passed a new run.
 
 ## State and lifecycle
 
@@ -86,9 +86,9 @@ Pi extension reload invalidates old view connections before asynchronous cleanup
 
 The transport limits an encoded message to 2,000,000 characters, outstanding hold, call and subscription IDs to 256 per category on each server connection. Duplicate IDs in a category are rejected. Chord owns subscription delivery. The frame controller buffers at most 128 messages before opening/mounting and allows 10 seconds to become ready. Narrow host actions have a separate 32-pending limit per connection. Overflow and activation/mount failure produce explicit errors; these limits are not a promise that arbitrary authored code will finish promptly.
 
-[PR Review](../examples/desktop-extensions/pr-review/README.md) uses authenticated `gh`, existing local Git objects and the configured Pi model. It records versioned local findings in Pi session entries, checks revision/location identity, and prepares an unsent fix draft. Requested, Running, Incomplete and interrupted states are distinct because Pi's public submission API does not acknowledge provider admission. It neither posts a GitHub review nor fetches/merges a branch. Its current bounds include 20-second commands, 1 MiB output, 200 changed files and 20 findings.
+[PR Review](../extensions/pr-review/README.md) uses authenticated `gh`, existing local Git objects and the configured Pi model. It records versioned local findings in Pi session entries, checks revision/location identity, and prepares an unsent fix draft. Requested, Running, Incomplete and interrupted states are distinct because Pi's public submission API does not acknowledge provider admission. It neither posts a GitHub review nor fetches/merges a branch. Its current bounds include 20-second commands, 1 MiB output, 200 changed files and 20 findings.
 
-[Test Runs](../examples/desktop-extensions/test-runs/README.md) executes fixed demonstration `node:test` suites through Pi's bash operations. It retains the last 32 KiB of output with a truncation notice, supports Stop/timeout, and restores the current Pi branch's 20 most recent run records. These are real child processes, not the repository's full checks. The browser sends suite IDs rather than shell commands. Both examples share the same author contract and support terminal commands without a desktop host.
+[Test Runs](../extensions/test-runs/README.md) executes fixed demonstration `node:test` suites through Pi's bash operations. It retains the last 32 KiB of output with a truncation notice, supports Stop/timeout, and restores the current Pi branch's 20 most recent run records. These are real child processes, not the repository's full checks. The browser sends suite IDs rather than shell commands. Both extensions share the same author contract and support terminal commands without a desktop host.
 
 The implemented author workflow is local edit, checks, browser rebuild and explicit reload. The helper remains private; npm publication and a dedicated **Ask Pi to improve this extension** action are not part of this implementation.
 
@@ -100,6 +100,7 @@ The [Pi package review](reports/pi-packages-and-extension-architecture.md) recor
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                              |
-| ---- | -------------------- | --------------------------------------------------------------------- |
-| v1   | 2026-10-18 20:18 CST | 同步 Chord 1.2 作者契约、传输限制和导航确认，拆出旧版探测与验收证据。 |
+| 版本 | 修改时间             | 修改内容                                                                 |
+| ---- | -------------------- | ------------------------------------------------------------------------ |
+| v1   | 2026-10-18 20:18 CST | 同步 Chord 1.2 作者契约、传输限制和导航确认，拆出旧版探测与验收证据。    |
+| v2   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |

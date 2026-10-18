@@ -1,8 +1,8 @@
 # CI baseline and adoption plan
 
-> 最后修改时间：2026-10-18 20:18 CST
-> 文档版本：v3
-> 修改说明：同步五套示例及 Platform、Catalogs 和架构检查范围，收敛已有边界校验的维护要求。
+> 最后修改时间：2026-10-18 20:45 CST
+> 文档版本：v4
+> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
 
 The current design is renderer → narrow preload API → main-process app store →
 Pi SDK driver → Pi runtime. Desktop UI state and Pi session state have separate
@@ -37,13 +37,13 @@ Run `pnpm check` locally and in the existing CI typecheck job. It runs:
    direction and the timeline scroll owner.
 4. `pnpm typecheck`: builds shared declarations, then checks every workspace,
    including the website and extension helper. It also checks all five
-   desktop extension examples: PR Review, Test Runs, GitHub, Usage and Trace. First, `check:workspaces` asks pnpm for
+   first-party desktop extensions: PR Review, Test Runs, GitHub, Usage and Trace. First, `check:workspaces` asks pnpm for
    its workspace list and rejects missing or empty typecheck scripts, so a new
    workspace cannot silently skip checking. This checks script presence, not
    whether a deliberately misleading script performs a real typecheck. Existing strict TypeScript settings
    remain in place.
 5. `pnpm test:baseline`: guard tests, Platform, Catalogs, driver and extension-helper tests, all five
-   desktop extension examples and browser-bundle freshness, release-helper tests,
+   first-party desktop extensions and browser-bundle freshness, release-helper tests,
    and desktop unit tests (including failed-action state preservation).
 
 Guard tests exercise the actual lint configuration with invalid and valid input.
@@ -135,3 +135,4 @@ still need to protect the checks.
 | v1   | 2026-10-14 21:10 CST | 将应用 Node 基线改为 24，明确支持 Node 24–26。                                 |
 | v2   | 2026-10-15 10:44 CST | 移除视频工程的 lint 与类型检查范围说明。                                       |
 | v3   | 2026-10-18 20:18 CST | 同步五套示例及 Platform、Catalogs 和架构检查范围，收敛已有边界校验的维护要求。 |
+| v4   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。       |
