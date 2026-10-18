@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
@@ -56,7 +57,7 @@ export function ExtensionCardItem({
             const target = actionTarget(action);
             return (
               <li key={`action:${index}`}>
-                <button
+                <Button
                   type="button"
                   className="turn-changes__file extension-card__action"
                   data-action-type={action.type}
@@ -66,7 +67,7 @@ export function ExtensionCardItem({
                 >
                   <span className="extension-card__label">{action.label}</span>
                   <span className="extension-card__action-target">{target}</span>
-                </button>
+                </Button>
               </li>
             );
           })}

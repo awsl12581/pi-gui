@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useRef, useState } from "react";
@@ -51,19 +52,19 @@ export function TurnChangesCard({
           <LineStats lines={totals} />
         </div>
         {firstFile && onOpen ? (
-          <button
+          <Button
             type="button"
             className="turn-changes__review"
             onClick={() => onOpen(turn, firstFile.path)}
           >
             {t("Review")}
-          </button>
+          </Button>
         ) : null}
       </header>
       <ul className="turn-changes__files" ref={listRef}>
         {shown.map((file) => (
           <li key={file.path}>
-            <button
+            <Button
               type="button"
               className="turn-changes__file"
               data-file-path={file.path}
@@ -73,12 +74,12 @@ export function TurnChangesCard({
             >
               <FilePath path={file.path} />
               <FileStats file={file} />
-            </button>
+            </Button>
           </li>
         ))}
         {hidden ? (
           <li>
-            <button
+            <Button
               type="button"
               className="turn-changes__file turn-changes__more"
               onClick={() => {
@@ -92,7 +93,7 @@ export function TurnChangesCard({
               }}
             >
               {t("Show {{value0}} more", { value0: hidden })}
-            </button>
+            </Button>
           </li>
         ) : null}
       </ul>

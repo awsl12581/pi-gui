@@ -3,6 +3,7 @@ import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { NewThreadEnvironment } from "../../../contracts/desktop-state";
 import { trapDialogFocus } from "../../ui/dialog-focus";
+import { Button } from "../../components/ui/button";
 
 interface ForkModalProps {
   readonly submitting: boolean;
@@ -67,7 +68,9 @@ export function ForkModal({
             <div className="tree-modal__eyebrow">{t("Fork conversation")}</div>
             <h2 className="tree-modal__title">{t("Start a new thread")}</h2>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={t("Close fork modal")}
             className="tree-modal__close"
             disabled={submitting}
@@ -75,7 +78,7 @@ export function ForkModal({
             onClick={onClose}
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {error ? (
@@ -102,7 +105,9 @@ export function ForkModal({
             role="radiogroup"
             aria-label={t("Fork environment")}
           >
-            <button
+            <Button
+              variant={environment === "local" ? "default" : "outline"}
+              size="sm"
               aria-pressed={environment === "local"}
               className={`new-thread__environment ${environment === "local" ? "new-thread__environment--active" : ""}`}
               data-testid="fork-environment-local"
@@ -110,8 +115,10 @@ export function ForkModal({
               onClick={() => setEnvironment("local")}
             >
               <span>{t("Same worktree")}</span>
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={environment === "worktree" ? "default" : "outline"}
+              size="sm"
               aria-pressed={environment === "worktree"}
               className={`new-thread__environment ${environment === "worktree" ? "new-thread__environment--active" : ""}`}
               data-testid="fork-environment-worktree"
@@ -121,7 +128,7 @@ export function ForkModal({
               onClick={() => setEnvironment("worktree")}
             >
               <span>{t("New worktree")}</span>
-            </button>
+            </Button>
           </div>
 
           <div className="tree-modal__footer">
@@ -131,16 +138,11 @@ export function ForkModal({
                 : t("The forked thread opens in the same folder as the original.")}
             </div>
             <div className="tree-modal__actions">
-              <button
-                className="button button--secondary"
-                disabled={submitting}
-                type="button"
-                onClick={onClose}
-              >
+              <Button variant="outline" disabled={submitting} type="button" onClick={onClose}>
                 {t("Cancel")}
-              </button>
-              <button
-                className="button button--primary"
+              </Button>
+              <Button
+                variant="default"
                 data-fork-confirm="true"
                 data-testid="fork-modal-confirm"
                 disabled={submitting}
@@ -148,7 +150,7 @@ export function ForkModal({
                 onClick={() => onSubmit(environment)}
               >
                 {submitting ? t("Forking…") : t("Fork thread")}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

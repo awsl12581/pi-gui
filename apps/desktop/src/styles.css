@@ -1,3 +1,6 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/sidebar.css";
@@ -14,3 +17,24 @@
 @import "./styles/thread-switch.css";
 @import "./styles/command-palette.css";
 @import "./styles/annotations.css";
+
+@theme inline {
+  --color-background: var(--window);
+  --color-foreground: var(--text-strong);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--text-strong);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--text-strong);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--window);
+  --color-secondary: var(--surface-muted);
+  --color-secondary-foreground: var(--text-strong);
+  --color-muted: var(--surface-muted);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--accent-tint-bg);
+  --color-accent-foreground: var(--text-strong);
+  --color-destructive: var(--error);
+  --color-border: var(--line);
+  --color-input: var(--line);
+  --color-ring: var(--focus-ring-border);
+}

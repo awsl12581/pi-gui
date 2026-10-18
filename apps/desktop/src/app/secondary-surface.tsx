@@ -1,3 +1,4 @@
+import { Input } from "../components/ui/input";
 import { t } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -101,7 +102,7 @@ function SecondarySurfaceNav({
     <>
       <label className="secondary-surface__search">
         <SearchIcon />
-        <input
+        <Input
           aria-label={searchLabel}
           placeholder={t("Search")}
           spellCheck={false}

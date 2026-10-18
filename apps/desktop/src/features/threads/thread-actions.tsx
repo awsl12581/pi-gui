@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
@@ -138,7 +139,7 @@ export function ThreadActionsMenu({ actions, className }: ThreadActionsMenuProps
   return (
     <div className={`workspace-menu ${className}`} role="menu">
       {actions.map((action) => (
-        <button
+        <Button
           key={action.id}
           className="workspace-menu__item"
           data-thread-action={action.id}
@@ -155,7 +156,7 @@ export function ThreadActionsMenu({ actions, className }: ThreadActionsMenuProps
               {action.hint}
             </span>
           ) : null}
-        </button>
+        </Button>
       ))}
     </div>
   );

@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { RuntimeExtensionRecord } from "@pi-gui/session-driver/runtime-types";
@@ -101,13 +102,14 @@ function ExtensionDetail({
     <ResourceDetail
       actions={
         hasFolder ? (
-          <button
-            className="button button--secondary"
+          <Button
+            variant="outline"
+
             type="button"
             onClick={() => onOpenExtensionFolder(selected.path)}
           >
             {t("Open folder")}
-          </button>
+          </Button>
         ) : null
       }
       backLabel={t("All extensions")}

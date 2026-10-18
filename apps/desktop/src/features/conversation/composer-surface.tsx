@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -200,14 +201,14 @@ export function ComposerSurface({
               <span className="composer__slash-intent-meta">{activeSlashCommandMeta}</span>
             ) : null}
           </span>
-          <button
+          <Button
             aria-label={t("Clear {{value0}}", { value0: activeSlashCommand.title })}
             className="composer__slash-intent-clear"
             type="button"
             onClick={onClearSlashCommand}
           >
             ×
-          </button>
+          </Button>
         </div>
       ) : null}
       <QueuedComposerMessages
@@ -240,14 +241,14 @@ export function ComposerSurface({
                   <span className="composer-attachment__name">{attachment.name}</span>
                 </>
               )}
-              <button
+              <Button
                 aria-label={t("Remove {{value0}}", { value0: attachment.name })}
                 className="composer-attachment__remove"
                 type="button"
                 onClick={() => onRemoveAttachment(attachment.id)}
               >
                 ×
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -305,7 +306,7 @@ export function ComposerSurface({
                       </div>
                     ) : null}
                     {section.items.map((command) => (
-                      <button
+                      <Button
                         className={`slash-menu__item ${command.section === "runtime" ? "slash-menu__item--skill" : ""} ${selectedSlashCommand?.id === command.id ? "slash-menu__item--active" : ""}`}
                         key={command.id}
                         type="button"
@@ -345,7 +346,7 @@ export function ComposerSurface({
                             <span className="slash-menu__description">{command.description}</span>
                           </span>
                         )}
-                      </button>
+                      </Button>
                     ))}
                   </div>
                 ))}
@@ -360,7 +361,7 @@ export function ComposerSurface({
                 <div className="slash-menu__search">{selectedSlashCommand.title}</div>
                 {slashOptions.length > 0 ? (
                   slashOptions.map((option) => (
-                    <button
+                    <Button
                       className={`slash-menu__option ${selectedSlashOption?.value === option.value ? "slash-menu__option--active" : ""}`}
                       key={option.value}
                       type="button"
@@ -368,7 +369,7 @@ export function ComposerSurface({
                     >
                       <span className="slash-menu__option-title">{option.label}</span>
                       <span className="slash-menu__option-description">{option.description}</span>
-                    </button>
+                    </Button>
                   ))
                 ) : slashOptionEmptyState ? (
                   <div className="slash-menu__empty">
@@ -494,7 +495,7 @@ function MentionMenuItem({
       <div
         className={`mention-menu__item mention-menu__item--extension ${active ? "mention-menu__item--active" : ""} ${option.enabled ? "" : "mention-menu__item--disabled"}`}
       >
-        <button
+        <Button
           className="mention-menu__item-main"
           disabled={option.enabling}
           type="button"
@@ -520,9 +521,9 @@ function MentionMenuItem({
             </span>
             <span className="mention-menu__description">{option.description}</span>
           </span>
-        </button>
+        </Button>
         {option.enabled ? null : (
-          <button
+          <Button
             aria-label={t("Enable {{value0}}", { value0: option.displayName })}
             className="mention-menu__enable"
             disabled={option.enabling}
@@ -530,7 +531,7 @@ function MentionMenuItem({
             onClick={() => onEnableExtension(option)}
           >
             {option.enabling ? t("Enabling") : t("Enable")}
-          </button>
+          </Button>
         )}
       </div>
     );
@@ -540,7 +541,7 @@ function MentionMenuItem({
   const dirPart = lastSlash >= 0 ? option.filePath.slice(0, lastSlash + 1) : "";
   const namePart = lastSlash >= 0 ? option.filePath.slice(lastSlash + 1) : option.filePath;
   return (
-    <button
+    <Button
       className={`mention-menu__item ${active ? "mention-menu__item--active" : ""}`}
       type="button"
       onClick={() => onSelect(option)}
@@ -552,7 +553,7 @@ function MentionMenuItem({
         {dirPart ? <span className="mention-menu__dirname">{dirPart}</span> : null}
         <span className="mention-menu__filename">{namePart}</span>
       </span>
-    </button>
+    </Button>
   );
 }
 

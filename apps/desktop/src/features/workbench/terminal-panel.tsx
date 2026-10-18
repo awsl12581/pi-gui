@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -385,9 +386,11 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
           ))}
         </div>
         <div className="terminal-panel__actions">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
-            className="icon-button terminal-panel__action"
+            className="terminal-panel__action"
             title={t("New terminal")}
             aria-label={t("New terminal")}
             onClick={() =>
@@ -397,10 +400,12 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
             }
           >
             <PlusIcon />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             type="button"
-            className="icon-button terminal-panel__action"
+            className="terminal-panel__action"
             title={t("Restart terminal")}
             aria-label={t("Restart terminal")}
             onClick={() =>
@@ -410,7 +415,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
             }
           >
             <RefreshIcon />
-          </button>
+          </Button>
         </div>
       </div>
       {error ? (

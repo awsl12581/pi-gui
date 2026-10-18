@@ -1,3 +1,4 @@
+import { Input } from "../../components/ui/input";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -188,7 +189,7 @@ export function CommandPalette<F extends string>({
           <span className="command-palette__search-icon">
             <SearchIcon />
           </span>
-          <input
+          <Input
             ref={inputRef}
             aria-activedescendant={active ? optionId(activePosition) : undefined}
             aria-autocomplete="list"

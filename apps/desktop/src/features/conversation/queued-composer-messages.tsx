@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ComposerAttachment, QueuedComposerMessage } from "../../../contracts/desktop-state";
@@ -43,9 +44,9 @@ export function QueuedComposerMessages({
       {editingQueuedMessageId ? (
         <div className="queued-composer-messages__editing" data-testid="queued-composer-editing">
           <span>{t("Editing queued message")}</span>
-          <button type="button" onClick={onCancelEdit}>
+          <Button type="button" onClick={onCancelEdit}>
             {t("Cancel")}
-          </button>
+          </Button>
         </div>
       ) : null}
       {messages.map((message) => (
@@ -60,17 +61,17 @@ export function QueuedComposerMessages({
             ) : null}
             <div className="queued-composer-message__actions">
               {message.mode !== "steer" ? (
-                <button type="button" onClick={() => onSteerMessage(message.id)}>
+                <Button type="button" onClick={() => onSteerMessage(message.id)}>
                   {t("Steer")}
-                </button>
+                </Button>
               ) : null}
               {/* Its annotations cannot be reattached to the transcript, so it is not editable. */}
               {parseAnnotatedPrompt(message.text) ? null : (
-                <button type="button" onClick={() => onEditMessage(message.id)}>
+                <Button type="button" onClick={() => onEditMessage(message.id)}>
                   {t("Edit")}
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 aria-label={t("Delete queued message {{value0}}", {
                   value0: message.text || message.id,
                 })}
@@ -78,7 +79,7 @@ export function QueuedComposerMessages({
                 onClick={() => onRemoveMessage(message.id)}
               >
                 {t("Delete")}
-              </button>
+              </Button>
             </div>
           </div>
           {message.attachments.length > 0 ? (

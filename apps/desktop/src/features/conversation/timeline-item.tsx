@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t, i18n, translateMessage } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useMemo, useRef } from "react";
@@ -334,9 +335,11 @@ function TimelineToolCallItem({
           </span>
         </button>
         {filePath && onViewFileInDiff ? (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={t("View {{value0}} in changes", { value0: filePath })}
-            className="icon-button timeline-tool__view-in-diff"
+            className="timeline-tool__view-in-diff"
             data-testid="timeline-tool-view-in-diff"
             type="button"
             onClick={(event) => {
@@ -345,7 +348,7 @@ function TimelineToolCallItem({
             }}
           >
             <DiffIcon />
-          </button>
+          </Button>
         ) : null}
       </div>
       {images.length > 0 ? (
@@ -376,28 +379,32 @@ function TimelineToolCallItem({
                     </span>
                   ) : null}
                 </span>
-                <button
-                  className="icon-button timeline-tool__copy"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="timeline-tool__copy"
                   type="button"
                   onClick={handleCopy}
                   aria-label={t("Copy")}
                 >
                   <CopyIcon />
-                </button>
+                </Button>
               </div>
               <InlineDiff diff={diffText} language={diffLanguage} />
             </>
           ) : (
             <>
               <div className="timeline-tool__body-actions">
-                <button
-                  className="icon-button timeline-tool__copy"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="timeline-tool__copy"
                   type="button"
                   onClick={handleCopy}
                   aria-label={t("Copy")}
                 >
                   <CopyIcon />
-                </button>
+                </Button>
               </div>
               <pre className="timeline-tool__pre">{formatToolContent(item.input, item.output)}</pre>
             </>

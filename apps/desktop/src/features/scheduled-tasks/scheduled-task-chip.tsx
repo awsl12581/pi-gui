@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ScheduledTaskRecord } from "../../../contracts/desktop-state";
@@ -13,9 +14,9 @@ export function ScheduledTaskChip({ task, onOpen }: ScheduledTaskChipProps) {
   return (
     <div className="scheduled-task-chip" data-testid="scheduled-task-chip">
       <span>{formatScheduledTaskRowMeta(task)}</span>
-      <button className="button button--secondary" type="button" onClick={onOpen}>
+      <Button variant="outline" type="button" onClick={onOpen}>
         {t("Open")}
-      </button>
+      </Button>
     </div>
   );
 }

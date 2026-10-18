@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { CheckIcon } from "../../ui/icons";
 
@@ -64,7 +65,7 @@ export function ReviewMenu({
         if (!rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
       }}
     >
-      <button
+      <Button
         className={buttonClassName}
         type="button"
         aria-label={label}
@@ -76,7 +77,7 @@ export function ReviewMenu({
       >
         {value ? <span id={valueId}>{value}</span> : null}
         {buttonContent}
-      </button>
+      </Button>
       {open ? (
         <div
           className={`workspace-menu review-menu__popover review-menu__popover--${align}`}
@@ -95,7 +96,7 @@ export function ReviewMenu({
               {option.startsGroup ? (
                 <div className="review-menu__divider" role="separator" />
               ) : null}
-              <button
+              <Button
                 className="workspace-menu__item review-menu__item"
                 type="button"
                 role="menuitemradio"
@@ -108,7 +109,7 @@ export function ReviewMenu({
               >
                 <span>{option.label}</span>
                 {option.checked ? <CheckIcon /> : null}
-              </button>
+              </Button>
             </Fragment>
           ))}
         </div>

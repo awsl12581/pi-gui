@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState } from "react";
@@ -284,14 +285,10 @@ export function ExtensionViewPanel({
     >
       <header className="extension-view-panel__header">
         <span>{view.title}</span>
-        <button
-          className="button"
-          type="button"
-          onClick={() => setReloadNonce((value) => value + 1)}
-        >
+        <Button type="button" onClick={() => setReloadNonce((value) => value + 1)}>
           <RefreshIcon />
           {t("Reload view")}
-        </button>
+        </Button>
       </header>
       {state.kind === "failed" ? (
         <div className="extension-view-panel__status" role="status">

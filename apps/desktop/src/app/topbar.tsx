@@ -1,3 +1,4 @@
+import { Button } from "../components/ui/button";
 import { t } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
@@ -75,7 +76,7 @@ export function Topbar({
         {children}
         {!panelVisible ? (
           <div className="shortcut-tooltip-wrap topbar__tooltip-wrap">
-            <button
+            <Button
               type="button"
               aria-label={t("Toggle side panel")}
               aria-pressed={panelVisible}
@@ -86,7 +87,7 @@ export function Topbar({
               onClick={onTogglePanel}
             >
               <SidePanelIcon />
-            </button>
+            </Button>
             <span className="shortcut-tooltip topbar__tooltip" role="tooltip">
               <span>{panelVisible ? t("Hide side panel") : t("Show side panel")}</span>
               <kbd>{getSidePanelToggleShortcutLabel(api.platform)}</kbd>

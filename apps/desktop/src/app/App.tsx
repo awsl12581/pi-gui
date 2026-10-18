@@ -1,3 +1,4 @@
+import { Button } from "../components/ui/button";
 import { t, i18n } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -99,7 +100,6 @@ import { useTreeForkModals } from "../features/conversation/hooks/use-tree-fork-
 import { useComposerDraftSync } from "../features/conversation/hooks/use-composer-draft-sync";
 import { useSessionComposer } from "../features/conversation/hooks/use-session-composer";
 import { useTranscriptAnnotations } from "../features/conversation/annotations/use-transcript-annotations";
-
 export default function App() {
   useLocale();
   const desktop = useDesktopAppState();
@@ -125,7 +125,6 @@ export default function App() {
   } | null>(null);
   const [scheduledEditor, setScheduledEditor] = useState<ScheduledEditorState | null>(null);
   const api = window.piApp;
-
   useEffect(() => {
     const piApi = window.piApp;
     if (!piApi) return;
@@ -1041,17 +1040,19 @@ export default function App() {
                 className="chat-header__menu-wrap"
                 ref={threadMenu.openMenu?.surface === "header" ? threadMenu.menuWrapRef : undefined}
               >
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-haspopup="menu"
                   aria-expanded={threadMenu.openMenu?.surface === "header"}
                   aria-label={t("Thread actions")}
-                  className="icon-button"
+
                   data-testid="thread-header-menu"
                   type="button"
                   onClick={threadMenu.toggleHeaderMenu}
                 >
                   …
-                </button>
+                </Button>
                 {threadMenu.openMenu?.surface === "header" && selectedThreadActions ? (
                   <ThreadActionsMenu
                     actions={selectedThreadActions}
@@ -1312,8 +1313,9 @@ export default function App() {
                   )}
                 </p>
                 <div className="empty-panel__actions">
-                  <button
-                    className="button button--primary"
+                  <Button
+                    variant="default"
+
                     type="button"
                     onClick={() =>
                       newThread.openSurface(
@@ -1322,7 +1324,7 @@ export default function App() {
                     }
                   >
                     {t("New thread")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </section>

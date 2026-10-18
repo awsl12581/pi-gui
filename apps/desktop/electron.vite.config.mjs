@@ -2,6 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "electron-vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { licenseNoticeDefines } from "./scripts/license-notices.mjs";
 
@@ -42,7 +43,7 @@ export default defineConfig(({ command }) => {
       define: licenseNoticeDefines(projectRoot),
       root: projectRoot,
       base: "./",
-      plugins: [react(), tsconfigPaths({ projects: [pathsProject] })],
+      plugins: [react(), tsconfigPaths({ projects: [pathsProject] }), tailwindcss()],
       server: {
         port: devPort,
         strictPort: true,

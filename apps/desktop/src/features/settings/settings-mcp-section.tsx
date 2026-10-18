@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useState } from "react";
@@ -188,14 +190,15 @@ function McpServerRow({
       </div>
       <div className="settings-row__actions">
         {server.scope === "global" ? (
-          <button
-            className="button button--secondary"
+          <Button
+            variant="outline"
+
             disabled={disabled}
             type="button"
             onClick={onRemove}
           >
             {t("Remove")}
-          </button>
+          </Button>
         ) : null}
         <SettingsSwitch
           checked={server.enabled}
@@ -265,7 +268,7 @@ function AddMcpServerForm({
       description={t("Saved to {{value0}}.", { value0: configPath })}
     >
       <SettingsRow title={t("Name")}>
-        <input
+        <Input
           aria-label={t("Server name")}
           className="settings-text-input"
           disabled={disabled}
@@ -278,7 +281,7 @@ function AddMcpServerForm({
         title={t("What it does")}
         description={t("Optional. pi tells the model about the server with it.")}
       >
-        <input
+        <Input
           aria-label={t("Server description")}
           className="settings-text-input"
           disabled={disabled}
@@ -304,7 +307,7 @@ function AddMcpServerForm({
             title={t("Command")}
             description={t("Started on this machine for each thread.")}
           >
-            <input
+            <Input
               aria-label={t("Server command")}
               className="settings-text-input"
               disabled={disabled}
@@ -317,7 +320,7 @@ function AddMcpServerForm({
             title={t("Arguments")}
             description={t("Separated by spaces; quote an argument that contains spaces.")}
           >
-            <input
+            <Input
               aria-label={t("Server arguments")}
               className="settings-text-input"
               disabled={disabled}
@@ -334,7 +337,7 @@ function AddMcpServerForm({
             "A streamable HTTP server. If it needs a sign-in, type /mcp login in a thread.",
           )}
         >
-          <input
+          <Input
             aria-label={t("Server URL")}
             className="settings-text-input"
             disabled={disabled}
@@ -349,8 +352,7 @@ function AddMcpServerForm({
           {t("Open threads reload to start it. Add env or headers in the file itself.")}
         </span>
         <div className="settings-row__control">
-          <button
-            className="button"
+          <Button
             disabled={disabled || !ready}
             type="button"
             onClick={() => {
@@ -358,7 +360,7 @@ function AddMcpServerForm({
             }}
           >
             {t("Add server")}
-          </button>
+          </Button>
         </div>
       </div>
     </SettingsGroup>

@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -454,8 +456,10 @@ export function DiffPanel({
           </span>
         ) : null}
         <span className="review-panel__toolbar-spacer" />
-        <button
-          className="icon-button review-panel__tool"
+        <Button
+          variant="ghost"
+          size="icon"
+          className="review-panel__tool"
           type="button"
           onClick={refresh}
           aria-label={t("Refresh")}
@@ -463,7 +467,7 @@ export function DiffPanel({
           disabled={loading}
         >
           <RefreshIcon />
-        </button>
+        </Button>
         <ReviewMenu
           label={t("Review options")}
           buttonClassName="icon-button review-panel__tool"
@@ -520,7 +524,7 @@ export function DiffPanel({
           }}
         >
           <label htmlFor="review-base-ref">{t("Base")}</label>
-          <input
+          <Input
             id="review-base-ref"
             aria-label={t("Base branch")}
             value={baseDraft}
@@ -531,9 +535,9 @@ export function DiffPanel({
                 : t("Repository default")
             }
           />
-          <button type="submit" className="button" disabled={loading}>
+          <Button type="submit" disabled={loading}>
             {t("Compare")}
-          </button>
+          </Button>
         </form>
       ) : null}
       {actionIssue ? <ReviewIssueBanner issue={actionIssue} onRefresh={refresh} /> : null}
@@ -551,9 +555,9 @@ export function DiffPanel({
               role="status"
             >
               <p>{result.message}</p>
-              <button className="button" type="button" onClick={refresh}>
+              <Button type="button" onClick={refresh}>
                 {t("Retry")}
-              </button>
+              </Button>
             </div>
           ) : result.files.length === 0 ? (
             <div className="diff-panel__empty">
@@ -582,15 +586,17 @@ export function DiffPanel({
                 ) : null}
                 <span className="review-panel__toolbar-spacer" />
                 {selectedFile.status !== "deleted" ? (
-                  <button
-                    className="icon-button review-panel__open-file"
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="review-panel__open-file"
                     type="button"
                     aria-label={t("Open in Files")}
                     title={t("Open in Files")}
                     onClick={() => openCurrentFile(result, selectedFile)}
                   >
                     <FileIcon />
-                  </button>
+                  </Button>
                 ) : null}
               </div>
               {selectedFile.previousPath ? (
@@ -763,9 +769,9 @@ function ReviewIssueBanner({
       role="status"
     >
       <p>{issue.message}</p>
-      <button className="button" type="button" onClick={onRefresh}>
+      <Button type="button" onClick={onRefresh}>
         {issue.state === "stale" ? t("Refresh comparison") : t("Retry")}
-      </button>
+      </Button>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { Input } from "../../../components/ui/input";
 import { t, i18n } from "../../../../i18n";
 import { useLocale } from "../../../ui/use-locale";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -344,7 +345,7 @@ function AnnotationEditor({
       data-testid="annotation-editor"
       style={{ top: popoverTop(anchor, 44), left: Math.max(POPOVER_GAP, anchor.left - 24) }}
     >
-      <input
+      <Input
         aria-label={t("Annotation comment")}
         className="annotation-editor__input"
         placeholder={t("Add an optional comment…")}

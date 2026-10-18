@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useId, useState } from "react";
@@ -40,7 +41,7 @@ export function ContextMeter({ usage }: ContextMeterProps) {
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => setOpen(false)}
     >
-      <button
+      <Button
         type="button"
         className="context-meter__ring"
         data-tone={tone}
@@ -63,7 +64,7 @@ export function ContextMeter({ usage }: ContextMeterProps) {
             transform="rotate(-90 8 8)"
           />
         </svg>
-      </button>
+      </Button>
       {open ? (
         <div className="context-meter__card" id={cardId} role="tooltip">
           <section className="context-meter__section">

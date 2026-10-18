@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useMemo, useState } from "react";
@@ -81,8 +83,9 @@ export function ScheduledTasksView({
         </div>
         <div className="view-header__actions">
           <div className="scheduled-create">
-            <button
-              className="button button--primary"
+            <Button
+              variant="default"
+
               data-testid="scheduled-task-create"
               type="button"
               aria-haspopup="menu"
@@ -90,7 +93,7 @@ export function ScheduledTasksView({
               onClick={() => setCreateOpen((open) => !open)}
             >
               {t("Create")}
-            </button>
+            </Button>
             {createOpen ? (
               <div className="workspace-menu scheduled-create__menu" role="menu">
                 <button
@@ -122,7 +125,7 @@ export function ScheduledTasksView({
       </header>
 
       <div className="scheduled-toolbar">
-        <input
+        <Input
           aria-label={t("Search scheduled tasks")}
           className="skills-search"
           data-testid="scheduled-task-search"
@@ -178,8 +181,10 @@ export function ScheduledTasksView({
                 <span className="scheduled-task-row__meta">{formatScheduledTaskRowMeta(task)}</span>
               </button>
               <span className="scheduled-task-row__menu-wrap">
-                <button
-                  className="icon-button"
+                <Button
+                  variant="ghost"
+                  size="icon"
+
                   type="button"
                   aria-label={t("Actions for {{value0}}", { value0: task.title })}
                   aria-haspopup="menu"
@@ -190,7 +195,7 @@ export function ScheduledTasksView({
                   }}
                 >
                   …
-                </button>
+                </Button>
                 {menuTaskId === task.id ? (
                   <div className="workspace-menu scheduled-task-row__menu" role="menu">
                     {task.status === "paused" ? (

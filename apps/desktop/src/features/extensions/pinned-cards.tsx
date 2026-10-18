@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useMemo, useState } from "react";
@@ -92,28 +93,32 @@ export function PinnedCards({
             controls={
               <span className="pinned-card__controls">
                 {canCollapse ? (
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-expanded={!collapsed}
                     aria-label={`${collapsed ? t("Expand") : t("Collapse")} ${pin.card.title}`}
-                    className="pinned-card__control icon-button"
+                    className="pinned-card__control"
                     data-testid="pinned-card-toggle"
                     title={collapsed ? t("Expand") : t("Collapse")}
                     type="button"
                     onClick={() => onToggle(pin)}
                   >
                     {collapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-                  </button>
+                  </Button>
                 ) : null}
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label={t("Hide {{value0}}", { value0: pin.card.title })}
-                  className="pinned-card__control icon-button"
+                  className="pinned-card__control"
                   data-testid="pinned-card-dismiss"
                   title={t("Hide until it changes")}
                   type="button"
                   onClick={(event) => focusComposerAfter(event.currentTarget, () => onDismiss(pin))}
                 >
                   <CloseIcon />
-                </button>
+                </Button>
               </span>
             }
           />

@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -68,7 +70,7 @@ export function FileExplorer({
   return (
     <section className="file-explorer" data-testid="file-explorer" aria-label={t("File explorer")}>
       <div className="file-explorer__toolbar">
-        <input
+        <Input
           aria-label={t("Filter files")}
           className="file-explorer__filter"
           data-testid="file-workbench-filter"
@@ -77,15 +79,17 @@ export function FileExplorer({
           type="search"
           value={filter}
         />
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Refresh")}
-          className="icon-button"
+
           disabled={loading}
           onClick={onRefresh}
           type="button"
         >
           <RefreshIcon />
-        </button>
+        </Button>
       </div>
       {emptyCopy ? (
         <div className="diff-panel__empty">{emptyCopy}</div>

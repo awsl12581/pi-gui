@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { RuntimeSkillRecord } from "@pi-gui/session-driver/runtime-types";
@@ -63,20 +64,22 @@ export function SkillsTab({
         <ResourceDetail
           actions={
             <>
-              <button
-                className="button button--secondary"
+              <Button
+                variant="outline"
+
                 type="button"
                 onClick={() => onOpenSkillFolder(selected.filePath)}
               >
                 {t("Open folder")}
-              </button>
-              <button
-                className="button button--primary"
+              </Button>
+              <Button
+                variant="default"
+
                 type="button"
                 onClick={() => onTrySkill(selected)}
               >
                 {t("Try")}
-              </button>
+              </Button>
             </>
           }
           backLabel={t("All skills")}

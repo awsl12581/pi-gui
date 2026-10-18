@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/button";
 import { t } from "../../../../i18n";
 import { useLocale } from "../../../ui/use-locale";
 import { useLayoutEffect, useState, type RefObject } from "react";
@@ -122,7 +123,7 @@ export function AnnotationMarkers({
   return (
     <div className="annotation-markers">
       {placed.map((marker) => (
-        <button
+        <Button
           aria-label={t("Edit annotation {{value0}}", { value0: marker.number })}
           className="annotation-marker"
           data-annotation-id={marker.id}
@@ -134,7 +135,7 @@ export function AnnotationMarkers({
           onClick={(event) => onOpen(marker.id, event.currentTarget.getBoundingClientRect())}
         >
           {marker.number}
-        </button>
+        </Button>
       ))}
     </div>
   );

@@ -1,3 +1,6 @@
+import { Input } from "../../components/ui/input";
+import { Checkbox } from "../../components/ui/checkbox";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
@@ -109,15 +112,17 @@ export function SettingsCustomEndpointsSection({
                 </div>
               </div>
               <div className="settings-row__control">
-                <button
-                  className="button button--secondary"
+                <Button
+                  variant="outline"
+
                   type="button"
                   onClick={() => setDialog({ kind: "edit", original: entry })}
                 >
                   {t("Edit")}
-                </button>
-                <button
-                  className="button button--secondary"
+                </Button>
+                <Button
+                  variant="outline"
+
                   type="button"
                   onClick={() =>
                     void handleDelete(entry.providerId).catch((error: unknown) => {
@@ -126,7 +131,7 @@ export function SettingsCustomEndpointsSection({
                   }
                 >
                   {t("Remove")}
-                </button>
+                </Button>
               </div>
             </div>
           ))
@@ -139,9 +144,9 @@ export function SettingsCustomEndpointsSection({
             </div>
           </div>
           <div className="settings-row__control">
-            <button className="button" type="button" onClick={() => setDialog({ kind: "create" })}>
+            <Button type="button" onClick={() => setDialog({ kind: "create" })}>
               {t("Add endpoint")}
-            </button>
+            </Button>
           </div>
         </div>
       </SettingsGroup>
@@ -323,7 +328,7 @@ function CustomEndpointDialog({
           </p>
           <label className="settings-field">
             <span>{t("Provider ID")}</span>
-            <input
+            <Input
               aria-label={t("Provider ID")}
               autoFocus={!isEdit}
               className="settings-search"
@@ -344,7 +349,7 @@ function CustomEndpointDialog({
           </label>
           <label className="settings-field">
             <span>{t("Base URL")}</span>
-            <input
+            <Input
               aria-label={t("Base URL")}
               className="settings-search"
               disabled={savePending}
@@ -362,7 +367,7 @@ function CustomEndpointDialog({
           </label>
           <label className="settings-field">
             <span>{t("API key")}</span>
-            <input
+            <Input
               aria-label={t("API key")}
               className="settings-search"
               disabled={savePending}
@@ -383,8 +388,9 @@ function CustomEndpointDialog({
           <div className="settings-field">
             <div className="settings-field__header">
               <span>{t("Models")}</span>
-              <button
-                className="button button--secondary"
+              <Button
+                variant="outline"
+
                 disabled={probePending || savePending}
                 ref={probeButtonRef}
                 type="button"
@@ -396,7 +402,7 @@ function CustomEndpointDialog({
                 }
               >
                 {probePending ? t("Detecting…") : t("Detect models")}
-              </button>
+              </Button>
             </div>
             {probeError ? (
               <p className="settings-row__description settings-warning">{probeError}</p>
@@ -421,16 +427,16 @@ function CustomEndpointDialog({
             <p className="extension-dialog__body settings-warning">{formError}</p>
           ) : null}
           <div className="extension-dialog__actions">
-            <button
-              className="button button--secondary"
+            <Button
+              variant="outline"
+
               disabled={savePending}
               type="button"
               onClick={onClose}
             >
               {t("Cancel")}
-            </button>
-            <button
-              className="button"
+            </Button>
+            <Button
               disabled={
                 savePending || Boolean(idValidationError) || models.length === 0 || !baseUrl.trim()
               }
@@ -443,7 +449,7 @@ function CustomEndpointDialog({
               }
             >
               {isEdit ? t("Save changes") : t("Add endpoint")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -495,12 +501,11 @@ function ModelChecklist({
             .map((id) => (
               <li key={id} className="settings-row">
                 <label className="custom-endpoint-model-list__item">
-                  <input
+                  <Checkbox
                     aria-label={t("Enable {{value0}}", { value0: id })}
-                    type="checkbox"
                     checked={selectedIds.has(id)}
                     disabled={disabled}
-                    onChange={() => onToggle(id)}
+                    onCheckedChange={() => onToggle(id)}
                   />
                   <span className="settings-row__title">{id}</span>
                 </label>
@@ -509,7 +514,7 @@ function ModelChecklist({
         </ul>
       )}
       <div className="settings-row">
-        <input
+        <Input
           aria-label={t("Add model ID manually")}
           className="settings-search"
           disabled={disabled}
@@ -523,14 +528,15 @@ function ModelChecklist({
             }
           }}
         />
-        <button
-          className="button button--secondary"
+        <Button
+          variant="outline"
+
           disabled={disabled || manualDraft.trim().length === 0}
           type="button"
           onClick={submitManual}
         >
           {t("Add")}
-        </button>
+        </Button>
       </div>
     </div>
   );

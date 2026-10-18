@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useState, type ReactNode } from "react";
@@ -74,7 +75,7 @@ function ResourceGroup({
       <div className="settings-group">
         {visible.map((item) => (
           <div className="resource-row" key={item.id}>
-            <button
+            <Button
               className="resource-row__main"
               data-resource-id={item.id}
               type="button"
@@ -87,7 +88,7 @@ function ResourceGroup({
                 <span className="resource-row__title">{item.title}</span>
                 <span className="resource-row__description">{item.description}</span>
               </span>
-            </button>
+            </Button>
             <SettingsSwitch
               checked={item.enabled}
               disabled={!item.onToggle}
@@ -98,9 +99,9 @@ function ResourceGroup({
         ))}
       </div>
       {hiddenCount > 0 ? (
-        <button className="resource-list__more" type="button" onClick={() => setShowAll(true)}>
+        <Button className="resource-list__more" type="button" onClick={() => setShowAll(true)}>
           {t("Show {{value0}} more", { value0: hiddenCount })}
-        </button>
+        </Button>
       ) : null}
     </section>
   );

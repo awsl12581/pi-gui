@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
@@ -18,7 +19,7 @@ export function ImageAttachmentThumb({ src, name, className }: ImageAttachmentTh
 
   return (
     <>
-      <button
+      <Button
         aria-label={t("View {{value0}}", { value0: name })}
         className={`image-attachment-thumb ${className}`}
         ref={triggerRef}
@@ -27,7 +28,7 @@ export function ImageAttachmentThumb({ src, name, className }: ImageAttachmentTh
         onClick={() => setOpen(true)}
       >
         <img alt={name} src={src} />
-      </button>
+      </Button>
       {open ? (
         <ImageViewer
           name={name}
@@ -87,14 +88,14 @@ function ImageViewer({
       }}
     >
       <img alt={name} className="image-viewer__image" src={src} />
-      <button
+      <Button
         aria-label={t("Close image")}
         className="image-viewer__close"
         type="button"
         onClick={onClose}
       >
         ×
-      </button>
+      </Button>
     </div>,
     document.body,
   );

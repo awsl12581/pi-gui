@@ -1,6 +1,12 @@
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { ChevronDownIcon } from "../../ui/icons";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 
 /** A checkbox drawn as a switch, so it keeps native checkbox keyboard and form behaviour. */
 export function SettingsSwitch({
@@ -79,27 +85,20 @@ export function SettingsSelect<T extends string>({
   // fires no change, so an unset value gets an explicit placeholder instead.
   const hasValue = options.some((option) => option.value === value);
   return (
-    <span className="settings-select-control">
-      <select
-        aria-label={label}
-        value={hasValue ? value : ""}
-        onChange={(event) => {
-          const selected = options.find((option) => option.value === event.currentTarget.value);
-          if (selected) onChange(selected.value);
-        }}
-      >
-        {hasValue ? null : (
-          <option disabled value="">
-            {t("Choose…")}
-          </option>
-        )}
+    <Select
+      value={hasValue ? value : undefined}
+      onValueChange={(selectedValue) => onChange(selectedValue as T)}
+    >
+      <SelectTrigger aria-label={label} className="settings-select-control">
+        <SelectValue placeholder={t("Choose…")} />
+      </SelectTrigger>
+      <SelectContent>
         {options.map((option) => (
-          <option key={option.value} value={option.value}>
+          <SelectItem key={option.value} value={option.value}>
             {option.label}
-          </option>
+          </SelectItem>
         ))}
-      </select>
-      <ChevronDownIcon />
-    </span>
+      </SelectContent>
+    </Select>
   );
 }

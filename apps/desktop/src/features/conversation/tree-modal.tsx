@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -354,7 +356,7 @@ export function TreeModal({
         {!loading && tree && step === "select" ? (
           <>
             <div className="tree-modal__search-row">
-              <input
+              <Input
                 autoFocus
                 aria-label={t("Search session tree")}
                 className="tree-modal__search"
@@ -439,17 +441,18 @@ export function TreeModal({
                 )}
               </div>
               <div className="tree-modal__actions">
-                <button className="button button--secondary" type="button" onClick={onClose}>
+                <Button variant="outline" type="button" onClick={onClose}>
                   {t("Cancel")}
-                </button>
-                <button
-                  className="button button--primary"
+                </Button>
+                <Button
+                  variant="default"
+
                   disabled={!selectedId || currentLeafSelected}
                   type="button"
                   onClick={() => setStep("summary")}
                 >
                   {currentLeafSelected ? t("Already here") : t("Continue")}
-                </button>
+                </Button>
               </div>
             </div>
           </>
@@ -520,16 +523,18 @@ export function TreeModal({
                     : t("The summary will be attached to the branch you switch to.")}
               </div>
               <div className="tree-modal__actions">
-                <button
-                  className="button button--secondary"
+                <Button
+                  variant="outline"
+
                   disabled={submitting}
                   type="button"
                   onClick={() => setStep("select")}
                 >
                   {t("Back")}
-                </button>
-                <button
-                  className="button button--primary"
+                </Button>
+                <Button
+                  variant="default"
+
                   data-tree-summary-confirm="true"
                   disabled={
                     submitting ||
@@ -540,7 +545,7 @@ export function TreeModal({
                   onClick={handleSubmit}
                 >
                   {submitting ? t("Switching…") : t("Switch branch")}
-                </button>
+                </Button>
               </div>
             </div>
           </div>

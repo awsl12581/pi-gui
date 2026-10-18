@@ -194,10 +194,6 @@
   font-size: var(--text-xs);
 }
 
-.workbench__unavailable > .button {
-  align-self: flex-start;
-}
-
 .workbench__error {
   margin: 0;
   padding: 8px 12px;

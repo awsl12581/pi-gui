@@ -1,3 +1,6 @@
+import { Input } from "../../components/ui/input";
+import { Checkbox } from "../../components/ui/checkbox";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -110,8 +113,10 @@ export function ReviewFileTree({
         {stageActions.length ? (
           <span className="review-panel__stage-actions">
             {file.hasStagedChanges && stageActions.includes("unstage") ? (
-              <button
-                className="icon-button review-tree__stage"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="review-tree__stage"
                 type="button"
                 aria-label={t("Unstage")}
                 title={t("Unstage file")}
@@ -119,11 +124,13 @@ export function ReviewFileTree({
                 onClick={() => onStage(file, "unstage")}
               >
                 <MinusIcon />
-              </button>
+              </Button>
             ) : null}
             {file.hasUnstagedChanges && stageActions.includes("stage") ? (
-              <button
-                className="icon-button review-tree__stage"
+              <Button
+                variant="ghost"
+                size="icon"
+                className="review-tree__stage"
                 type="button"
                 aria-label={t("Stage")}
                 title={t("Stage file")}
@@ -131,18 +138,17 @@ export function ReviewFileTree({
                 onClick={() => onStage(file, "stage")}
               >
                 <PlusIcon />
-              </button>
+              </Button>
             ) : null}
           </span>
         ) : null}
-        <input
+        <Checkbox
           aria-label={t("Mark {{value0}} reviewed", { value0: file.path })}
           className="diff-panel__reviewed-checkbox"
           data-testid={`diff-panel-reviewed-${file.path}`}
-          type="checkbox"
           checked={file.reviewed}
           disabled={busy || stale}
-          onChange={() => onToggleReviewed(file)}
+          onCheckedChange={() => onToggleReviewed(file)}
         />
         <span
           className={`review-tree__status review-tree__status--${file.conflicted ? "conflicted" : file.status}`}
@@ -159,7 +165,7 @@ export function ReviewFileTree({
       <div className="review-tree__header">
         <label className="review-tree__filter">
           <SearchIcon />
-          <input
+          <Input
             aria-label={t("Filter changed files")}
             placeholder={t("Filter files…")}
             value={query}

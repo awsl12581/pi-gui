@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { DesktopNotificationPermissionStatus } from "../../../contracts/ipc";
@@ -53,24 +54,26 @@ export function SettingsNotificationsSection({
           >
             <div className="settings-row__actions">
               {showAskMacOs ? (
-                <button
-                  className="button button--secondary"
+                <Button
+                  variant="outline"
+
                   disabled={notificationPermissionPending}
                   type="button"
                   onClick={onRequestNotificationPermission}
                 >
                   {t("Ask macOS")}
-                </button>
+                </Button>
               ) : null}
               {showOpenSystemSettings ? (
-                <button
-                  className="button button--secondary"
+                <Button
+                  variant="outline"
+
                   disabled={notificationPermissionPending}
                   type="button"
                   onClick={onOpenSystemNotificationSettings}
                 >
                   {t("Open System Settings")}
-                </button>
+                </Button>
               ) : null}
             </div>
           </SettingsRow>

@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useState } from "react";
@@ -29,7 +31,7 @@ export function SettingsLicensesSection() {
           "Original notices for pi-gui, installed dependencies and development tools. GitHub CLI is bundled on Windows. Independently installed extensions have their own licenses.",
         )}
       >
-        <input
+        <Input
           className="settings-text-input licenses-search"
           aria-label={t("Search licenses")}
           placeholder={t("Search packages, licenses or copyright holders")}
@@ -74,8 +76,9 @@ export function SettingsLicensesSection() {
         </div>
       </SettingsGroup>
       <SettingsGroup title={t("Chromium and Electron third-party notices")} plain>
-        <button
-          className="button button--secondary"
+        <Button
+          variant="outline"
+
           type="button"
           onClick={() => {
             setChromiumError(false);
@@ -85,7 +88,7 @@ export function SettingsLicensesSection() {
           }}
         >
           {t("View Chromium notices")}
-        </button>
+        </Button>
         {chromiumError ? (
           <p role="alert">{t("Could not load Chromium notices. Try again.")}</p>
         ) : null}

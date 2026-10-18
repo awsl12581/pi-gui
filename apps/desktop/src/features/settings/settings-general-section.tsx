@@ -1,3 +1,4 @@
+import { Input } from "../../components/ui/input";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useState } from "react";
@@ -99,7 +100,7 @@ export function SettingsGeneralSection({
             "The shell the integrated terminal starts. Leave blank to use your login shell.",
           )}
         >
-          <input
+          <Input
             aria-label={t("Shell of integrated terminal")}
             className="settings-text-input"
             placeholder="/bin/zsh"

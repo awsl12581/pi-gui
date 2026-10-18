@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useState, type ReactNode } from "react";
@@ -130,7 +132,7 @@ export function SettingsModelsSection({
           </h3>
           <label className="resource-search">
             <SearchIcon />
-            <input
+            <Input
               aria-label={t("Search models")}
               placeholder={t("Search models")}
               spellCheck={false}
@@ -184,9 +186,9 @@ export function SettingsModelsSection({
               {t("Not connected")}{" "}
               <span className="resource-list__count">{visibleUnconnected.length}</span>
             </h3>
-            <button className="button button--secondary" type="button" onClick={onOpenProviders}>
+            <Button variant="outline" type="button" onClick={onOpenProviders}>
               {t("Connect a provider")}
-            </button>
+            </Button>
           </div>
           <p className="settings-section__description">
             {t("Models from providers you have not signed in to.")}

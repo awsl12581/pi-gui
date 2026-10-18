@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
@@ -128,16 +130,18 @@ export function ExtensionDock({
           </span>
         </button>
         {onDismiss ? (
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={t("Hide extension status")}
-            className="extension-dock__dismiss icon-button"
+            className="extension-dock__dismiss"
             data-testid="extension-dock-dismiss"
             title={t("Hide until the extension changes it")}
             type="button"
             onClick={(event) => focusComposerAfter(event.currentTarget, onDismiss)}
           >
             <CloseIcon />
-          </button>
+          </Button>
         ) : null}
       </div>
       {expanded ? (
@@ -256,7 +260,7 @@ export function ExtensionDialog({
         ) : null}
 
         {dialog.kind === "input" ? (
-          <input
+          <Input
             autoFocus
             className="skills-search"
             placeholder={dialog.placeholder ?? t("Enter a value")}
@@ -275,34 +279,37 @@ export function ExtensionDialog({
         ) : null}
 
         <div className="extension-dialog__actions">
-          <button
+          <Button
+            variant="outline"
             ref={cancelButtonRef}
-            className="button button--secondary"
+
             data-testid="extension-dialog-cancel"
             type="button"
             onClick={respondWithCancel}
           >
             {t("Cancel")}
-          </button>
+          </Button>
           {dialog.kind === "confirm" ? (
-            <button
-              className="button button--primary"
+            <Button
+              variant="default"
+
               data-testid="extension-dialog-confirm"
               type="button"
               onClick={respondWithSubmit}
             >
               {t("Confirm")}
-            </button>
+            </Button>
           ) : null}
           {dialog.kind === "input" || dialog.kind === "editor" ? (
-            <button
-              className="button button--primary"
+            <Button
+              variant="default"
+
               data-testid="extension-dialog-submit"
               type="button"
               onClick={respondWithSubmit}
             >
               {t("Submit")}
-            </button>
+            </Button>
           ) : null}
         </div>
       </div>

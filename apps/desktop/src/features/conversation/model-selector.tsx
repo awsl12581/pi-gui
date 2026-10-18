@@ -1,3 +1,4 @@
+import { Input } from "../../components/ui/input";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -121,7 +122,7 @@ export function ModelSelector({
               onWheel={(event) => event.stopPropagation()}
             >
               <div className="model-selector__filter">
-                <input
+                <Input
                   className="model-selector__filter-input"
                   placeholder={t("Filter models...")}
                   value={modelFilter}

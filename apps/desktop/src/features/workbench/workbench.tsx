@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useId, useRef, type KeyboardEvent, type ReactNode } from "react";
@@ -186,9 +187,11 @@ export function Workbench({
                   )}
                   <span>{label}</span>
                 </button>
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label={t("Close {{value0}} tab", { value0: label })}
-                  className="workbench__tab-close icon-button"
+                  className="workbench__tab-close"
                   disabled={loading}
                   onClick={() => closeAndFocus(toolId)}
                   tabIndex={-1}
@@ -196,14 +199,16 @@ export function Workbench({
                   type="button"
                 >
                   <CloseIcon />
-                </button>
+                </Button>
               </div>
             );
           })}
         </div>
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Add tab")}
-          className="workbench__add icon-button"
+          className="workbench__add"
           data-testid="workbench-add-tab"
           disabled={loading}
           onClick={onShowChooser}
@@ -212,27 +217,29 @@ export function Workbench({
           type="button"
         >
           <PlusIcon />
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Toggle side panel")}
           aria-pressed="true"
           aria-controls="task-workbench"
           data-testid="toggle-side-panel"
-          className="workbench__add icon-button"
+          className="workbench__add"
           onClick={onTogglePanel}
           title={t("Hide side panel")}
           type="button"
         >
           <SidePanelIcon />
-        </button>
+        </Button>
       </div>
       {error ? (
         <div className="workbench__error" role="status">
           <p>{error ? t(error) : error}</p>
           {loading && onRetryRestore ? (
-            <button className="button" onClick={onRetryRestore} type="button">
+            <Button onClick={onRetryRestore} type="button">
               {t("Retry restoring tabs")}
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}
@@ -285,9 +292,9 @@ export function Workbench({
               <div role="status">
                 <p>{extensionViewsError}</p>
                 {onReloadExtensionViews ? (
-                  <button className="button" type="button" onClick={onReloadExtensionViews}>
+                  <Button type="button" onClick={onReloadExtensionViews}>
                     {t("Refresh views")}
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             ) : null}
@@ -340,17 +347,13 @@ export function Workbench({
                 )}
             </p>
             {!extensionViewsLoading && onReloadExtensionViews ? (
-              <button className="button" type="button" onClick={onReloadExtensionViews}>
+              <Button type="button" onClick={onReloadExtensionViews}>
                 {t("Refresh views")}
-              </button>
+              </Button>
             ) : null}
-            <button
-              className="button"
-              onClick={() => closeAndFocus(toolRefId(activeTool))}
-              type="button"
-            >
+            <Button onClick={() => closeAndFocus(toolRefId(activeTool))} type="button">
               {t("Close tab")}
-            </button>
+            </Button>
           </div>
         ) : (
           children

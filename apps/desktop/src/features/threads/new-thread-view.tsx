@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -348,23 +349,26 @@ function NewThreadComposerFooter({
                 event.currentTarget.value = "";
               }}
             />
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("Attach files")}
-              className="icon-button composer__attach"
+              className="composer__attach"
               type="button"
               onClick={() => fileInputRef.current?.click()}
             >
               <PlusIcon />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="default"
               aria-label={t("Start thread")}
-              className="button button--primary button--cta-icon"
+              className="button--cta-icon"
               type="button"
               disabled={!hasContent || modelOnboarding.requiresModelSelection}
               onClick={onSubmit}
             >
               <ArrowUpIcon />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

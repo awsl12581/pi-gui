@@ -1,5 +1,6 @@
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import type { ThemeMode, ThemePresetId } from "../../../contracts/desktop-state";
 import { SettingsSelect, SettingsSwitch } from "./settings-controls";
 import { SettingsGroup, SettingsRow } from "./settings-utils";
@@ -51,20 +52,20 @@ export function SettingsAppearanceSection({
   return (
     <>
       <SettingsGroup title={t("Theme")} plain>
-        <div
+        <RadioGroup
           aria-label={t("Theme")}
           className="theme-mode-tiles"
-          role="radiogroup"
+          value={themeMode}
+          onValueChange={(value) => onSetThemeMode(value as ThemeMode)}
           style={tilePalette(themePresetId)}
         >
           {THEME_MODES.map((option) => (
-            <label className="theme-mode-tile" key={option.mode}>
-              <input
-                checked={themeMode === option.mode}
-                name="theme-mode"
-                type="radio"
-                onChange={() => onSetThemeMode(option.mode)}
-              />
+            <label
+              className="theme-mode-tile"
+              key={option.mode}
+              htmlFor={`theme-mode-${option.mode}`}
+            >
+              <RadioGroupItem id={`theme-mode-${option.mode}`} value={option.mode} />
               <span
                 aria-hidden="true"
                 className={`theme-mode-tile__preview theme-mode-tile__preview--${option.mode}`}
@@ -78,7 +79,7 @@ export function SettingsAppearanceSection({
               <span className="theme-mode-tile__label">{option.label}</span>
             </label>
           ))}
-        </div>
+        </RadioGroup>
       </SettingsGroup>
 
       <SettingsGroup>

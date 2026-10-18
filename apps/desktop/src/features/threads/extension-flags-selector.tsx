@@ -1,3 +1,4 @@
+import { Input } from "../../components/ui/input";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState } from "react";
@@ -105,7 +106,7 @@ export function ExtensionFlagsSelector({
                           onChange={(checked) => onSetFlag(flag.name, checked)}
                         />
                       ) : (
-                        <input
+                        <Input
                           type="text"
                           className="extension-flags__input"
                           aria-label={`--${flag.name}`}

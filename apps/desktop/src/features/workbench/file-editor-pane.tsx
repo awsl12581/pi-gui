@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -163,9 +164,11 @@ export function FileEditorPane({
                 {t("View source")}
               </button>
             ) : null}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("Copy file")}
-              className="icon-button"
+
               disabled={!preview || preview.binary || Boolean(viewerError)}
               type="button"
               onClick={() => {
@@ -177,7 +180,7 @@ export function FileEditorPane({
               }}
             >
               <CopyIcon />
-            </button>
+            </Button>
             <button
               className="file-workbench__mode"
               disabled={!activePath}

@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { RefObject } from "react";
@@ -26,7 +28,7 @@ export function ThreadSearchBar({
   useLocale();
   return (
     <div className="thread-search-bar" data-testid="thread-search-bar">
-      <input
+      <Input
         ref={inputRef}
         className="thread-search-bar__input"
         type="text"
@@ -51,32 +53,38 @@ export function ThreadSearchBar({
         {query ? (matchCount > 0 ? `${activeIndex + 1} / ${matchCount}` : t("0 results")) : ""}
       </span>
       <div className="thread-search-bar__actions">
-        <button
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Previous match")}
-          className="icon-button"
+
           type="button"
           disabled={matchCount === 0}
           onClick={onPrev}
         >
           &#x25B2;
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Next match")}
-          className="icon-button"
+
           type="button"
           disabled={matchCount === 0}
           onClick={onNext}
         >
           &#x25BC;
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
           aria-label={t("Close search")}
-          className="icon-button"
+
           type="button"
           onClick={onClose}
         >
           &#x2715;
-        </button>
+        </Button>
       </div>
     </div>
   );

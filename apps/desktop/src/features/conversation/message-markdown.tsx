@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { memo, useMemo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -21,7 +22,7 @@ function markdownComponents(
       const file = onOpenWorkspaceFileLine ? workspaceFileLineFromAnchorProps(props) : null;
       if (file && onOpenWorkspaceFileLine) {
         return (
-          <button
+          <Button
             className="message__file-link"
             data-end-line={file.endLine}
             data-line={file.line}
@@ -31,7 +32,7 @@ function markdownComponents(
             onClick={() => onOpenWorkspaceFileLine(file)}
           >
             {children}
-          </button>
+          </Button>
         );
       }
       return (

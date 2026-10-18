@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -482,9 +484,11 @@ export function Sidebar(props: SidebarProps) {
                 );
               }}
             />
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("Open folder")}
-              className="icon-button"
+
               type="button"
               onClick={() => {
                 void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
@@ -495,7 +499,7 @@ export function Sidebar(props: SidebarProps) {
               }}
             >
               <FolderIcon />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -503,8 +507,9 @@ export function Sidebar(props: SidebarProps) {
           <div className="empty-state" data-testid="empty-state">
             <h2>{t("No folders yet")}</h2>
             <p>{t("Open a project folder to start building a workspace and session list.")}</p>
-            <button
-              className="button button--primary"
+            <Button
+              variant="default"
+
               type="button"
               onClick={() => {
                 void updateSnapshot(setSnapshot, () => api.pickWorkspace()).catch(
@@ -515,7 +520,7 @@ export function Sidebar(props: SidebarProps) {
               }}
             >
               {t("Open first folder")}
-            </button>
+            </Button>
           </div>
         ) : (
           <DndContext
@@ -804,9 +809,11 @@ function WorkspaceFolderContent(
         </button>
         <span className="workspace-row__actions">
           {onNewThread ? (
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("New thread in {{value0}}", { value0: workspace.name })}
-              className="icon-button workspace-row__action-button"
+              className="workspace-row__action-button"
               title={t("New thread")}
               type="button"
               onClick={() => {
@@ -818,16 +825,18 @@ function WorkspaceFolderContent(
               }}
             >
               <PlusIcon />
-            </button>
+            </Button>
           ) : null}
           <span
             className="workspace-row__menu-wrap"
             ref={wsMenu.workspaceMenuId === workspace.id ? wsMenu.workspaceMenuWrapRef : undefined}
           >
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("Workspace actions for {{value0}}", { value0: workspace.name })}
               aria-haspopup="menu"
-              className="icon-button workspace-row__menu-button"
+              className="workspace-row__menu-button"
               aria-expanded={wsMenu.workspaceMenuId === workspace.id}
               type="button"
               onClick={(event) => {
@@ -837,7 +846,7 @@ function WorkspaceFolderContent(
               }}
             >
               …
-            </button>
+            </Button>
             {wsMenu.workspaceMenuId === workspace.id ? (
               <div className="workspace-menu">
                 <button
@@ -913,7 +922,7 @@ function WorkspaceFolderContent(
             wsMenu.submitRename(workspace);
           }}
         >
-          <input
+          <Input
             aria-label={t("Rename {{value0}}", { value0: workspace.name })}
             className="workspace-rename__input"
             ref={wsMenu.workspaceRenameInputRef}
@@ -1225,12 +1234,14 @@ function ThreadGroupingControl({
 
   return (
     <span className="shortcut-tooltip-wrap thread-grouping" ref={wrapRef}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         ref={buttonRef}
         aria-expanded={open}
         aria-haspopup="menu"
         aria-label={t("Customize Sidebar")}
-        className="icon-button"
+
         type="button"
         onClick={() => {
           if (open) {
@@ -1241,7 +1252,7 @@ function ThreadGroupingControl({
         }}
       >
         <CustomizeSidebarIcon />
-      </button>
+      </Button>
       {open ? null : (
         <span className="shortcut-tooltip" role="tooltip">
           {t("Customize Sidebar")}
@@ -1659,10 +1670,12 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
             )}
             <span className="session-row__action-cluster">
               {!archived ? (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label={`${pinned ? t("Unpin") : t("Pin")} ${thread.session.title}${actionContext}`}
                   aria-pressed={pinned}
-                  className="icon-button session-row__action session-row__pin-action"
+                  className="session-row__action session-row__pin-action"
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -1670,12 +1683,14 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
                   }}
                 >
                   <PinIcon filled={pinned} />
-                </button>
+                </Button>
               ) : null}
               <span className="shortcut-tooltip-wrap session-row__tooltip-wrap">
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   aria-label={`${archived ? t("Restore") : t("Archive")} ${thread.session.title}${actionContext}`}
-                  className="icon-button session-row__action"
+                  className="session-row__action"
                   type="button"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -1683,7 +1698,7 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
                   }}
                 >
                   {archived ? <RestoreIcon /> : <ArchiveIcon />}
-                </button>
+                </Button>
                 {threadMenu && !overlay && !menuOpen ? (
                   <span className="shortcut-tooltip session-row__tooltip" role="tooltip">
                     <span>{archived ? t("Restore thread") : t("Archive thread")}</span>
@@ -1711,7 +1726,7 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
               threadMenu.submitRename(thread);
             }}
           >
-            <input
+            <Input
               aria-label={t("Rename thread {{value0}}", { value0: thread.session.title })}
               className="workspace-rename__input"
               // Mounts when a rename starts, including after the sidebar or a

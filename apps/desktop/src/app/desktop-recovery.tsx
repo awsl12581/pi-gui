@@ -1,5 +1,6 @@
 import type { DesktopAppState } from "../../contracts/desktop-state";
 import { t } from "../../i18n";
+import { Button } from "../components/ui/button";
 import { useLocale } from "../ui/use-locale";
 import { Component, Fragment, type ReactNode } from "react";
 import type { DesktopAppView, StateHydrationFailure } from "./desktop-app-state";
@@ -104,24 +105,24 @@ export function DesktopStartupSurface({ state, onRetry, onRelaunch }: DesktopSta
         <p>{copy.body}</p>
         {showActions ? (
           <div className="loading-card__actions">
-            <button
-              className="button button--primary"
+            <Button
+              className="loading-card__primary-action"
               data-testid="hydrate-retry"
               type="button"
               disabled={retrying}
               onClick={onRetry}
             >
               {retrying ? t("Retrying…") : t("Retry")}
-            </button>
+            </Button>
             {showRelaunch ? (
-              <button
-                className="button button--ghost"
+              <Button
+                variant="ghost"
                 data-testid="hydrate-relaunch"
                 type="button"
                 onClick={onRelaunch}
               >
                 {t("Relaunch pi-gui")}
-              </button>
+              </Button>
             ) : null}
           </div>
         ) : null}

@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -252,15 +253,16 @@ function TranscriptHydrateError({
       <h2>{t("Couldn't load this thread")}</h2>
       <p>{t("The selected conversation couldn't be restored. Retry to try again.")}</p>
       <div className="transcript-hydrate-error__actions">
-        <button
-          className="button button--primary"
+        <Button
+          variant="default"
+
           data-testid="hydrate-retry"
           type="button"
           disabled={retrying || !onRetry}
           onClick={onRetry}
         >
           {retrying ? t("Retrying…") : t("Retry")}
-        </button>
+        </Button>
       </div>
     </div>
   );

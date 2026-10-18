@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -235,17 +236,20 @@ export function ComposerPanel({
                   <ContextMeter usage={usage} />
                 </div>
                 <div className="composer__actions">
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     aria-label={t("Attach files")}
-                    className="icon-button composer__attach"
+                    className="composer__attach"
                     type="button"
                     onClick={onPickAttachments}
                   >
                     <PlusIcon />
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="default"
                     aria-label={primaryActionIsStop ? t("Stop run") : t("Send message")}
-                    className="button button--primary button--cta-icon"
+                    className="button--cta-icon"
                     data-testid="send"
                     type="button"
                     disabled={
@@ -255,7 +259,7 @@ export function ComposerPanel({
                     onClick={onSubmit}
                   >
                     {primaryActionIsStop ? <StopSquareIcon /> : <ArrowUpIcon />}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -268,15 +272,16 @@ export function ComposerPanel({
             {t("Preparing task… Your current draft is saved before opening it.")}
           </p>
           {selectedSession.status === "running" ? (
-            <button
+            <Button
+              variant="default"
               aria-label={t("Stop run")}
-              className="button button--primary button--cta-icon"
+              className="button--cta-icon"
               data-testid="stop-while-preparing-task"
               onClick={onStop}
               type="button"
             >
               <StopSquareIcon />
-            </button>
+            </Button>
           ) : null}
         </div>
       ) : null}

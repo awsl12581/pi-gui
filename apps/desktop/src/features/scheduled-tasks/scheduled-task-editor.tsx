@@ -1,3 +1,6 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -230,14 +233,20 @@ export function ScheduledTaskEditor({
           <h2 id="scheduled-editor-title">
             {editor.mode === "edit" ? t("Edit scheduled task") : t("Set up scheduled task")}
           </h2>
-          <button className="icon-button" type="button" aria-label={t("Close")} onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            type="button"
+            aria-label={t("Close")}
+            onClick={onClose}
+          >
             ×
-          </button>
+          </Button>
         </header>
 
         <label className="scheduled-editor__field">
           <span>{t("Title")}</span>
-          <input
+          <Input
             data-testid="scheduled-task-title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -275,24 +284,19 @@ export function ScheduledTaskEditor({
 
         <fieldset className="scheduled-editor__field">
           <legend>{t("Runs in")}</legend>
-          <label className="scheduled-editor__choice">
-            <input
-              type="radio"
-              name="scheduled-target"
-              checked={targetKind === "new-thread"}
-              onChange={() => setTargetKind("new-thread")}
-            />
-            {t("New thread for this task")}
-          </label>
-          <label className="scheduled-editor__choice">
-            <input
-              type="radio"
-              name="scheduled-target"
-              checked={targetKind === "existing-thread"}
-              onChange={() => setTargetKind("existing-thread")}
-            />
-            {t("Existing thread")}
-          </label>
+          <RadioGroup
+            value={targetKind}
+            onValueChange={(value) => setTargetKind(value as typeof targetKind)}
+          >
+            <label className="scheduled-editor__choice" htmlFor="scheduled-target-new-thread">
+              <RadioGroupItem id="scheduled-target-new-thread" value="new-thread" />
+              {t("New thread for this task")}
+            </label>
+            <label className="scheduled-editor__choice" htmlFor="scheduled-target-existing-thread">
+              <RadioGroupItem id="scheduled-target-existing-thread" value="existing-thread" />
+              {t("Existing thread")}
+            </label>
+          </RadioGroup>
           {targetKind === "existing-thread" ? (
             <select
               data-testid="scheduled-task-session"
@@ -392,19 +396,21 @@ export function ScheduledTaskEditor({
 
         <div className="scheduled-editor__actions">
           {openChatTarget && onOpenChat ? (
-            <button
-              className="button button--secondary"
+            <Button
+              variant="outline"
+
               type="button"
               onClick={() => onOpenChat(openChatTarget)}
             >
               {t("Open chat")}
-            </button>
+            </Button>
           ) : null}
-          <button className="button button--secondary" type="button" onClick={onClose}>
+          <Button variant="outline" type="button" onClick={onClose}>
             {t("Cancel")}
-          </button>
-          <button
-            className="button button--primary"
+          </Button>
+          <Button
+            variant="default"
+
             data-testid="scheduled-task-save"
             type="button"
             disabled={!canSubmit || busy}
@@ -423,7 +429,7 @@ export function ScheduledTaskEditor({
             }}
           >
             {editor.mode === "edit" ? t("Save") : t("Create")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, type ReactNode } from "react";
@@ -48,10 +49,10 @@ export function ResourceDetail({
 
   return (
     <div className="skill-detail resource-detail">
-      <button className="resource-detail__back" ref={backButtonRef} type="button" onClick={onBack}>
+      <Button className="resource-detail__back" ref={backButtonRef} type="button" onClick={onBack}>
         <span aria-hidden="true">←</span>
         <span>{backLabel}</span>
-      </button>
+      </Button>
       <div className="resource-detail__header">
         <span className="resource-row__icon resource-row__icon--large" aria-hidden="true">
           {icon}

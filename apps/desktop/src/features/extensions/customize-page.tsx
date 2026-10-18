@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -113,23 +115,26 @@ export function CustomizePage({
           </div>
           <div className="view-header__actions">
             {workspacePicker}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               aria-label={t("Refresh")}
-              className="icon-button resource-refresh"
+              className="resource-refresh"
               title={t("Refresh")}
               type="button"
               onClick={onRefresh}
             >
               <RefreshIcon />
-            </button>
+            </Button>
             {tab === "skills" && workspace ? (
-              <button
-                className="button button--primary"
+              <Button
+                variant="default"
+
                 type="button"
                 onClick={() => onTryCommand(NEW_SKILL_PROMPT)}
               >
                 {t("New skill")}
-              </button>
+              </Button>
             ) : null}
           </div>
         </header>
@@ -158,7 +163,7 @@ export function CustomizePage({
           </div>
           <label className="resource-search">
             <SearchIcon />
-            <input
+            <Input
               aria-label={t("Search {{value0}}", { value0: tab })}
               placeholder={t("Search {{value0}}", { value0: tab })}
               spellCheck={false}

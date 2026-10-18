@@ -1,3 +1,5 @@
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useState } from "react";
@@ -164,7 +166,7 @@ export function SettingsProvidersSection({
           </h3>
           <label className="resource-search">
             <SearchIcon />
-            <input
+            <Input
               aria-label={t("Search providers")}
               placeholder={t("Search providers")}
               spellCheck={false}
@@ -250,7 +252,7 @@ function ProviderApiKeyDialog({
       <div className="extension-dialog" data-testid="provider-api-key-dialog">
         <div className="extension-dialog__title">{title}</div>
         <p className="extension-dialog__body">{body}</p>
-        <input
+        <Input
           aria-label={t("{{value0}} API key", { value0: provider.name })}
           autoFocus
           className="settings-search"
@@ -275,17 +277,19 @@ function ProviderApiKeyDialog({
         />
         {error ? <p className="extension-dialog__body settings-warning">{error}</p> : null}
         <div className="extension-dialog__actions">
-          <button
-            className="button button--secondary"
+          <Button
+            variant="outline"
+
             disabled={pending}
             type="button"
             onClick={onClose}
           >
             {t("Cancel")}
-          </button>
+          </Button>
           {onRemove ? (
-            <button
-              className="button button--secondary"
+            <Button
+              variant="outline"
+
               disabled={pending}
               type="button"
               onClick={() =>
@@ -295,10 +299,9 @@ function ProviderApiKeyDialog({
               }
             >
               {t("Remove saved key")}
-            </button>
+            </Button>
           ) : null}
-          <button
-            className="button"
+          <Button
             disabled={pending || draft.trim().length === 0}
             type="button"
             onClick={() =>
@@ -308,7 +311,7 @@ function ProviderApiKeyDialog({
             }
           >
             {provider.authSource === "auth_file" ? t("Save key") : t("Set API key")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

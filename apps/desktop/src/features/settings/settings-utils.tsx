@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
@@ -125,15 +126,16 @@ export function ProviderRow({
       {actions.length > 0 ? (
         <div className="settings-row__actions">
           {actions.map((action) => (
-            <button
+            <Button
+              variant="outline"
               key={action.label}
-              className="button button--secondary"
+
               disabled={action.disabled}
               type="button"
               onClick={action.onClick}
             >
               {action.label}
-            </button>
+            </Button>
           ))}
         </div>
       ) : null}

@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/button";
 import { t } from "../../../../i18n";
 import { useLocale } from "../../../ui/use-locale";
 import { ChatIcon, CloseIcon } from "../../../ui/icons";
@@ -19,10 +20,10 @@ export function AnnotationChip({
   });
   return (
     <div className="annotation-chip" data-testid="annotation-chip">
-      <button className="annotation-chip__button" type="button">
+      <Button className="annotation-chip__button" type="button">
         <ChatIcon />
         <span>{label}</span>
-      </button>
+      </Button>
       <div className="annotation-chip__popover" data-testid="annotation-chip-popover">
         <div className="annotation-chip__list">
           {annotations.map((annotation, index) => (
@@ -34,14 +35,14 @@ export function AnnotationChip({
                   <div className="annotation-chip__note">{annotation.note}</div>
                 ) : null}
               </div>
-              <button
+              <Button
                 aria-label={t("Remove annotation {{value0}}", { value0: index + 1 })}
                 className="annotation-chip__remove"
                 type="button"
                 onClick={() => onRemove(annotation.id)}
               >
                 <CloseIcon />
-              </button>
+              </Button>
             </div>
           ))}
         </div>

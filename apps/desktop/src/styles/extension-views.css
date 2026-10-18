@@ -19,11 +19,6 @@
   font-weight: var(--font-medium);
 }
 
-.extension-view-panel__header .button {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
 .extension-view-panel__status {
   flex: none;
   padding: 16px;
