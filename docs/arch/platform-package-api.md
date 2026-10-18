@@ -1,8 +1,8 @@
 # Platform package 对外能力与接口设计
 
-> 最后修改时间：2026-10-14 21:10 CST
-> 文档版本：v3
-> 修改说明：将平台包支持的 Node 范围调整为 24–26。
+> 最后修改时间：2026-10-18 20:18 CST
+> 文档版本：v4
+> 修改说明：补齐 GitHub CLI 公开接口与已落地测试入口，明确历史验证范围。
 
 ## 1. 状态和目标
 
@@ -37,7 +37,7 @@ Electron main ────┘
 
 ## 3. 公开能力总表
 
-统一从 `@pi-gui/platform` 根入口导入。初始公开接口限定如下，不导出内部平台策略或测试注入函数。
+统一从 `@pi-gui/platform` 根入口导入。当前公开操作如下；GitHub CLI 的参数和平台范围另见[运行指南](../guides/github-cli-runtime.md)。不导出内部平台策略或测试注入函数。
 
 | 公开函数                     | 调用者的意图                   | 主要输入              | 返回                               |
 | ---------------------------- | ------------------------------ | --------------------- | ---------------------------------- |
@@ -50,6 +50,10 @@ Electron main ────┘
 | `runProcess`                 | 执行程序并收集输出             | 程序、argv、工作目录  | 退出码与原始输出字节               |
 | `resolveShell`               | 得到一个可启动的交互 shell     | 可选 shell 名称或路径 | shell 类型、程序路径、交互启动参数 |
 | `runShellCommand`            | 在指定 shell 中执行一段命令    | 命令文本、工作目录    | 退出码与原始输出字节               |
+
+另有 `bundledGitHubCliPath(resourceRoot, platform?, arch?)` 和 `resolveGitHubCli(options?)` 两个函数，以及 `GITHUB_CLI_VERSION` 常量、`GitHubCli` / `GitHubCliOptions` 类型。`bundledGitHubCliPath` 只计算候选路径，不证明二进制存在；`resolveGitHubCli` 优先检查传入 resourceRoot 下的宿主/架构资源，再查 PATH，找不到返回 `null`。当前资源只包含 Windows x64 的 GitHub CLI 2.102.0。返回对象包含 executable、bundled 和使用 `runProcess` 的 run 方法。
+
+这些 GitHub CLI 解析参数允许显式指定 platform/arch，属于资源定位接口，不能推广为其余文件与子进程操作需要调用者传平台上下文。实现和导出以[根入口](../../packages/platform/src/index.ts)及[GitHub CLI 模块](../../packages/platform/src/github-cli.ts)为准；生产调用者尚未统一迁移到 resolver。
 
 已有标准库操作如 `join`、`basename`、`readFile` 不再另起包装。Git 业务、备份轮转、JSON schema、会话租约及 PTY 进程所有权不属于该包。
 
@@ -404,7 +408,7 @@ export class ProcessError extends PlatformError {
 
 当前迁移状态如下：
 
-| 现有位置                                                 | 计划使用能力              | 必须留在当前 owner 的行为                                  |
+| 现有位置                                                 | 使用能力                  | 必须留在当前 owner 的行为                                  |
 | -------------------------------------------------------- | ------------------------- | ---------------------------------------------------------- |
 | `packages/catalogs/src/node/json-catalog-store.ts`       | 安全文件替换              | catalog schema、JSON 编码和 catalog 写入协调               |
 | `apps/desktop/electron/persistence/atomic-file-write.ts` | 文件替换和目录同步        | `.bak`、`.corrupt`、校验已有数据和备份恢复                 |
@@ -433,17 +437,17 @@ export class ProcessError extends PlatformError {
 
 持续读取测试不能通过容忍缺失文件来获得绿色结果；输出超限测试不能只检查返回了部分输出；包含性测试必须覆盖链接逃逸。文件锁导致的 `EPERM` 需在实际环境复现后分类，不先写宽泛重试。
 
-仓库检查沿用 `pnpm check`，新增 package 时同步 workspace typecheck、typed lint 和 host/renderer guard。实现阶段再补该 package 的实际测试脚本和 baseline 入口，不在包尚不存在时声称这些命令已经可运行。
+仓库检查沿用 `pnpm check`。当前 package 已有 build、typecheck、test 脚本；`pnpm --filter @pi-gui/platform test` 编译后运行 `test/*.test.mts`，根 `test:baseline` 已调用它。workspace typecheck、typed lint 和 host/renderer guard 已覆盖该包，后续接口变更应同步维护。命令存在不代表本轮已执行通过。
 
-落地顺序为：文件替换 → shell 配置 → 路径/链接能力 → 有限程序执行。每步先验证核心失败场景，再迁移真实调用者并删除重复实现。公开接口仍以本文件为准，阶段进度应在实施报告中标明，不能把目录已经创建当作能力完成。
+后续迁移先验证核心失败场景，再迁移真实调用者并删除被完整替代的实现。目录、导出或测试入口存在，不等于所有平台和文件系统均已验证。
 
-## 15. 本文的验证状态
+## 15. 历史验证与当前限制
 
-本次实现包含 package、catalog/driver/desktop 持久化和有限 Git 调用迁移。Windows 平台包测试 3 项通过，shared build、catalog、driver 和 Electron 主进程类型检查通过；尚未在 macOS 上实测，终端 PTY 的生命周期仍由 Desktop owner 管理。
+以下为十月十四日实现阶段的历史结果，不是本轮文档修订的新验收：当时实现包含 package、catalog/driver/desktop 持久化和有限 Git 调用迁移。Windows 平台包测试 3 项通过，shared build、catalog、driver 和 Electron 主进程类型检查通过；尚未在 macOS 上实测，终端 PTY 的生命周期仍由 Desktop owner 管理。
 
-9 个公开操作的 TypeScript 声明与 5 个调用示例已通过严格类型检查，文档通过仓库已安装 Prettier 的格式检查。检查使用 Node v24.21.0，声明和示例的检查输出保留于 `.artifacts/platform-package-doc-check.log`。这只证明声明和示例在类型上成立，不证明运行时行为。
+当时 9 个公开操作的 TypeScript 声明与 5 个调用示例已通过严格类型检查，文档通过仓库已安装 Prettier 的格式检查。检查使用 Node v24.21.0，声明和示例的检查输出保留于 `.artifacts/platform-package-doc-check.log`。这只证明声明和示例在类型上成立，不证明运行时行为。
 
-现有 Windows 清理检查暴露了并发 rename 的 EPERM、symlink 权限、POSIX shell 用例和路径选择器问题，作为设计输入。历史失败与验证证据见 [清理报告](../reports/obsolete-design-review.md)。这些证据不证明本文的新接口已经正确实现。
+现有 Windows 清理检查暴露了并发 rename 的 EPERM、symlink 权限、POSIX shell 用例和路径选择器问题，作为设计输入。历史失败与验证证据见 [清理报告](../archive/obsolete-design-review.md)。这些证据不证明本文的新接口已经正确实现。
 
 ## 版本修改记录
 
@@ -452,3 +456,4 @@ export class ProcessError extends PlatformError {
 | v1   | 2026-10-14 17:50 CST | 创建平台包公开能力与接口提案，明确参数心智模型、错误语义、迁移边界和三系统验收要求。                |
 | v2   | 2026-10-14 18:30 CST | 实现平台包并迁移文件、catalog、driver、持久化和有限 Git 调用，记录 Windows 验证结果与剩余平台边界。 |
 | v3   | 2026-10-14 21:10 CST | 将平台包支持的 Node 范围调整为 24–26。                                                              |
+| v4   | 2026-10-18 20:18 CST | 补齐 GitHub CLI 公开接口与已落地测试入口，明确历史验证范围。                                        |

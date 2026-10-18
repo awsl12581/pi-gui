@@ -1,14 +1,14 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-15 12:05 CST
-> 文档版本：v5
-> 修改说明：记录桌面扩展协议迁移到 Chord 1.2 的当前边界。
+> 最后修改时间：2026-10-18 20:18 CST
+> 文档版本：v6
+> 修改说明：同步归档后的历史验证入口，区分当前实现与旧阶段证据。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
 The Pi runtime and desktop extension adapter use Pi 1.2 and Chord 1.2. Extension facets register TypeBox remote contracts with `api.serve`; browser views acquire them through the scoped client host, subscribe to state, and release handles during cleanup. The transport uses Chord's frame, call, cancellation, and state protocols inside the existing opaque-origin frame boundary.
 
-The review/capture and custom extension-view additions are **implemented and verified within the documented macOS scope** as of September 22, 2026. The [final verification report](workspace-redesign-verification.md) separates baseline checks, Core Electron, real-provider workflows, external local-package loading and local packaged-app proof from the older [workspace foundation evidence](workspace-redesign-plan.md). It does not claim Windows/Linux validation or a notarized/published release.
+The review/capture and custom extension-view additions are **implemented and verified within the documented macOS scope** as of September 22, 2026. The [final verification report](archive/workspace-redesign-verification.md) separates baseline checks, Core Electron, real-provider workflows, external local-package loading and local packaged-app proof from the older [workspace foundation evidence](archive/workspace-foundation-verification.md). It does not claim Windows/Linux validation or a notarized/published release.
 
 ## Execution path
 
@@ -89,7 +89,7 @@ The [view host](../apps/desktop/electron/extensions/extension-view-owner.ts) val
 
 Runtime invalidation revokes capabilities before asynchronous cleanup. Backend activation defaults to a 10-second timeout; late activation is disposed. The frame has a 10-second ready deadline and 128-message pre-mount buffers. The transport bounds messages at 2,000,000 encoded characters and pending calls/subscriptions/updates at 256; host actions have a separate 32-pending limit. Disconnect rejects browser waits, while explicit cancellation and backend lifetime remain separate. No unknown-outcome operation is automatically replayed.
 
-The [local author workflow](../examples/desktop-extensions/README.md) covers the file-based [PR Review](../examples/desktop-extensions/pr-review/README.md) and [Test Runs](../examples/desktop-extensions/test-runs/README.md) examples. Browser edits use a checked-in build and Reload view; backend edits use an idle Pi reload. These use Pi's ordinary discovery/trust path without a second installer or marketplace; independently installed local tarballs also passed actual Pi loading. npm publication and a dedicated extension-authoring task button are not implemented. See the [extension design](chord-desktop-extension-design.md) for example limits and the [verification report](workspace-redesign-verification.md) for completed proof.
+The [local author workflow](../examples/desktop-extensions/README.md) covers the file-based [PR Review](../examples/desktop-extensions/pr-review/README.md) and [Test Runs](../examples/desktop-extensions/test-runs/README.md) examples. Browser edits use a checked-in build and Reload view; backend edits use an idle Pi reload. These use Pi's ordinary discovery/trust path without a second installer or marketplace; independently installed local tarballs also passed actual Pi loading. npm publication and a dedicated extension-authoring task button are not implemented. See the [extension design](chord-desktop-extension-design.md) for example limits and the [verification report](archive/workspace-redesign-verification.md) for completed proof.
 
 ## Current placement
 
@@ -179,3 +179,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。           |
 | v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。     |
 | v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。          |
+| v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。         |

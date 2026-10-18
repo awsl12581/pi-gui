@@ -1,8 +1,8 @@
 # CI baseline and adoption plan
 
-> 最后修改时间：2026-10-15 10:44 CST
-> 文档版本：v2
-> 修改说明：移除视频工程的 lint 与类型检查范围说明。
+> 最后修改时间：2026-10-18 20:18 CST
+> 文档版本：v3
+> 修改说明：同步五套示例及 Platform、Catalogs 和架构检查范围，收敛已有边界校验的维护要求。
 
 The current design is renderer → narrow preload API → main-process app store →
 Pi SDK driver → Pi runtime. Desktop UI state and Pi session state have separate
@@ -29,17 +29,20 @@ Run `pnpm check` locally and in the existing CI typecheck job. It runs:
    workspaces with the real typed-lint configuration, so adding a workspace
    without typed-lint coverage fails the baseline. Generated-output exclusions
    are scoped to output locations, not similarly named folders inside source.
-3. `pnpm check:architecture`: checks renderer runtime imports and reachable local
-   helpers. It rejects Node, Electron, Pi runtime, and main/preload implementation
-   dependencies. Explicit type-only imports and pure shared helpers remain valid.
+3. `pnpm check:architecture`: runs renderer-boundary, contract-authority,
+   host-boundary and timeline-owner checks. The renderer check follows reachable
+   local runtime helpers and rejects Node, Electron, Pi runtime, and main/preload
+   implementation imports. Explicit type-only imports and pure shared helpers
+   remain valid. The other checks enforce contract ownership, package dependency
+   direction and the timeline scroll owner.
 4. `pnpm typecheck`: builds shared declarations, then checks every workspace,
-   including the website and extension helper. It also checks both
-   desktop extension examples. First, `check:workspaces` asks pnpm for
+   including the website and extension helper. It also checks all five
+   desktop extension examples: PR Review, Test Runs, GitHub, Usage and Trace. First, `check:workspaces` asks pnpm for
    its workspace list and rejects missing or empty typecheck scripts, so a new
    workspace cannot silently skip checking. This checks script presence, not
    whether a deliberately misleading script performs a real typecheck. Existing strict TypeScript settings
    remain in place.
-5. `pnpm test:baseline`: guard tests, driver and extension-helper tests, both
+5. `pnpm test:baseline`: guard tests, Platform, Catalogs, driver and extension-helper tests, all five
    desktop extension examples and browser-bundle freshness, release-helper tests,
    and desktop unit tests (including failed-action state preservation).
 
@@ -77,19 +80,27 @@ See [merge enforcement](merge-enforcement.md) for its contract and remote
 activation status. Repository branch rules must require this result before it
 blocks merges; local tests alone do not establish remote enforcement.
 
-## Next decisions, in order
+## Maintaining boundary validation
 
-1. Strengthen IPC contracts: main and preload currently rely on annotations and
-   casts. Keep one authoritative contract and validate meaningful external data
-   boundaries. Avoid introducing a generic framework without a concrete need.
-2. Validate saved JSON at its owning storage boundary, with regression tests
-   proving invalid shapes fail clearly without overwriting existing data.
-   The mandatory schema-skew test now fails if its required projection is absent;
-   platform capability skips and credential-dependent lanes remain separate.
+Main already decodes Review and extension-view IPC requests through dedicated
+request modules. UI-state, attachment, catalog and scheduled-task owners validate
+their own saved formats; malformed or unsupported data must not be overwritten.
+See the [architecture](architecture.md) for ownership and recovery rules.
+
+For changed IPC or persistence paths, inspect the actual external boundary and
+maintain its decoder and authoritative contract. Existing decoders do not prove
+that every IPC route is fully hardened; identify a concrete unchecked input before
+adding a task. Keep schema-skew, invalid-shape and failed-action preservation
+coverage where they protect current data. Ordinary features follow the static
+check requirements in AGENTS.md; new tests are reserved for overall flows,
+high-risk operations and unusual failure cases.
 
 For every new rule, show a representative violation fail, restore a valid case,
-and run the affected product lane. Retain clear evidence of passed, failed and
-blocked coverage; a settings smoke does not establish a working conversation.
+and run the affected product lane. Retain evidence under `records/` and distinguish
+passed, failed and blocked coverage; a settings smoke does not establish a working
+conversation. Local isolated runs must follow the [verification guide](guides/isolated-desktop-verification.md)
+to keep builds, temporary directories and output in the run directory; CI workflow
+artifact paths are described separately above.
 
 ## Renderer architecture guard
 
@@ -119,7 +130,8 @@ still need to protect the checks.
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                       |
-| ---- | -------------------- | ---------------------------------------------- |
-| v1   | 2026-10-14 21:10 CST | 将应用 Node 基线改为 24，明确支持 Node 24–26。 |
-| v2   | 2026-10-15 10:44 CST | 移除视频工程的 lint 与类型检查范围说明。       |
+| 版本 | 修改时间             | 修改内容                                                                       |
+| ---- | -------------------- | ------------------------------------------------------------------------------ |
+| v1   | 2026-10-14 21:10 CST | 将应用 Node 基线改为 24，明确支持 Node 24–26。                                 |
+| v2   | 2026-10-15 10:44 CST | 移除视频工程的 lint 与类型检查范围说明。                                       |
+| v3   | 2026-10-18 20:18 CST | 同步五套示例及 Platform、Catalogs 和架构检查范围，收敛已有边界校验的维护要求。 |

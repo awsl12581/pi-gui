@@ -1,8 +1,8 @@
 # Pi 包使用情况与 GUI 插件架构讨论
 
-> 最后修改时间：2026-10-15 12:05 CST
-> 文档版本：v2
-> 修改说明：盘点 Pi 依赖及 GUI 扩展接入现状，提出桌面专属插件的边界与待讨论决策。
+> 最后修改时间：2026-10-18 20:18 CST
+> 文档版本：v3
+> 修改说明：将旧版 Chord 验证引用指向归档记录，补充当前设计入口。
 
 本文用于讨论。标为“现状”的内容来自当前代码；标为“提案”的内容尚未实现。Pi 与 Chord 已升级到 1.2，桌面视图协议同步迁移。
 
@@ -154,7 +154,7 @@ Electron main 的 extension owners 负责资源校验、backend host、连接和
 | 用户操作与示例               | [示例作者说明](../../examples/desktop-extensions/README.md)、[Extensions 页面](../../apps/desktop/src/features/extensions/extensions-view.tsx)                                                                |
 | 上游包目录及扩展概念         | [上游 main README](https://github.com/earendil-works/pi#packages)、[v1.0.0 README](https://github.com/earendil-works/pi/blob/v1.0.0/README.md)、当前安装包的 `docs/extensions.md`                             |
 
-本次上游快照与文档检查记录位于 `records/20261015-113454-pi-extension-review/`；升级证据位于 `records/20261015-115500-pi-1.2-upgrade/`。旧的 [Chord 设计文档](../chord-desktop-extension-design.md) 记录的是 0.87.0 和当时的 macOS 验证范围，不能视为当前 1.2 的验证结果。
+本次上游快照与文档检查记录位于 `records/20261015-113454-pi-extension-review/`；升级证据位于 `records/20261015-115500-pi-1.2-upgrade/`。旧版 [Chord 探测记录](../archive/chord-feasibility.md) 和 [Workspace 验证](../archive/workspace-redesign-verification.md) 已归档，记录的是 0.87 系列及当时的 macOS 范围，不能视为当前 1.2 的验证结果；[当前 Chord 设计](../chord-desktop-extension-design.md) 已同步 1.2。
 
 本次完成了类型检查、Chord transport 测试、桌面 view owner 测试和五个示例 bundle 构建。PR 示例的 Windows 集成测试因环境没有 `gh` 可执行文件未完成；没有完成真实 provider 验收。
 
@@ -164,3 +164,4 @@ Electron main 的 extension owners 负责资源校验、backend host、连接和
 | ---- | -------------------- | -------------------------------------------------------- |
 | v1   | 2026-10-15 11:36 CST | 创建 Pi 包盘点、GUI 扩展能力边界与桌面专属插件架构讨论。 |
 | v2   | 2026-10-15 12:05 CST | 记录 Pi/Chord 1.2 升级、桌面扩展协议迁移及验证限制。     |
+| v3   | 2026-10-18 20:18 CST | 将旧版 Chord 验证引用指向归档记录，补充当前设计入口。    |
