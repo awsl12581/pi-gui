@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { PiDesktopApi } from "../../../contracts/ipc";
@@ -18,6 +20,7 @@ export function useExtensionHostActions({
   readonly workbench: ReturnType<typeof useWorkbench>;
   readonly flushComposerDraftAsync: (target: SessionRef) => Promise<void>;
 }) {
+  useLocale();
   const [fileError, setFileError] = useState<{
     readonly target: SessionRef;
     readonly message: string;
@@ -34,11 +37,11 @@ export function useExtensionHostActions({
   const beforePrepareTaskDraft = useCallback(async () => {
     const draftTarget = target;
     if (!draftTarget || targetRef.current !== draftTarget)
-      throw new Error("Return to the extension's task to create a task draft.");
+      throw new Error(t("Return to the extension's task to create a task draft."));
     await flushComposerDraftAsync(draftTarget);
     if (targetRef.current !== draftTarget)
-      throw new Error("The task changed before its draft could be saved.");
-  }, [flushComposerDraftAsync, target]);
+      throw new Error(t("The task changed before its draft could be saved."));
+  }, [flushComposerDraftAsync, target, i18n.language]);
   const handlePrepareTaskDraftPendingChange = useCallback(
     (pending: boolean, requestKey: string) => {
       setPreparingDrafts((current) => {
@@ -50,7 +53,7 @@ export function useExtensionHostActions({
         return next;
       });
     },
-    [target],
+    [target, i18n.language],
   );
   useEffect(() => {
     setFileError(null);
@@ -72,7 +75,10 @@ export function useExtensionHostActions({
             if (targetRef.current !== current || fileRequestRef.current !== request) return;
             setFileError({
               target: current,
-              message: `Couldn't open ${event.path}. ${error instanceof Error ? error.message : "Try opening the file again."}`,
+              message: t("Couldn't open {{value0}}. {{value1}}", {
+                value0: event.path,
+                value1: error instanceof Error ? error.message : t("Try opening the file again."),
+              }),
             });
           });
       }),

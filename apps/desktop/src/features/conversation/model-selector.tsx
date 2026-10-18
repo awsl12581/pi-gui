@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import {
@@ -32,17 +34,18 @@ export function ModelSelector({
   disabled,
   dropdownPlacement = "above",
   showEmptyModelControl = false,
-  unselectedModelLabel = "Choose model",
-  emptyModelLabel = "Choose model",
+  unselectedModelLabel = t("Choose model"),
+  emptyModelLabel = t("Choose model"),
   emptyModelTitle = MODEL_OPTIONS_EMPTY_TITLE,
   onSetModel,
   onSetThinking,
 }: ModelSelectorProps) {
+  useLocale();
   const [open, setOpen] = useState<OpenDropdown>("none");
   const [modelFilter, setModelFilter] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const modelOptions = useMemo(() => buildModelOptions(runtime), [runtime]);
+  const modelOptions = useMemo(() => buildModelOptions(runtime), [runtime, i18n.language]);
   const filteredModels = useMemo(() => {
     if (!modelFilter) return modelOptions;
     const q = modelFilter.toLowerCase();
@@ -52,9 +55,12 @@ export function ModelSelector({
         opt.description.toLowerCase().includes(q) ||
         opt.providerId.toLowerCase().includes(q),
     );
-  }, [modelOptions, modelFilter]);
+  }, [modelOptions, modelFilter, i18n.language]);
 
-  const groupedModels = useMemo(() => groupByProvider(filteredModels), [filteredModels]);
+  const groupedModels = useMemo(
+    () => groupByProvider(filteredModels),
+    [filteredModels, i18n.language],
+  );
   const hasAvailableModelOptions = modelOptions.length > 0;
   const hasModelControl = Boolean(provider && modelId) || hasAvailableModelOptions;
   const shouldRenderModelControl = hasModelControl || showEmptyModelControl;
@@ -117,7 +123,7 @@ export function ModelSelector({
               <div className="model-selector__filter">
                 <input
                   className="model-selector__filter-input"
-                  placeholder="Filter models..."
+                  placeholder={t("Filter models...")}
                   value={modelFilter}
                   onChange={(e) => setModelFilter(e.target.value)}
                   autoFocus
@@ -142,7 +148,7 @@ export function ModelSelector({
                       >
                         <span className="model-selector__item-label">{option.label}</span>
                         {isActive ? (
-                          <span className="model-selector__item-meta">active</span>
+                          <span className="model-selector__item-meta">{t("active")}</span>
                         ) : null}
                       </button>
                     );
@@ -152,10 +158,10 @@ export function ModelSelector({
               {groupedModels.length === 0 ? (
                 <>
                   <div className="model-selector__group-title">
-                    {noMatchingModels ? "No matching models" : emptyModelTitle}
+                    {noMatchingModels ? t("No matching models") : t(emptyModelTitle)}
                   </div>
                   {noMatchingModels ? (
-                    <div className="model-selector__empty">Try a different filter.</div>
+                    <div className="model-selector__empty">{t("Try a different filter.")}</div>
                   ) : null}
                 </>
               ) : null}
@@ -171,14 +177,14 @@ export function ModelSelector({
             disabled={disabled}
             onClick={() => setOpen(open === "thinking" ? "none" : "thinking")}
           >
-            {thinkingLevel}
+            {t(thinkingLevel)}
           </button>
           {open === "thinking" ? (
             <div
               className={`model-selector__dropdown ${dropdownPlacement === "below" ? "model-selector__dropdown--below" : ""}`}
               onWheel={(event) => event.stopPropagation()}
             >
-              <div className="model-selector__group-title">Thinking Level</div>
+              <div className="model-selector__group-title">{t("Thinking Level")}</div>
               {THINKING_OPTIONS.map((option) => {
                 const isActive = option.value === thinkingLevel;
                 return (

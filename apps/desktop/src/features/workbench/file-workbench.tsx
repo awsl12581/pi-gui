@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import {
   useCallback,
   useEffect,
@@ -29,6 +31,7 @@ export function FileWorkbench({
   tabs,
   onTabsChange,
 }: FileWorkbenchProps) {
+  useLocale();
   const [files, setFiles] = useState<readonly string[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [listError, setListError] = useState<string | null>(null);
@@ -52,7 +55,7 @@ export function FileWorkbench({
             return;
           }
           console.error("[renderer] listWorkspaceFiles failed", error);
-          setListError("Couldn't load files");
+          setListError(t("Couldn't load files"));
         })
         .finally(() => {
           if (requestIdRef.current !== requestId) {
@@ -61,7 +64,7 @@ export function FileWorkbench({
           setLoading(false);
         });
     },
-    [api, workspace.id],
+    [api, workspace.id, i18n.language],
   );
 
   const prevStatusRef = useRef(sessionStatus);

@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { trapDialogFocus } from "../../ui/dialog-focus";
@@ -10,13 +12,14 @@ interface ImageAttachmentThumbProps {
 
 /** Image attachment thumbnail that opens the full image in a focused viewer when clicked. */
 export function ImageAttachmentThumb({ src, name, className }: ImageAttachmentThumbProps) {
+  useLocale();
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <>
       <button
-        aria-label={`View ${name}`}
+        aria-label={t("View {{value0}}", { value0: name })}
         className={`image-attachment-thumb ${className}`}
         ref={triggerRef}
         title={name}
@@ -48,6 +51,7 @@ function ImageViewer({
   readonly name: string;
   readonly onClose: () => void;
 }) {
+  useLocale();
   const dialogRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -84,7 +88,7 @@ function ImageViewer({
     >
       <img alt={name} className="image-viewer__image" src={src} />
       <button
-        aria-label="Close image"
+        aria-label={t("Close image")}
         className="image-viewer__close"
         type="button"
         onClick={onClose}

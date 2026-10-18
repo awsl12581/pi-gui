@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Notification, type BrowserWindow } from "electron";
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -150,7 +151,7 @@ export class NotificationManager {
       await this.showNotification(
         event.sessionRef,
         event.snapshot.title,
-        "Agent finished responding",
+        t("Agent finished responding"),
       );
       return;
     }
@@ -439,7 +440,7 @@ function requiresAttention(event: Extract<SessionDriverEvent, { type: "hostUiReq
 
 function hostUiBody(event: Extract<SessionDriverEvent, { type: "hostUiRequest" }>): string {
   if (event.request.kind === "notify") {
-    return `${event.request.level === "error" ? "Error" : "Warning"}: ${event.request.message}`;
+    return `${event.request.level === "error" ? t("Error") : t("Warning")}: ${event.request.message}`;
   }
   if (
     event.request.kind === "confirm" ||
@@ -448,7 +449,7 @@ function hostUiBody(event: Extract<SessionDriverEvent, { type: "hostUiRequest" }
   ) {
     return event.request.title;
   }
-  return "Needs your input";
+  return t("Needs your input");
 }
 
 function sameSessionRef(left: SessionRef | undefined, right: SessionRef | undefined): boolean {

@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { HostUiResponse } from "@pi-gui/session-driver";
 import { trapDialogFocus } from "../../ui/dialog-focus";
@@ -65,6 +67,7 @@ export function useDismissibleExtensionDock(
   uiState: SessionExtensionUiStateRecord | undefined,
   dock: ExtensionDockModel | undefined,
 ): { readonly dock: ExtensionDockModel | undefined; readonly dismiss: () => void } {
+  useLocale();
   const [dismissedWidgetText, setDismissedWidgetText] = useState<ReadonlyMap<string, string>>(
     () => new Map(),
   );
@@ -73,7 +76,7 @@ export function useDismissibleExtensionDock(
   const dismiss = useCallback(() => {
     if (!widgetText) return;
     setDismissedWidgetText((current) => new Map(current).set(sessionKey, widgetText));
-  }, [sessionKey, widgetText]);
+  }, [sessionKey, widgetText, i18n.language]);
   const dismissed = dismissedWidgetText.get(sessionKey);
   const changed = dismissed !== undefined && widgetText !== undefined && dismissed !== widgetText;
   // Once the widget changes or is cleared, the hide is spent: the same text coming back later
@@ -101,6 +104,7 @@ export function ExtensionDock({
   readonly onToggle: () => void;
   readonly onDismiss?: () => void;
 }) {
+  useLocale();
   return (
     <div
       className={`extension-dock ${expanded ? "extension-dock--expanded" : ""}`}
@@ -125,10 +129,10 @@ export function ExtensionDock({
         </button>
         {onDismiss ? (
           <button
-            aria-label="Hide extension status"
+            aria-label={t("Hide extension status")}
             className="extension-dock__dismiss icon-button"
             data-testid="extension-dock-dismiss"
-            title="Hide until the extension changes it"
+            title={t("Hide until the extension changes it")}
             type="button"
             onClick={(event) => focusComposerAfter(event.currentTarget, onDismiss)}
           >
@@ -156,6 +160,7 @@ export function ExtensionDialog({
   readonly dialog: SessionExtensionDialogRecord;
   readonly onRespond: (response: HostUiResponse) => void;
 }) {
+  useLocale();
   const [draft, setDraft] = useState("");
   const titleId = useId();
   const bodyId = useId();
@@ -254,7 +259,7 @@ export function ExtensionDialog({
           <input
             autoFocus
             className="skills-search"
-            placeholder={dialog.placeholder ?? "Enter a value"}
+            placeholder={dialog.placeholder ?? t("Enter a value")}
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
           />
@@ -277,7 +282,7 @@ export function ExtensionDialog({
             type="button"
             onClick={respondWithCancel}
           >
-            Cancel
+            {t("Cancel")}
           </button>
           {dialog.kind === "confirm" ? (
             <button
@@ -286,7 +291,7 @@ export function ExtensionDialog({
               type="button"
               onClick={respondWithSubmit}
             >
-              Confirm
+              {t("Confirm")}
             </button>
           ) : null}
           {dialog.kind === "input" || dialog.kind === "editor" ? (
@@ -296,7 +301,7 @@ export function ExtensionDialog({
               type="button"
               onClick={respondWithSubmit}
             >
-              Submit
+              {t("Submit")}
             </button>
           ) : null}
         </div>
@@ -336,7 +341,7 @@ function resolveDockSummaryText(
     }
   }
 
-  return GENERIC_ACTIVE_LABEL;
+  return t(GENERIC_ACTIVE_LABEL);
 }
 
 function buildDockBodyText(

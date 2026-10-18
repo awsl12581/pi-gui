@@ -1,11 +1,13 @@
+import {
+  formatScheduledTaskRecurrence,
+  formatScheduledTaskNextRun,
+} from "../../i18n/scheduled-tasks";
 import { expect, test } from "@playwright/test";
 import {
   nextRunAt,
   earliestScheduledWakeAt,
 } from "../../electron/scheduled-tasks/scheduled-task-schedule";
 import {
-  formatScheduledTaskRecurrence,
-  formatScheduledTaskNextRun,
   isIanaTimeZone,
   onceActivationNeedsNewTime,
   scheduledOriginsByMessageId,

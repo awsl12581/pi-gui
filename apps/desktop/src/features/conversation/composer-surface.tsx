@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import {
   useRef,
   useState,
@@ -128,6 +130,7 @@ export function ComposerSurface({
   footer,
   annotationChip,
 }: ComposerSurfaceProps) {
+  useLocale();
   const [isDragActive, setIsDragActive] = useState(false);
   const dragDepthRef = useRef(0);
 
@@ -183,7 +186,7 @@ export function ComposerSurface({
     >
       {isDragActive ? (
         <div className="composer__drop-indicator" data-testid="composer-drop-indicator">
-          Drop images or files to attach
+          {t("Drop images or files to attach")}
         </div>
       ) : null}
       {activeSlashCommand ? (
@@ -198,7 +201,7 @@ export function ComposerSurface({
             ) : null}
           </span>
           <button
-            aria-label={`Clear ${activeSlashCommand.title}`}
+            aria-label={t("Clear {{value0}}", { value0: activeSlashCommand.title })}
             className="composer__slash-intent-clear"
             type="button"
             onClick={onClearSlashCommand}
@@ -238,7 +241,7 @@ export function ComposerSurface({
                 </>
               )}
               <button
-                aria-label={`Remove ${attachment.name}`}
+                aria-label={t("Remove {{value0}}", { value0: attachment.name })}
                 className="composer-attachment__remove"
                 type="button"
                 onClick={() => onRemoveAttachment(attachment.id)}
@@ -322,7 +325,7 @@ export function ComposerSurface({
                               ) : null}
                               {command.compatibility?.status === "terminal-only" ? (
                                 <span className="slash-menu__skill-badge slash-menu__skill-badge--warning">
-                                  Terminal-only
+                                  {t("Terminal-only")}
                                 </span>
                               ) : null}
                             </span>
@@ -408,6 +411,7 @@ function MentionMenuSections({
   readonly onSelect: (option: MentionOption) => void;
   readonly onEnableExtension: (option: ExtensionMentionOption) => void;
 }) {
+  useLocale();
   const extensionOptions = options.filter(
     (option): option is ExtensionMentionOption => option.kind === "extension",
   );
@@ -419,7 +423,7 @@ function MentionMenuSections({
     <>
       {extensionOptions.length > 0 ? (
         <MentionMenuSection
-          title="Extensions"
+          title={t("Extensions")}
           options={extensionOptions}
           selectedIndex={selectedIndex}
           allOptions={options}
@@ -429,7 +433,7 @@ function MentionMenuSections({
       ) : null}
       {fileOptions.length > 0 ? (
         <MentionMenuSection
-          title="Files"
+          title={t("Files")}
           options={fileOptions}
           selectedIndex={selectedIndex}
           allOptions={options}
@@ -456,6 +460,7 @@ function MentionMenuSection({
   readonly onSelect: (option: MentionOption) => void;
   readonly onEnableExtension: (option: ExtensionMentionOption) => void;
 }) {
+  useLocale();
   return (
     <div className="mention-menu__section">
       <div className="mention-menu__section-title">{title}</div>
@@ -483,6 +488,7 @@ function MentionMenuItem({
   readonly onSelect: (option: MentionOption) => void;
   readonly onEnableExtension: (option: ExtensionMentionOption) => void;
 }) {
+  useLocale();
   if (option.kind === "extension") {
     return (
       <div
@@ -508,7 +514,7 @@ function MentionMenuItem({
               <span className="mention-menu__filename">{option.displayName}</span>
               {option.enabled ? null : (
                 <span className="mention-menu__badge">
-                  {option.enabling ? "Enabling" : "Disabled"}
+                  {option.enabling ? t("Enabling") : t("Disabled")}
                 </span>
               )}
             </span>
@@ -517,13 +523,13 @@ function MentionMenuItem({
         </button>
         {option.enabled ? null : (
           <button
-            aria-label={`Enable ${option.displayName}`}
+            aria-label={t("Enable {{value0}}", { value0: option.displayName })}
             className="mention-menu__enable"
             disabled={option.enabling}
             type="button"
             onClick={() => onEnableExtension(option)}
           >
-            {option.enabling ? "Enabling" : "Enable"}
+            {option.enabling ? t("Enabling") : t("Enable")}
           </button>
         )}
       </div>
@@ -551,6 +557,7 @@ function MentionMenuItem({
 }
 
 function SlashCommandIcon({ command }: { readonly command: ComposerSlashCommand }) {
+  useLocale();
   switch (command.kind) {
     case "runtime":
       return command.runtimeCommand?.source === "skill" ? <SkillIcon /> : <SparkIcon />;

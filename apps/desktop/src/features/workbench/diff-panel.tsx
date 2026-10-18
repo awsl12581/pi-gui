@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   DiffPanelFileRequest,
@@ -47,8 +49,9 @@ export function DiffPanel({
   onSelectionChange,
   onOpenFile,
 }: DiffPanelProps) {
+  useLocale();
   const scopeKey = JSON.stringify(selection.scope);
-  const requestedScope = useMemo(() => selection.scope, [scopeKey]);
+  const requestedScope = useMemo(() => selection.scope, [scopeKey, i18n.language]);
   const queryKey = JSON.stringify([workspaceId, sessionId, selection.workspaceId, scopeKey]);
   const activeQueryKey = useRef(queryKey);
   activeQueryKey.current = queryKey;
@@ -85,7 +88,7 @@ export function DiffPanel({
   useEffect(() => setHeldPath(undefined), [selection.selectedPath]);
   const selectedFile = useMemo(
     () => (review ? pickReviewFile(review, [selection.selectedPath, shownFallback]) : undefined),
-    [review, selection.selectedPath, shownFallback],
+    [review, selection.selectedPath, shownFallback, i18n.language],
   );
   const stale = actionIssue?.state === "stale" || fileResult?.state === "stale";
 
@@ -109,7 +112,7 @@ export function DiffPanel({
         result: {
           state: "unavailable",
           code: "checkout-unavailable",
-          message: "The selected checkout is unavailable.",
+          message: t("The selected checkout is unavailable."),
         },
       });
       setLoading(false);
@@ -144,6 +147,8 @@ export function DiffPanel({
     selection.workspaceId,
     sessionId,
     workspaceId,
+    ,
+    i18n.language,
   ]);
 
   useEffect(() => {
@@ -247,6 +252,8 @@ export function DiffPanel({
     selection.workspaceId,
     sessionId,
     workspaceId,
+    ,
+    i18n.language,
   ]);
   refreshQuietlyRef.current = refreshQuietly;
   useEffect(() => {
@@ -420,16 +427,18 @@ export function DiffPanel({
       ? [
           review.baseLabel,
           ...(review.headOid ? [`HEAD ${review.headOid.slice(0, 8)}`] : []),
-          ...(review.capturedAt ? [`Captured ${formatCaptureTime(review.capturedAt)}`] : []),
+          ...(review.capturedAt
+            ? [t("Captured {{value0}}", { value0: formatCaptureTime(review.capturedAt) })]
+            : []),
         ]
       : [];
 
   return (
-    <section className="side-panel diff-panel review-panel" aria-label="Review">
+    <section className="side-panel diff-panel review-panel" aria-label={t("Review")}>
       <div className="review-panel__toolbar">
         <ReviewMenu
-          label="Review scope"
-          value={SCOPE_LABELS[selectedScope]}
+          label={t("Review scope")}
+          value={t(SCOPE_LABELS[selectedScope])}
           buttonClassName="review-panel__scope"
           buttonContent={<ChevronDownIcon />}
           align="start"
@@ -449,21 +458,21 @@ export function DiffPanel({
           className="icon-button review-panel__tool"
           type="button"
           onClick={refresh}
-          aria-label="Refresh"
-          title="Refresh comparison"
+          aria-label={t("Refresh")}
+          title={t("Refresh comparison")}
           disabled={loading}
         >
           <RefreshIcon />
         </button>
         <ReviewMenu
-          label="Review options"
+          label={t("Review options")}
           buttonClassName="icon-button review-panel__tool"
           buttonContent={<MoreIcon />}
           align="end"
           details={comparisonDetails}
           options={[
             ...(!selectedCheckout
-              ? [{ id: selection.workspaceId, label: "Unavailable checkout", checked: true }]
+              ? [{ id: selection.workspaceId, label: t("Unavailable checkout"), checked: true }]
               : []),
             ...contexts.map((context) => ({
               id: context.workspace.id,
@@ -488,9 +497,9 @@ export function DiffPanel({
           className={`icon-button review-panel__tool${treeVisible ? " review-panel__tool--active" : ""}`}
           type="button"
           onClick={() => setTreeVisible(!treeVisible)}
-          aria-label={treeVisible ? "Hide file tree" : "Show file tree"}
+          aria-label={treeVisible ? t("Hide file tree") : t("Show file tree")}
           aria-pressed={treeVisible}
-          title={treeVisible ? "Hide file tree" : "Show file tree"}
+          title={treeVisible ? t("Hide file tree") : t("Show file tree")}
         >
           <SidePanelIcon />
         </button>
@@ -510,20 +519,20 @@ export function DiffPanel({
               });
           }}
         >
-          <label htmlFor="review-base-ref">Base</label>
+          <label htmlFor="review-base-ref">{t("Base")}</label>
           <input
             id="review-base-ref"
-            aria-label="Base branch"
+            aria-label={t("Base branch")}
             value={baseDraft}
             onChange={(event) => setBaseDraft(event.target.value)}
             placeholder={
               review?.scope.kind === "branch"
-                ? (review.scope.baseRef ?? "Repository default")
-                : "Repository default"
+                ? (review.scope.baseRef ?? t("Repository default"))
+                : t("Repository default")
             }
           />
           <button type="submit" className="button" disabled={loading}>
-            Compare
+            {t("Compare")}
           </button>
         </form>
       ) : null}
@@ -533,7 +542,7 @@ export function DiffPanel({
         <div className="diff-panel__viewer review-panel__viewer">
           {loading || !result ? (
             <div className="diff-panel__empty" role="status">
-              Loading comparison…
+              {t("Loading comparison…")}
             </div>
           ) : result.state !== "available" ? (
             <div
@@ -543,18 +552,18 @@ export function DiffPanel({
             >
               <p>{result.message}</p>
               <button className="button" type="button" onClick={refresh}>
-                Retry
+                {t("Retry")}
               </button>
             </div>
           ) : result.files.length === 0 ? (
             <div className="diff-panel__empty">
               {result.coverage.state === "partial"
-                ? "No changes in the captured files."
-                : "No changes"}
+                ? t("No changes in the captured files.")
+                : t("No changes")}
             </div>
           ) : !selectedFile ? (
             <div className="diff-panel__empty">
-              This file is not part of the selected comparison.
+              {t("This file is not part of the selected comparison.")}
             </div>
           ) : (
             <>
@@ -576,8 +585,8 @@ export function DiffPanel({
                   <button
                     className="icon-button review-panel__open-file"
                     type="button"
-                    aria-label="Open in Files"
-                    title="Open in Files"
+                    aria-label={t("Open in Files")}
+                    title={t("Open in Files")}
                     onClick={() => openCurrentFile(result, selectedFile)}
                   >
                     <FileIcon />
@@ -586,12 +595,13 @@ export function DiffPanel({
               </div>
               {selectedFile.previousPath ? (
                 <div className="review-panel__rename">
-                  Renamed from {formatPathForDisplay(selectedFile.previousPath)}
+                  {t("Renamed from")}
+                  {formatPathForDisplay(selectedFile.previousPath)}
                 </div>
               ) : null}
               <div className="review-panel__patches">
                 {fileLoading ? (
-                  <div className="diff-panel__empty">Loading diff…</div>
+                  <div className="diff-panel__empty">{t("Loading diff…")}</div>
                 ) : displayedFileResult?.state === "available" ? (
                   <>
                     <CoverageNotice coverage={displayedFileResult.coverage} />
@@ -599,7 +609,7 @@ export function DiffPanel({
                       <p className="review-panel__summary">{displayedFileResult.summary}</p>
                     ) : null}
                     {displayedFileResult.patch ? (
-                      <section className="review-panel__patch-section" aria-label="Diff">
+                      <section className="review-panel__patch-section" aria-label={t("Diff")}>
                         <InlineDiff
                           diff={displayedFileResult.patch}
                           language={extensionToLanguage(selectedFile.path)}
@@ -607,13 +617,15 @@ export function DiffPanel({
                         />
                       </section>
                     ) : displayedFileResult.summary ? null : (
-                      <p className="diff-panel__empty">No text diff is available for this file.</p>
+                      <p className="diff-panel__empty">
+                        {t("No text diff is available for this file.")}
+                      </p>
                     )}
                   </>
                 ) : displayedFileResult ? (
                   <ReviewIssueBanner issue={displayedFileResult} onRefresh={refresh} />
                 ) : (
-                  <div className="diff-panel__empty">Loading diff…</div>
+                  <div className="diff-panel__empty">{t("Loading diff…")}</div>
                 )}
               </div>
             </>
@@ -670,16 +682,49 @@ const SCOPE_OPTIONS: readonly {
   readonly label: string;
   readonly startsGroup?: boolean;
 }[] = [
-  { id: "turn", label: SCOPE_LABELS.turn },
-  { id: "selected-turn", label: SCOPE_LABELS["selected-turn"] },
-  { id: "uncommitted", label: SCOPE_LABELS.uncommitted, startsGroup: true },
-  { id: "unstaged", label: SCOPE_LABELS.unstaged },
-  { id: "staged", label: SCOPE_LABELS.staged },
-  { id: "branch", label: SCOPE_LABELS.branch, startsGroup: true },
+  {
+    id: "turn",
+    get label() {
+      return t(SCOPE_LABELS.turn);
+    },
+  },
+  {
+    id: "selected-turn",
+    get label() {
+      return t(SCOPE_LABELS["selected-turn"]);
+    },
+  },
+  {
+    id: "uncommitted",
+    get label() {
+      return t(SCOPE_LABELS.uncommitted);
+    },
+    startsGroup: true,
+  },
+  {
+    id: "unstaged",
+    get label() {
+      return t(SCOPE_LABELS.unstaged);
+    },
+  },
+  {
+    id: "staged",
+    get label() {
+      return t(SCOPE_LABELS.staged);
+    },
+  },
+  {
+    id: "branch",
+    get label() {
+      return t(SCOPE_LABELS.branch);
+    },
+    startsGroup: true,
+  },
 ];
 
 /** A path with its folder muted, like Codex's file header. */
 function PathLabel({ path }: { readonly path: string }) {
+  useLocale();
   const display = formatPathForDisplay(path);
   if (display !== path) return <>{display}</>;
   const slash = path.lastIndexOf("/");
@@ -710,6 +755,7 @@ function ReviewIssueBanner({
   readonly issue: ReviewIssue;
   readonly onRefresh: () => void;
 }) {
+  useLocale();
   return (
     <div
       className="review-panel__issue"
@@ -718,18 +764,19 @@ function ReviewIssueBanner({
     >
       <p>{issue.message}</p>
       <button className="button" type="button" onClick={onRefresh}>
-        {issue.state === "stale" ? "Refresh comparison" : "Retry"}
+        {issue.state === "stale" ? t("Refresh comparison") : t("Retry")}
       </button>
     </div>
   );
 }
 
 function CoverageNotice({ coverage }: { readonly coverage: ReviewCoverage }) {
+  useLocale();
   if (coverage.state === "complete" && coverage.notes.length === 0) return null;
   return (
     <details className="review-panel__coverage" data-testid="review-coverage">
       <summary>
-        {coverage.state === "partial" ? "Comparison has limits" : "Comparison details"}
+        {coverage.state === "partial" ? t("Comparison has limits") : t("Comparison details")}
       </summary>
       {coverage.notes.length ? (
         <ul>
@@ -738,7 +785,7 @@ function CoverageNotice({ coverage }: { readonly coverage: ReviewCoverage }) {
           ))}
         </ul>
       ) : (
-        <p>Some changes could not be included.</p>
+        <p>{t("Some changes could not be included.")}</p>
       )}
     </details>
   );
@@ -746,7 +793,7 @@ function CoverageNotice({ coverage }: { readonly coverage: ReviewCoverage }) {
 
 function formatCaptureTime(value: string): string {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString(i18n.language);
 }
 
 function errorMessage(error: unknown): string {
@@ -757,6 +804,7 @@ const TREE_VISIBLE_KEY = "pi-gui.review-tree-visible";
 
 /** Whether the changed-file tree shows beside the diff; a window preference like pane widths. */
 function useReviewTreeVisible() {
+  useLocale();
   const [visible, setVisible] = useState(() => {
     try {
       return localStorage.getItem(TREE_VISIBLE_KEY) !== "false";
@@ -764,13 +812,16 @@ function useReviewTreeVisible() {
       return true;
     }
   });
-  const update = useCallback((next: boolean) => {
-    setVisible(next);
-    try {
-      localStorage.setItem(TREE_VISIBLE_KEY, String(next));
-    } catch {
-      // The toggle still applies for this window when preferences cannot be saved.
-    }
-  }, []);
+  const update = useCallback(
+    (next: boolean) => {
+      setVisible(next);
+      try {
+        localStorage.setItem(TREE_VISIBLE_KEY, String(next));
+      } catch {
+        // The toggle still applies for this window when preferences cannot be saved.
+      }
+    },
+    [i18n.language],
+  );
   return [visible, update] as const;
 }

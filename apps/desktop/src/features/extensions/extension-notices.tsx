@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { SessionExtensionNoticeRecord } from "../../../contracts/desktop-state";
 
 // Same words terminal pi prints before a warning or error notify; info has none.
@@ -13,6 +15,7 @@ export function ExtensionNotices({
 }: {
   readonly notices?: readonly SessionExtensionNoticeRecord[];
 }) {
+  useLocale();
   // The live region stays mounted so screen readers announce notices as they arrive.
   return (
     <div className="extension-notices" data-testid="extension-notices" role="status">
@@ -25,7 +28,7 @@ export function ExtensionNotices({
             data-testid="extension-notice"
             key={notice.id}
           >
-            {prefix ? <span className="extension-notice__level">{prefix}</span> : null}
+            {prefix ? <span className="extension-notice__level">{t(prefix)}</span> : null}
             <span className="extension-notice__message">{notice.message}</span>
           </div>
         );

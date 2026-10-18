@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { randomUUID } from "node:crypto";
 import { constants, type Stats } from "node:fs";
 import {
@@ -256,7 +257,7 @@ export class TurnCheckpointStore {
       assistantEntryIds: [],
       lastEntryId: null,
       outcome: "open",
-      before: unavailableCapture("capture-pending", "The before capture did not finish."),
+      before: unavailableCapture("capture-pending", t("The before capture did not finish.")),
       after: null,
       overlaps: [],
     });
@@ -299,7 +300,7 @@ export class TurnCheckpointStore {
     const safeCapture = signal.aborted
       ? unavailableCapture(
           "capture-aborted",
-          "The capture was interrupted or exceeded its time limit.",
+          t("The capture was interrupted or exceeded its time limit."),
         )
       : capture;
     if (safeCapture.state === "unavailable" && safeCapture.code === "capture-aborted")
@@ -362,7 +363,7 @@ export class TurnCheckpointStore {
     } catch {
       return unavailableReview(
         "checkpoint-storage-unavailable",
-        "Checkpoint metadata could not be read; existing data was retained.",
+        t("Checkpoint metadata could not be read; existing data was retained."),
       );
     }
     const record = input.checkpointId
@@ -382,7 +383,7 @@ export class TurnCheckpointStore {
     ) {
       return unavailableReview(
         "checkpoint-unavailable",
-        "No captured turn exists for this task and checkout.",
+        t("No captured turn exists for this task and checkout."),
       );
     }
     return resolveRecord(this.repositoryPath, record);
@@ -469,12 +470,12 @@ export class TurnCheckpointStore {
       const root = await realpath(workspacePath);
       const rootStat = await lstat(root);
       if (!rootStat.isDirectory() || rootStat.isSymbolicLink())
-        throw new CaptureError("checkout-changing", "The checkout root changed during capture.");
+        throw new CaptureError("checkout-changing", t("The checkout root changed during capture."));
       const repositoryRoot = stripLine(await git(root, ["rev-parse", "--show-toplevel"], signal));
       if ((await realpath(repositoryRoot)) !== root)
         throw new CaptureError(
           "checkout-root-required",
-          "Turn captures require the Git checkout root.",
+          t("Turn captures require the Git checkout root."),
         );
       const [trackedOutput, otherOutput] = await Promise.all([
         git(root, ["ls-files", "--stage", "-v", "-z"], signal),
@@ -486,22 +487,22 @@ export class TurnCheckpointStore {
         if (!match)
           throw new CaptureError(
             "inventory-invalid",
-            "Git returned an unreadable tracked-file inventory.",
+            t("Git returned an unreadable tracked-file inventory."),
           );
         if (match[1]!.toUpperCase() === "S")
           throw new CaptureError(
             "sparse-checkout",
-            "Sparse checkout paths are not yet supported by turn captures.",
+            t("Sparse checkout paths are not yet supported by turn captures."),
           );
         if (match[2] === "160000")
           throw new CaptureError(
             "submodule",
-            "Submodule contents are excluded; this turn capture is unavailable.",
+            t("Submodule contents are excluded; this turn capture is unavailable."),
           );
         if (match[4] !== "0")
           throw new CaptureError(
             "conflicted-checkout",
-            "Resolve Git index conflicts before capturing a complete turn.",
+            t("Resolve Git index conflicts before capturing a complete turn."),
           );
         paths.add(match[5]!);
       }
@@ -515,7 +516,9 @@ export class TurnCheckpointStore {
       if (paths.size > this.limits.maxFiles)
         throw new CaptureError(
           "file-limit",
-          `The checkout exceeds the ${this.limits.maxFiles}-file capture limit.`,
+          t("The checkout exceeds the {{value0}}-file capture limit.", {
+            value0: this.limits.maxFiles,
+          }),
         );
       const entries = [...paths];
       // Only files whose version changed since this checkout's last capture are read again.
@@ -540,7 +543,7 @@ export class TurnCheckpointStore {
               if (size > this.limits.maxFileBytes || byteCount + size > this.limits.maxBytes) {
                 throw new CaptureError(
                   "byte-limit",
-                  "The checkout exceeds the bounded turn-capture size limit.",
+                  t("The checkout exceeds the bounded turn-capture size limit."),
                 );
               }
               byteCount += size;
@@ -591,7 +594,7 @@ export class TurnCheckpointStore {
       ) {
         throw new CaptureError(
           "object-invalid",
-          "Git returned an invalid snapshot object inventory.",
+          t("Git returned an invalid snapshot object inventory."),
         );
       }
       await rm(captureDirectory, { recursive: true, force: true });
@@ -638,7 +641,7 @@ export class TurnCheckpointStore {
           await git(this.repositoryPath, ["write-tree"], signal, undefined, indexEnvironment),
         );
         if (!/^[a-f0-9]{40}$/.test(treeOid))
-          throw new CaptureError("tree-invalid", "Git returned an invalid snapshot tree.");
+          throw new CaptureError("tree-invalid", t("Git returned an invalid snapshot tree."));
         signal.throwIfAborted();
         // The creation time in the name lets maintenance spare refs of in-flight captures.
         await git(
@@ -673,13 +676,13 @@ export class TurnCheckpointStore {
         timeout.aborted || parentSignal?.aborted
           ? unavailableCapture(
               "capture-aborted",
-              "The capture was interrupted or exceeded its time limit.",
+              t("The capture was interrupted or exceeded its time limit."),
             )
           : error instanceof CaptureError
             ? unavailableCapture(error.code, error.message)
             : unavailableCapture(
                 "capture-failed",
-                "The checkout could not be captured completely; no partial diff will be shown.",
+                t("The checkout could not be captured completely; no partial diff will be shown."),
               );
       return { ...result, fileCount, byteCount, durationMs: Date.now() - started };
     } finally {
@@ -753,7 +756,7 @@ export class TurnCheckpointStore {
             outcome: "interrupted",
             after: unavailableCapture(
               "runtime-interrupted",
-              "The app exited before this interval's final capture.",
+              t("The app exited before this interval's final capture."),
             ),
           });
         } else this.records.set(record.checkpointId, record);
@@ -933,10 +936,10 @@ async function inspectSnapshotFile(
     path.includes("\0") ||
     (sep === "\\" && path.includes("\\"))
   )
-    throw new CaptureError("unsafe-path", "The checkout contains an unsafe capture path.");
+    throw new CaptureError("unsafe-path", t("The checkout contains an unsafe capture path."));
   const absolute = resolve(root, path);
   if (relative(root, absolute).startsWith(`..${sep}`))
-    throw new CaptureError("unsafe-path", "A capture path escapes the checkout.");
+    throw new CaptureError("unsafe-path", t("A capture path escapes the checkout."));
   const ancestors: { path: string; stat: Stats }[] = [{ path: root, stat: rootStat }];
   let parent = root;
   for (const component of parts.slice(0, -1)) {
@@ -961,7 +964,10 @@ async function inspectSnapshotFile(
     for (const ancestor of ancestors) {
       const current = await lstat(ancestor.path);
       if (!current.isDirectory() || !sameIdentity(ancestor.stat, current))
-        throw new CaptureError("checkout-changing", "A parent directory changed during capture.");
+        throw new CaptureError(
+          "checkout-changing",
+          t("A parent directory changed during capture."),
+        );
     }
   };
   if (before.isSymbolicLink()) {
@@ -969,13 +975,13 @@ async function inspectSnapshotFile(
     reserve(bytes.length);
     await verifyAncestors();
     if (!sameVersion(before, await lstat(absolute)))
-      throw new CaptureError("checkout-changing", "A symlink changed during capture.");
+      throw new CaptureError("checkout-changing", t("A symlink changed during capture."));
     return { kind: "read", mode: "120000", bytes, version: before };
   }
   if (!before.isFile())
     throw new CaptureError(
       "unsupported-file",
-      "Special files and nested repositories are excluded from turn captures.",
+      t("Special files and nested repositories are excluded from turn captures."),
     );
   reserve(before.size);
   const handle = await open(
@@ -985,7 +991,7 @@ async function inspectSnapshotFile(
   try {
     // Check the opened inode before reading bytes: ancestor replacement cannot redirect a read.
     if (!sameVersion(before, await handle.stat()))
-      throw new CaptureError("checkout-changing", "A file changed before it could be captured.");
+      throw new CaptureError("checkout-changing", t("A file changed before it could be captured."));
     await verifyAncestors();
     const bytes = Buffer.alloc(before.size);
     let offset = 0;
@@ -998,12 +1004,12 @@ async function inspectSnapshotFile(
         offset,
       );
       if (read.bytesRead === 0)
-        throw new CaptureError("checkout-changing", "A file was truncated during capture.");
+        throw new CaptureError("checkout-changing", t("A file was truncated during capture."));
       offset += read.bytesRead;
     }
     signal.throwIfAborted();
     if (!sameVersion(before, await handle.stat()) || !sameVersion(before, await lstat(absolute)))
-      throw new CaptureError("checkout-changing", "A file changed during capture.");
+      throw new CaptureError("checkout-changing", t("A file changed during capture."));
     await verifyAncestors();
     return {
       kind: "read",
@@ -1028,7 +1034,7 @@ function directoryStat(
         if (!stat.isDirectory() || stat.isSymbolicLink())
           throw new CaptureError(
             "unsafe-symlink",
-            "A tracked path now passes through a symlink or non-directory.",
+            t("A tracked path now passes through a symlink or non-directory."),
           );
         return stat;
       },
@@ -1094,7 +1100,7 @@ function git(
     },
   ).then((result) => {
     if (result.exitCode !== 0)
-      throw new Error(result.stderr.toString("utf8") || "Git command failed.");
+      throw new Error(result.stderr.toString("utf8") || t("Git command failed."));
     return result.stdout;
   });
 }
@@ -1108,7 +1114,7 @@ function nulRecords(buffer: Buffer): string[] {
   if (!Buffer.from(text).equals(buffer) || (text && !text.endsWith("\0")))
     throw new CaptureError(
       "inventory-encoding",
-      "Git paths cannot be represented safely by the app.",
+      t("Git paths cannot be represented safely by the app."),
     );
   return text ? text.slice(0, -1).split("\0") : [];
 }
@@ -1163,15 +1169,20 @@ function resolveRecord(
       "checkpoint-incomplete",
       failed?.state === "unavailable"
         ? failed.message
-        : "This turn does not have complete before and after captures.",
+        : t("This turn does not have complete before and after captures."),
     );
   }
   const notes = [...record.before.coverage.notes, ...record.after.coverage.notes];
   if (record.outcome !== "completed")
-    notes.push(`This interval ended ${record.outcome}; it is not a completed turn.`);
+    notes.push(
+      t("This interval ended {{value0}}; it is not a completed turn.", { value0: record.outcome }),
+    );
   if (record.overlaps.length)
     notes.push(
-      `Other runs overlapped this interval in the same checkout (${record.overlaps.length}). Changes cannot be attributed to this agent alone.`,
+      t(
+        "Other runs overlapped this interval in the same checkout ({{value0}}). Changes cannot be attributed to this agent alone.",
+        { value0: record.overlaps.length },
+      ),
     );
   return {
     state: "available",

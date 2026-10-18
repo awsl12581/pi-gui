@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { lazy, Suspense, type ReactNode } from "react";
 import type {
   RuntimeSettingsSnapshot,
@@ -30,6 +32,8 @@ const SettingsLicensesSection = lazy(() =>
   })),
 );
 
+import type { LanguagePreference } from "../../../contracts/language";
+
 interface SettingsViewProps {
   readonly workspace?: WorkspaceRecord;
   readonly runtime?: RuntimeSnapshot;
@@ -42,6 +46,8 @@ interface SettingsViewProps {
   readonly notificationPermissionStatus: DesktopNotificationPermissionStatus;
   readonly notificationPermissionPending: boolean;
   readonly modelSettingsScopeMode: ModelSettingsScopeMode;
+  readonly languagePreference: LanguagePreference;
+  readonly onSetLanguagePreference: (preference: LanguagePreference) => void;
   readonly integratedTerminalShell: string;
   readonly themeMode: "system" | "light" | "dark";
   readonly themePresetId: ThemePresetId;
@@ -80,6 +86,8 @@ export function SettingsView({
   notificationPermissionStatus,
   notificationPermissionPending,
   modelSettingsScopeMode,
+  languagePreference,
+  onSetLanguagePreference,
   integratedTerminalShell,
   themeMode,
   themePresetId,
@@ -104,13 +112,14 @@ export function SettingsView({
   onSetEnableTransparency,
   mcpActions,
 }: SettingsViewProps) {
+  useLocale();
   const definition = settingsSectionDefinition(section);
   const header = (
     <header className="view-header">
       <div>
         <h1 className="view-header__title">{definition.title}</h1>
         <p className="view-header__body">
-          {definition.description(workspace?.name ?? "this workspace")}
+          {definition.description(workspace?.name ?? t("this workspace"))}
         </p>
       </div>
       {headerAccessory ? <div className="view-header__actions">{headerAccessory}</div> : null}
@@ -125,9 +134,11 @@ export function SettingsView({
           <div className="settings-group">
             <div className="settings-row">
               <div className="settings-row__label">
-                <div className="settings-row__title">Select a workspace</div>
+                <div className="settings-row__title">{t("Select a workspace")}</div>
                 <div className="settings-row__description">
-                  Providers and models are set per workspace. Choose one, or open a folder first.
+                  {t(
+                    "Providers and models are set per workspace. Choose one, or open a folder first.",
+                  )}
                 </div>
               </div>
             </div>
@@ -144,7 +155,7 @@ export function SettingsView({
 
         <div className="settings-grid">
           {section === "licenses" ? (
-            <Suspense fallback={<p role="status">Loading licenses…</p>}>
+            <Suspense fallback={<p role="status">{t("Loading licenses…")}</p>}>
               <SettingsLicensesSection />
             </Suspense>
           ) : null}
@@ -163,6 +174,8 @@ export function SettingsView({
             <SettingsGeneralSection
               runtime={runtime}
               modelSettingsScopeMode={modelSettingsScopeMode}
+              languagePreference={languagePreference}
+              onSetLanguagePreference={onSetLanguagePreference}
               integratedTerminalShell={integratedTerminalShell}
               onSetModelSettingsScopeMode={onSetModelSettingsScopeMode}
               onSetIntegratedTerminalShell={onSetIntegratedTerminalShell}

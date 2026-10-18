@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-18 21:08 CST
-> 文档版本：v8
-> 修改说明：记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。
+> 最后修改时间：2026-10-18 21:59 CST
+> 文档版本：v9
+> 修改说明：记录应用语言偏好、离线翻译资源、跨窗口同步及时间线文案描述符。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -158,6 +158,29 @@ filesystem or network API is added to preload. Rebuild or restart development af
 dependencies to refresh the inventory. The page preserves notices for inspection; it does
 not replace the obligation to retain required notices in distributed source or other assets.
 
+## Application language
+
+Settings > General > Preferences stores `languagePreference` (`system`, `en`, or `zh-CN`)
+in the current UI-state format. Main resolves the OS's first preferred language with
+`app.getPreferredSystemLanguages()`: Chinese variants use Simplified Chinese and unsupported
+languages fall back to English. The snapshot contains both the preference and resolved language.
+A validated main-frame IPC mutation persists the preference and publishes the shared state to
+all windows; restarting resolves a saved `system` preference against the current OS language.
+
+`apps/desktop/i18n` owns offline resources and a separate i18next instance in each process.
+English source messages supply the fallback catalog; `zh-CN.json` supplies Chinese translations.
+Renderer components subscribe through `useLocale`, retaining mounted drafts, dialogs and tools
+when the language changes. Main updates native menus and uses the same resources for app-owned
+notifications and diagnostics. Schedule presentation and searching live in `i18n/scheduled-tasks.ts`;
+portable schedule contracts retain validation and execution semantics.
+
+App-authored activity, tool and summary labels carry `labelMessage` descriptors with source keys
+and unmodified interpolation values, so existing timeline rows can change language. The plain
+source label remains available to non-renderer consumers. User messages, thread names, model
+responses, tool output, authored extension content and license texts are never passed through a
+general text-replacement mechanism. See the [internationalization guide](guides/internationalization.md)
+for resource and verification conventions.
+
 ## Development dependency installation
 
 Development commands support Node 24–26 (`>=24.0.0 <27`); CI uses Node 24.
@@ -198,13 +221,14 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 
 ## 版本修改记录
 
-| 版本 | 修改时间             | 修改内容                                                                 |
-| ---- | -------------------- | ------------------------------------------------------------------------ |
-| v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。             |
-| v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。             |
-| v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。                       |
-| v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。                 |
-| v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。                      |
-| v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。                     |
-| v7   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |
-| v8   | 2026-10-18 21:08 CST | 记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。             |
+| 版本 | 修改时间             | 修改内容                                                                   |
+| ---- | -------------------- | -------------------------------------------------------------------------- |
+| v1   | 2026-10-14 16:56 CST | 删除旧数据迁移说明，明确当前格式、拒绝旧格式及文件保护边界。               |
+| v2   | 2026-10-14 21:20 CST | 记录 Node 24–26 开发基线、ZIP 读取依赖约束和安装后准备职责。               |
+| v3   | 2026-10-15 10:44 CST | 移除视频工程与专用录屏渲染入口，保留产品媒体职责。                         |
+| v4   | 2026-10-15 11:37 CST | 移除已删除的 Claude 云环境安装脚本所对应的环境基线描述。                   |
+| v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。                        |
+| v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。                       |
+| v7   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。   |
+| v8   | 2026-10-18 21:08 CST | 记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。               |
+| v9   | 2026-10-18 21:59 CST | 记录语言偏好持久化、系统语言回退、离线资源、跨窗口同步和时间线文案描述符。 |

@@ -1,3 +1,6 @@
+import type { DesktopAppState } from "../../contracts/desktop-state";
+import { t } from "../../i18n";
+import { useLocale } from "../ui/use-locale";
 import { Component, Fragment, type ReactNode } from "react";
 import type { DesktopAppView, StateHydrationFailure } from "./desktop-app-state";
 
@@ -17,26 +20,44 @@ export interface DesktopStartupCopy {
 }
 
 const LOADING_COPY: DesktopStartupCopy = {
-  title: "Loading sessions",
-  body: "The desktop shell is restoring folder and thread state from the main process.",
+  get title() {
+    return t("Loading sessions");
+  },
+  get body() {
+    return t("The desktop shell is restoring folder and thread state from the main process.");
+  },
   status: "loading",
 };
 
 const STATE_FAILED_COPY: DesktopStartupCopy = {
-  title: "Couldn't restore sessions",
-  body: "The desktop shell couldn't read folder and thread state. Retry, or relaunch the app.",
+  get title() {
+    return t("Couldn't restore sessions");
+  },
+  get body() {
+    return t(
+      "The desktop shell couldn't read folder and thread state. Retry, or relaunch the app.",
+    );
+  },
   status: "failed",
 };
 
 const BRIDGE_FAILED_COPY: DesktopStartupCopy = {
-  title: "Couldn't restore sessions",
-  body: "The desktop shell isn't connected. Quit pi-gui and reopen it.",
+  get title() {
+    return t("Couldn't restore sessions");
+  },
+  get body() {
+    return t("The desktop shell isn't connected. Quit pi-gui and reopen it.");
+  },
   status: "failed",
 };
 
 const CRASHED_COPY: DesktopStartupCopy = {
-  title: "Something went wrong",
-  body: "The desktop window hit an unexpected error. Retry to remount, or relaunch the app.",
+  get title() {
+    return t("Something went wrong");
+  },
+  get body() {
+    return t("The desktop window hit an unexpected error. Retry to remount, or relaunch the app.");
+  },
   status: "crashed",
 };
 
@@ -60,6 +81,7 @@ interface DesktopStartupSurfaceProps {
 }
 
 export function DesktopStartupSurface({ state, onRetry, onRelaunch }: DesktopStartupSurfaceProps) {
+  useLocale();
   const copy = startupSurfaceCopy(state);
   const retrying = state.kind === "failed" ? state.retrying : false;
   const showActions = copy.status !== "loading";
@@ -89,7 +111,7 @@ export function DesktopStartupSurface({ state, onRetry, onRelaunch }: DesktopSta
               disabled={retrying}
               onClick={onRetry}
             >
-              {retrying ? "Retrying…" : "Retry"}
+              {retrying ? t("Retrying…") : t("Retry")}
             </button>
             {showRelaunch ? (
               <button
@@ -98,7 +120,7 @@ export function DesktopStartupSurface({ state, onRetry, onRelaunch }: DesktopSta
                 type="button"
                 onClick={onRelaunch}
               >
-                Relaunch pi-gui
+                {t("Relaunch pi-gui")}
               </button>
             ) : null}
           </div>
@@ -158,4 +180,34 @@ export function toStartupSurfaceState(view: DesktopAppView): DesktopStartupSurfa
     return view;
   }
   return { kind: "loading" };
+}
+
+export function WorkspaceRefreshNotice({
+  diagnostics,
+}: {
+  readonly diagnostics: DesktopAppState["startupDiagnostics"];
+}) {
+  useLocale();
+  return (
+    <>
+      {diagnostics.length > 0 ? (
+        <div className="startup-diagnostics" role="status" data-testid="startup-diagnostics">
+          <strong>{t("Some saved workspaces could not be refreshed.")}</strong>
+          <span>
+            {diagnostics
+              .map((diagnostic) => {
+                const workspaceName = diagnostic.workspacePath
+                  ?.split(/[\\/]/)
+                  .filter(Boolean)
+                  .at(-1);
+                return workspaceName
+                  ? t("{{value0}} is unavailable.", { value0: workspaceName })
+                  : diagnostic.message;
+              })
+              .join(" ")}
+          </span>
+        </div>
+      ) : null}
+    </>
+  );
 }

@@ -1,3 +1,4 @@
+import { isLanguagePreference, type LanguagePreference } from "../../contracts/language";
 import type {
   AppView,
   ExtensionCommandCompatibilityRecord,
@@ -48,6 +49,7 @@ export interface PersistedUiState {
   readonly threadGrouping?: ThreadGrouping;
   readonly collapsedWorkspaceIds?: readonly string[];
   readonly enableTransparency?: boolean;
+  readonly languagePreference?: LanguagePreference;
   readonly themeMode?: ThemeMode;
   readonly themePresetId?: ThemePresetId;
   readonly orchestrationChildren?: readonly OrchestrationChildThread[];
@@ -117,6 +119,9 @@ export function decodePersistedUiState(parsed: unknown): PersistedUiState {
     collapsedWorkspaceIds: toStringArray(candidate.collapsedWorkspaceIds),
     enableTransparency:
       typeof candidate.enableTransparency === "boolean" ? candidate.enableTransparency : undefined,
+    languagePreference: isLanguagePreference(candidate.languagePreference)
+      ? candidate.languagePreference
+      : undefined,
     themeMode: toThemeMode(candidate.themeMode),
     themePresetId: toThemePresetId(candidate.themePresetId),
     orchestrationChildren: toPersistedOrchestrationChildren(candidate.orchestrationChildren),
@@ -199,6 +204,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
       "threadGrouping",
       "collapsedWorkspaceIds",
       "enableTransparency",
+      "languagePreference",
       "themeMode",
       "themePresetId",
       "orchestrationChildren",
@@ -245,6 +251,7 @@ function validateUiState(value: unknown): Record<string, unknown> {
   for (const key of ["sidebarCollapsed", "enableTransparency"]) optional(root, key, boolean);
   optional(root, "activeView", (v) => toAppView(v) !== undefined);
   optional(root, "threadGrouping", isThreadGrouping);
+  optional(root, "languagePreference", isLanguagePreference);
   optional(root, "themeMode", isThemeMode);
   optional(root, "themePresetId", isThemePresetId);
   optional(root, "modelSettingsScopeMode", (v) => v === "per-repo" || v === "app-global");

@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import {
   ChevronDownIcon,
@@ -26,14 +28,15 @@ export function FileExplorer({
   onSelect,
   onRefresh,
 }: FileExplorerProps) {
+  useLocale();
   const [filter, setFilter] = useState("");
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const filterActive = filter.trim().length > 0;
   const visibleFiles = useMemo(
     () => (files ? filterWorkspaceFiles(files, filter) : []),
-    [files, filter],
+    [files, filter, i18n.language],
   );
-  const tree = useMemo(() => buildFileTree(visibleFiles), [visibleFiles]);
+  const tree = useMemo(() => buildFileTree(visibleFiles), [visibleFiles, i18n.language]);
 
   useEffect(() => {
     if (!selectedPath) {
@@ -55,27 +58,27 @@ export function FileExplorer({
   const emptyCopy = error
     ? error
     : files === null
-      ? "Loading files..."
+      ? t("Loading files...")
       : files.length === 0
-        ? "No indexed files"
+        ? t("No indexed files")
         : visibleFiles.length === 0
-          ? "No matching files"
+          ? t("No matching files")
           : null;
 
   return (
-    <section className="file-explorer" data-testid="file-explorer" aria-label="File explorer">
+    <section className="file-explorer" data-testid="file-explorer" aria-label={t("File explorer")}>
       <div className="file-explorer__toolbar">
         <input
-          aria-label="Filter files"
+          aria-label={t("Filter files")}
           className="file-explorer__filter"
           data-testid="file-workbench-filter"
           onChange={(event) => setFilter(event.target.value)}
-          placeholder="Filter files…"
+          placeholder={t("Filter files…")}
           type="search"
           value={filter}
         />
         <button
-          aria-label="Refresh"
+          aria-label={t("Refresh")}
           className="icon-button"
           disabled={loading}
           onClick={onRefresh}
@@ -130,6 +133,7 @@ function FileTreeRow({
   readonly onSelect: (path: string) => void;
   readonly onToggleDirectory: (path: string) => void;
 }) {
+  useLocale();
   if (node.kind === "directory") {
     const isExpanded = expandAll || expanded.has(node.path);
     return (
@@ -187,6 +191,7 @@ function FileTreeFileRow({
   readonly selected: boolean;
   readonly onSelect: (path: string) => void;
 }) {
+  useLocale();
   const rowRef = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     if (selected && rowRef.current) {

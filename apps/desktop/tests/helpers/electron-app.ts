@@ -1,3 +1,4 @@
+import type { LanguagePreference } from "../../contracts/language";
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { copyFile, mkdir, mkdtemp, readFile, realpath, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -74,6 +75,8 @@ export interface DesktopHarness {
 }
 
 export interface LaunchDesktopOptions {
+  /** UI fixtures start in English; null leaves the profile untouched to test the OS default. */
+  readonly languagePreference?: LanguagePreference | null;
   readonly initialWorkspaces?: readonly string[];
   readonly notificationLogPath?: string;
   readonly testMode?: DesktopTestMode;
@@ -475,6 +478,29 @@ async function prepareAgentDir(
     throw new Error(
       "Pass either agentDir or realAuthSourceDir to the desktop launch helper, not both.",
     );
+  }
+
+  if (options.languagePreference !== null) {
+    await mkdir(userDataDir, { recursive: true });
+    try {
+      await writeFile(
+        join(userDataDir, "ui-state.json"),
+        JSON.stringify({
+          version: 19,
+          languagePreference: options.languagePreference ?? "en",
+        }),
+        { flag: "wx" },
+      );
+    } catch (error) {
+      // A restart or an intentionally seeded/corrupt state belongs to the test; never overwrite it.
+      if (!(
+        typeof error === "object" &&
+        error !== null &&
+        "code" in error &&
+        error.code === "EEXIST"
+      ))
+        throw error;
+    }
   }
 
   if (options.agentDir) {

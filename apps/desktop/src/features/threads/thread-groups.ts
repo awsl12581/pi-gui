@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type {
   DesktopAppState,
   SessionRecord,
@@ -91,7 +92,9 @@ export function buildThreadSidebarModel(
       const threads = historyThreads.filter(
         (entry) => recencyBucketId(sessionLastInteractedAt(entry.session), nowMs) === bucket,
       );
-      return threads.length > 0 ? [{ bucket, label: RECENCY_BUCKET_LABELS[bucket], threads }] : [];
+      return threads.length > 0
+        ? [{ bucket, label: t(RECENCY_BUCKET_LABELS[bucket]), threads }]
+        : [];
     }),
     archivedThreads,
     recencyOrder,
@@ -163,7 +166,7 @@ function collectThreadEntries(state: DesktopAppState): ThreadListEntry[] {
         session,
         environment: {
           kind: "local" as const,
-          label: "Local",
+          label: t("Local"),
         },
         contextLabel: folder.name,
       })),

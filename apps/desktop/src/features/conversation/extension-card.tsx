@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
 import type { ExtensionAction, ExtensionCard, ExtensionCardTone } from "@pi-gui/session-driver";
 import { ExtensionIcon } from "../../ui/icons";
@@ -21,6 +23,7 @@ export function ExtensionCardItem({
   readonly controls?: ReactNode;
   readonly collapsed?: boolean;
 }) {
+  useLocale();
   const toneLabel = cardToneLabel(card.tone);
   const hasBody = !collapsed && (card.rows.length > 0 || card.actions.length > 0);
   return (
@@ -79,13 +82,13 @@ function actionTarget(action: ExtensionAction): string {
     case "openFile":
       return action.line ? `${action.path}:${action.line}` : action.path;
     case "composer":
-      return "Adds to message";
+      return t("Adds to message");
     case "url":
       return new URL(action.url).host;
     case "command":
       return action.command;
     case "openThread":
-      return "Opens thread";
+      return t("Opens thread");
     default:
       return unhandledAction(action);
   }
@@ -98,11 +101,11 @@ function unhandledAction(action: never): string {
 function cardToneLabel(tone: ExtensionCardTone): string | undefined {
   switch (tone) {
     case "success":
-      return "Passed";
+      return t("Passed");
     case "warning":
-      return "Warning";
+      return t("Warning");
     case "error":
-      return "Failed";
+      return t("Failed");
     case "neutral":
       return undefined;
   }

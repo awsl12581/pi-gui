@@ -1,3 +1,5 @@
+import { t } from "../../../../i18n";
+import { useLocale } from "../../../ui/use-locale";
 import {
   useEffect,
   useRef,
@@ -51,6 +53,7 @@ export interface WorkspaceMenuState {
 }
 
 export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuState {
+  useLocale();
   const { api, setSnapshot, updateSnapshot } = params;
 
   const [workspaceMenuId, setWorkspaceMenuId] = useState<string | null>(null);
@@ -142,7 +145,9 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
 
   const removeWorkspace = (workspace: WorkspaceRecord) => {
     const confirmed = window.confirm(
-      `Remove ${workspace.name} from pi-gui? This will not delete any files.`,
+      t("Remove {{value0}} from pi-gui? This will not delete any files.", {
+        value0: workspace.name,
+      }),
     );
     setWorkspaceMenuId(null);
     setWorkspaceRenameId(null);
@@ -174,7 +179,9 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
 
   const removeWorktree = (workspaceId: string, worktree: WorktreeRecord) => {
     const confirmed = window.confirm(
-      `Remove worktree ${worktree.name}? This removes the git worktree from disk.`,
+      t("Remove worktree {{value0}}? This removes the git worktree from disk.", {
+        value0: worktree.name,
+      }),
     );
     if (!confirmed || !api) {
       return;

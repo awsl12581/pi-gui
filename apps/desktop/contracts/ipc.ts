@@ -6,6 +6,7 @@ import type {
   ExtensionViewMessage,
   ExtensionViewCatalogChange,
 } from "./extension-views";
+import type { LanguagePreference } from "./language";
 import type { RuntimeSettingsSnapshot } from "@pi-gui/session-driver/runtime-types";
 import type { ExtensionActionEffect, ExtensionActionRequest } from "./extension-actions";
 import type {
@@ -224,6 +225,7 @@ export const desktopIpc = {
   changeReviewFileStage: "pi-gui:change-review-file-stage",
   getThemeMode: "pi-gui:get-theme-mode",
   getResolvedTheme: "pi-gui:get-resolved-theme",
+  setLanguagePreference: "pi-gui:set-language-preference",
   setThemeMode: "pi-gui:set-theme-mode",
   setThemePresetId: "pi-gui:set-theme-preset-id",
   themeChanged: "pi-gui:theme-changed",
@@ -860,6 +862,7 @@ export interface PiDesktopApi {
   openExternal(url: string): Promise<void>;
   getThemeMode(): Promise<"system" | "light" | "dark">;
   getResolvedTheme(): Promise<"light" | "dark">;
+  setLanguagePreference(preference: LanguagePreference): Promise<DesktopAppState>;
   setThemeMode(mode: "system" | "light" | "dark"): Promise<DesktopAppState>;
   onThemeChanged(callback: (theme: "light" | "dark") => void): () => void;
   /** The window came back to the foreground, so outside changes (edits, git) may need rereading. */

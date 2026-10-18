@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import { createHash } from "node:crypto";
 import {
   chmod,
@@ -118,7 +119,7 @@ function git(cwd: string, args: readonly string[], maxBuffer = MAX_GIT_BYTES): P
   )
     .then((result) => {
       if (result.exitCode > 1)
-        throw new Error(result.stderr.toString("utf8").trim() || "Git command failed.");
+        throw new Error(result.stderr.toString("utf8").trim() || t("Git command failed."));
       return { stdout: result.stdout, code: result.exitCode, truncated: false };
     })
     .catch((error) => {
@@ -138,7 +139,7 @@ async function gitText(
 ): Promise<string> {
   const result = await git(cwd, args, maxBuffer);
   if (result.code !== 0 || result.truncated)
-    throw new Error("Git review data is unavailable or exceeds its size limit.");
+    throw new Error(t("Git review data is unavailable or exceeds its size limit."));
   return result.stdout.toString("utf8");
 }
 
@@ -180,7 +181,7 @@ function safePath(root: string, path: string): string {
     isAbsolute(fromRoot) ||
     path.includes("\0")
   ) {
-    throw new Error("Invalid Git file path.");
+    throw new Error(t("Invalid Git file path."));
   }
   return target;
 }
@@ -199,7 +200,7 @@ async function readWorkingFile(
         return {
           mode: "unsupported",
           digest: "symlink-parent",
-          note: "A parent directory is a symbolic link; content was not followed.",
+          note: t("A parent directory is a symbolic link; content was not followed."),
         };
       }
     } catch (error) {
@@ -213,14 +214,14 @@ async function readWorkingFile(
       return {
         mode: "160000",
         digest: `${before.mtimeMs}:${before.ctimeMs}`,
-        note: "Submodule or directory content is not included in this patch.",
+        note: t("Submodule or directory content is not included in this patch."),
       };
     const mode = before.isSymbolicLink() ? "120000" : before.mode & 0o111 ? "100755" : "100644";
     if (!before.isSymbolicLink() && !before.isFile())
       return {
         mode: "unsupported",
         digest: "special-file",
-        note: "Special file content is not supported.",
+        note: t("Special file content is not supported."),
       };
     if (before.size > maxBytes)
       return {
@@ -228,8 +229,10 @@ async function readWorkingFile(
         digest: `large:${before.size}:${before.mtimeMs}:${before.ctimeMs}`,
         note:
           before.size > MAX_CONTENT_BYTES
-            ? "File exceeds the 8 MiB review content limit."
-            : "File content was omitted because review preparation reached its byte or time budget.",
+            ? t("File exceeds the 8 MiB review content limit.")
+            : t(
+                "File content was omitted because review preparation reached its byte or time budget.",
+              ),
       };
     const bytes = before.isSymbolicLink()
       ? Buffer.from(await readlink(absolute))
@@ -241,7 +244,7 @@ async function readWorkingFile(
       before.mtimeMs !== after.mtimeMs ||
       before.ctimeMs !== after.ctimeMs
     ) {
-      throw new Error("File changed while its review snapshot was being read.");
+      throw new Error(t("File changed while its review snapshot was being read."));
     }
     return { mode, digest: digest(bytes), bytes };
   } catch (error) {
@@ -432,7 +435,9 @@ export async function createGitReview(
         return issue(
           "unavailable",
           "nested-workspace",
-          "Git review requires the checkout root. Open the repository root to review its changes.",
+          t(
+            "Git review requires the checkout root. Open the repository root to review its changes.",
+          ),
         );
     }
     if (isWorkingReviewScope(scope)) {
@@ -524,7 +529,7 @@ export async function createGitReview(
         return issue(
           "stale",
           "checkout-changed",
-          "The checkout changed while the review was being created. Refresh it.",
+          t("The checkout changed while the review was being created. Refresh it."),
         );
       }
       const notes = files.flatMap((file) =>
@@ -551,15 +556,22 @@ export async function createGitReview(
         ).trim();
         if (transformed || autoCrlf === "true" || autoCrlf === "input")
           notes.push(
-            "Patches compare raw working bytes with Git blobs; configured filters and line-ending conversions are not applied.",
+            t(
+              "Patches compare raw working bytes with Git blobs; configured filters and line-ending conversions are not applied.",
+            ),
           );
         if (files.length > attributePaths.length)
           notes.push(
-            `Attribute-conversion coverage was checked for the first ${attributePaths.length} changed files only; patches use raw bytes.`,
+            t(
+              "Attribute-conversion coverage was checked for the first {{value0}} changed files only; patches use raw bytes.",
+              { value0: attributePaths.length },
+            ),
           );
       }
       if (entries.length > MAX_FILES)
-        notes.push(`Only the first ${MAX_FILES} changed files are included.`);
+        notes.push(
+          t("Only the first {{value0}} changed files are included.", { value0: MAX_FILES }),
+        );
       return {
         state: "available",
         checkoutPath,
@@ -580,7 +592,7 @@ export async function createGitReview(
       return issue(
         "unavailable",
         "missing-head",
-        "This comparison has no available head revision.",
+        t("This comparison has no available head revision."),
       );
     const baseRef =
       scope.kind === "turn"
@@ -590,7 +602,7 @@ export async function createGitReview(
       return issue(
         "unavailable",
         "missing-base",
-        "No repository default or tracking branch is configured. Choose a base reference.",
+        t("No repository default or tracking branch is configured. Choose a base reference."),
       );
     let baseOid = await resolveRevision(
       checkoutPath,
@@ -598,7 +610,7 @@ export async function createGitReview(
       scope.kind === "turn" ? "tree" : "commit",
     );
     if (!baseOid)
-      return issue("unavailable", "missing-base", "The selected base reference is unavailable.");
+      return issue("unavailable", "missing-base", t("The selected base reference is unavailable."));
     if (scope.kind === "branch") {
       baseOid = (
         await gitText(checkoutPath, ["merge-base", baseOid, headOid]).catch(() => "")
@@ -607,7 +619,7 @@ export async function createGitReview(
         return issue(
           "unavailable",
           "unrelated-base",
-          "The selected base and HEAD have no common ancestor.",
+          t("The selected base and HEAD have no common ancestor."),
         );
     }
     const names = (
@@ -695,7 +707,7 @@ export async function createGitReview(
     const coverage = combineCoverage([
       scope.kind === "turn" ? (scope.coverage ?? COMPLETE) : COMPLETE,
       changes.length > MAX_FILES
-        ? partial(`Only the first ${MAX_FILES} changed files are included.`)
+        ? partial(t("Only the first {{value0}} changed files are included.", { value0: MAX_FILES }))
         : COMPLETE,
     ]);
     return {
@@ -705,7 +717,7 @@ export async function createGitReview(
         scope.kind === "turn"
           ? { kind: "turn", checkpointId: scope.checkpointId }
           : { kind: "branch", baseRef },
-      baseLabel: scope.kind === "turn" ? "Captured turn" : baseRef,
+      baseLabel: scope.kind === "turn" ? t("Captured turn") : baseRef,
       headOid,
       baseOid,
       coverage,
@@ -715,7 +727,7 @@ export async function createGitReview(
     return issue(
       "unavailable",
       "git-review-unavailable",
-      error instanceof Error ? error.message : "Git review is unavailable.",
+      error instanceof Error ? error.message : t("Git review is unavailable."),
     );
   }
 }
@@ -845,11 +857,11 @@ function countTextLines(bytes: Buffer | undefined): ReviewLineCounts | null {
 }
 
 function workingBaseLabel(kind: "uncommitted" | "staged" | "unstaged", hasHead: boolean): string {
-  const head = hasHead ? "HEAD" : "Empty repository";
+  const head = hasHead ? "HEAD" : t("Empty repository");
   return kind === "staged"
     ? `${head} → index`
     : kind === "unstaged"
-      ? "Index → working tree"
+      ? t("Index → working tree")
       : `${head} → working tree`;
 }
 
@@ -859,7 +871,7 @@ export async function checkGitReviewFileCurrent(
 ): Promise<ReviewIssue | null> {
   const file = snapshot.files.find((entry) => entry.id === fileId);
   if (!file)
-    return issue("unavailable", "missing-file", "This file does not belong to the review.");
+    return issue("unavailable", "missing-file", t("This file does not belong to the review."));
   if (!isWorkingReviewScope(snapshot.scope)) return null;
   const staged = snapshot.scope.kind === "staged";
   try {
@@ -872,7 +884,7 @@ export async function checkGitReviewFileCurrent(
     const paths = [...new Set([...ownPaths, ...renamePartners])];
     const head = await resolveRevision(snapshot.checkoutPath, "HEAD");
     if (head !== snapshot.headOid)
-      return issue("stale", "head-changed", "HEAD changed. Refresh the review.");
+      return issue("stale", "head-changed", t("HEAD changed. Refresh the review."));
     const index = parseBlobs(
       await gitText(snapshot.checkoutPath, ["ls-files", "--stage", "-z", "--", ...paths]),
       true,
@@ -908,13 +920,13 @@ export async function checkGitReviewFileCurrent(
       : issue(
           "stale",
           "file-changed",
-          "The file or index changed. Refresh the review before continuing.",
+          t("The file or index changed. Refresh the review before continuing."),
         );
   } catch (error) {
     return issue(
       "unavailable",
       "freshness-unavailable",
-      error instanceof Error ? error.message : "The file could not be checked.",
+      error instanceof Error ? error.message : t("The file could not be checked."),
     );
   }
 }
@@ -925,17 +937,19 @@ async function readBlob(cwd: string, ref: BlobRef | undefined): Promise<WorkingF
     return {
       mode: ref.mode,
       digest: ref.oid,
-      note: `Submodule revision ${ref.oid}; nested content is not included.`,
+      note: t("Submodule revision {{value0}}; nested content is not included.", {
+        value0: ref.oid,
+      }),
     };
   const size = Number((await gitText(cwd, ["cat-file", "-s", ref.oid])).trim());
   if (size > MAX_CONTENT_BYTES)
     return {
       mode: ref.mode,
       digest: ref.oid,
-      note: "File exceeds the 8 MiB review content limit.",
+      note: t("File exceeds the 8 MiB review content limit."),
     };
   const result = await git(cwd, ["cat-file", "blob", ref.oid], MAX_CONTENT_BYTES);
-  if (result.code !== 0 || result.truncated) throw new Error("Git blob is unavailable.");
+  if (result.code !== 0 || result.truncated) throw new Error(t("Git blob is unavailable."));
   return { mode: ref.mode, digest: ref.oid, bytes: result.stdout };
 }
 
@@ -982,13 +996,15 @@ async function readPatch(
     );
     const patch = result.stdout.toString("utf8");
     const notes: string[] = [];
-    if (result.truncated) notes.push("Patch is truncated at the 1 MiB review limit.");
+    if (result.truncated) notes.push(t("Patch is truncated at the 1 MiB review limit."));
     if (
       patch.includes("Binary files ") ||
       before.bytes?.subarray(0, 8000).includes(0) ||
       after.bytes?.subarray(0, 8000).includes(0)
     )
-      notes.push("Binary file contents are not rendered; the patch reports whether they differ.");
+      notes.push(
+        t("Binary file contents are not rendered; the patch reports whether they differ."),
+      );
     return { patch, coverage: notes.length ? partial(...notes) : COMPLETE };
   } finally {
     await rm(scratch, { recursive: true, force: true });
@@ -1001,7 +1017,7 @@ export async function readGitReviewFile(
 ): Promise<GitReviewFileContent | ReviewIssue> {
   const file = snapshot.files.find((entry) => entry.id === fileId);
   if (!file)
-    return issue("unavailable", "missing-file", "This file does not belong to the review.");
+    return issue("unavailable", "missing-file", t("This file does not belong to the review."));
   const stale = await checkGitReviewFileCurrent(snapshot, fileId);
   if (stale) return stale;
   try {
@@ -1039,8 +1055,9 @@ export async function readGitReviewFile(
       file.hasStagedChanges &&
       file.hasUnstagedChanges
     ) {
-      summary =
-        "The combined contents match HEAD; staged and unstaged changes cancel each other. Choose Staged or Unstaged to see each part.";
+      summary = t(
+        "The combined contents match HEAD; staged and unstaged changes cancel each other. Choose Staged or Unstaged to see each part.",
+      );
     }
     const current = await checkGitReviewFileCurrent(snapshot, fileId);
     if (current) return current;
@@ -1050,7 +1067,9 @@ export async function readGitReviewFile(
       coverage: combineCoverage([
         coverage,
         file.conflicted
-          ? partial("Unmerged index stages are summarized; no staged or unstaged patch is claimed.")
+          ? partial(
+              t("Unmerged index stages are summarized; no staged or unstaged patch is claimed."),
+            )
           : COMPLETE,
       ]),
       ...(summary ? { summary } : {}),
@@ -1059,7 +1078,7 @@ export async function readGitReviewFile(
     return issue(
       "failed",
       "file-review-failed",
-      error instanceof Error ? error.message : "The patch could not be read.",
+      error instanceof Error ? error.message : t("The patch could not be read."),
     );
   }
 }
@@ -1073,7 +1092,7 @@ export async function changeGitReviewFileStage(
     return issue(
       "unavailable",
       "immutable-comparison",
-      "Only Uncommitted, Staged and Unstaged review can change the index.",
+      t("Only Uncommitted, Staged and Unstaged review can change the index."),
     );
   // Staged and Unstaged only move the side they show: staging from Staged or unstaging from
   // Unstaged would change content that comparison never displayed.
@@ -1082,17 +1101,17 @@ export async function changeGitReviewFileStage(
       "unavailable",
       "unseen-stage-change",
       action === "stage"
-        ? "Staged review cannot stage working-tree edits it does not show."
-        : "Unstaged review cannot unstage index changes it does not show.",
+        ? t("Staged review cannot stage working-tree edits it does not show.")
+        : t("Unstaged review cannot unstage index changes it does not show."),
     );
   const file = snapshot.files.find((entry) => entry.id === fileId);
   if (!file)
-    return issue("unavailable", "missing-file", "This file does not belong to the review.");
+    return issue("unavailable", "missing-file", t("This file does not belong to the review."));
   if (file.conflicted || file.source.working?.note)
     return issue(
       "unavailable",
       "unsupported-staging",
-      "Resolve this file's conflict or incomplete coverage before staging it through review.",
+      t("Resolve this file's conflict or incomplete coverage before staging it through review."),
     );
   const stale = await checkGitReviewFileCurrent(snapshot, fileId);
   if (stale) return stale;
@@ -1114,7 +1133,7 @@ export async function changeGitReviewFileStage(
     return issue(
       "failed",
       "stage-failed",
-      error instanceof Error ? error.message : "The index could not be changed.",
+      error instanceof Error ? error.message : t("The index could not be changed."),
     );
   }
 }

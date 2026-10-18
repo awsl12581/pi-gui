@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { PiDesktopApi } from "../../../contracts/ipc";
@@ -35,6 +37,7 @@ function targetKey(target: SessionRef): string {
 
 /** Each window owns this map. Host templates are read once, never subscribed to as live state. */
 export function useWorkbench({ api, target }: UseWorkbenchOptions) {
+  useLocale();
   const entries = useRef(new Map<string, WorkbenchEntry>());
   const pendingRestores = useRef(new Set<string>());
   const mounted = useRef(true);
@@ -44,7 +47,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
 
   const publish = useCallback(() => {
     if (mounted.current) setRevision((revision) => revision + 1);
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     mounted.current = true;
@@ -53,22 +56,25 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
     };
   }, []);
 
-  const ensureEntry = useCallback((ref: SessionRef): WorkbenchEntry => {
-    const key = targetKey(ref);
-    const existing = entries.current.get(key);
-    if (existing) return existing;
-    const initialView = initialWorkbenchView(ref.workspaceId);
-    const entry: WorkbenchEntry = {
-      view: initialView,
-      initialView,
-      restore: "loading",
-      pendingActions: [],
-      latestSave: 0,
-      error: "",
-    };
-    entries.current.set(key, entry);
-    return entry;
-  }, []);
+  const ensureEntry = useCallback(
+    (ref: SessionRef): WorkbenchEntry => {
+      const key = targetKey(ref);
+      const existing = entries.current.get(key);
+      if (existing) return existing;
+      const initialView = initialWorkbenchView(ref.workspaceId);
+      const entry: WorkbenchEntry = {
+        view: initialView,
+        initialView,
+        restore: "loading",
+        pendingActions: [],
+        latestSave: 0,
+        error: "",
+      };
+      entries.current.set(key, entry);
+      return entry;
+    },
+    [i18n.language],
+  );
 
   const persist = useCallback(
     (ref: SessionRef, entry: WorkbenchEntry) => {
@@ -95,7 +101,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
         },
       );
     },
-    [publish],
+    [publish, i18n.language],
   );
 
   const restore = useCallback(
@@ -124,13 +130,15 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
         },
         () => {
           entry.restore = "failed";
-          entry.error = "Couldn't restore saved tool tabs. Your current tabs are still available.";
+          entry.error = t(
+            "Couldn't restore saved tool tabs. Your current tabs are still available.",
+          );
           pendingRestores.current.delete(key);
           publish();
         },
       );
     },
-    [ensureEntry, persist, publish],
+    [ensureEntry, persist, publish, i18n.language],
   );
 
   const workspaceId = target?.workspaceId;
@@ -159,7 +167,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
       publish();
       persist(ref, entry);
     },
-    [ensureEntry, persist, publish],
+    [ensureEntry, persist, publish, i18n.language],
   );
 
   const dispatch = useCallback(
@@ -167,24 +175,27 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
       const ref = current.current.target;
       if (ref) apply(ref, [action]);
     },
-    [apply],
+    [apply, i18n.language],
   );
   const openTool = useCallback(
     (tool: ToolRef) => dispatch({ type: "open-tool", tool }),
-    [dispatch],
+    [dispatch, i18n.language],
   );
   const activateTool = useCallback(
     (toolId: string) => dispatch({ type: "activate-tool", toolId }),
-    [dispatch],
+    [dispatch, i18n.language],
   );
   const closeTool = useCallback(
     (toolId: string) => dispatch({ type: "close-tool", toolId }),
-    [dispatch],
+    [dispatch, i18n.language],
   );
-  const showChooser = useCallback(() => dispatch({ type: "show-chooser" }), [dispatch]);
+  const showChooser = useCallback(
+    () => dispatch({ type: "show-chooser" }),
+    [dispatch, i18n.language],
+  );
   const setVisibility = useCallback(
     (visibility: "visible" | "hidden") => dispatch({ type: "set-visibility", visibility }),
-    [dispatch],
+    [dispatch, i18n.language],
   );
   const toggleVisibility = useCallback(() => {
     const ref = current.current.target;
@@ -194,7 +205,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
       type: "set-visibility",
       visibility: entry.view.visibility === "visible" ? "hidden" : "visible",
     });
-  }, [dispatch, ensureEntry]);
+  }, [dispatch, ensureEntry, i18n.language]);
 
   const setFiles = useCallback(
     (update: SetStateAction<FileWorkbenchTabs>, checkoutId?: string) => {
@@ -207,7 +218,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
       if (nextTabs === files.tabs && nextWorkspaceId === files.workspaceId) return;
       apply(ref, [{ type: "set-files", files: { workspaceId: nextWorkspaceId, tabs: nextTabs } }]);
     },
-    [apply, ensureEntry],
+    [apply, ensureEntry, i18n.language],
   );
 
   const setChanges = useCallback(
@@ -224,7 +235,7 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
         return;
       apply(ref, [{ type: "set-changes", changes: next }]);
     },
-    [apply, ensureEntry],
+    [apply, ensureEntry, i18n.language],
   );
 
   const openFile = useCallback(
@@ -238,13 +249,13 @@ export function useWorkbench({ api, target }: UseWorkbenchOptions) {
       if (!latest || targetKey(latest) !== targetKey(ref)) return;
       apply(ref, [{ type: "open-file", file }]);
     },
-    [apply],
+    [apply, i18n.language],
   );
 
   const retryRestore = useCallback(() => {
     const ref = current.current.target;
     if (ref) restore(ref);
-  }, [restore]);
+  }, [restore, i18n.language]);
 
   const entry = target ? entries.current.get(targetKey(target)) : undefined;
   const view = entry?.view ?? initialWorkbenchView(target?.workspaceId ?? "");

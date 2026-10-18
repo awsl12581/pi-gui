@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type {
   RuntimeExtensionRecord,
@@ -51,6 +53,7 @@ export function CustomizePage({
   onToggleExtension,
   onOpenExtensionFolder,
 }: CustomizePageProps) {
+  useLocale();
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | undefined>();
   // The palette and the workspace picker change what is listed without going through the tabs,
@@ -79,14 +82,14 @@ export function CustomizePage({
   const normalizedQuery = query.trim().toLowerCase();
   const filteredSkills = useMemo(
     () => skills.filter((skill) => matchesQuery(skillSearchText(skill), normalizedQuery)),
-    [skills, normalizedQuery],
+    [skills, normalizedQuery, i18n.language],
   );
   const filteredExtensions = useMemo(
     () =>
       extensions.filter((extension) =>
         matchesQuery(extensionSearchText(extension), normalizedQuery),
       ),
-    [extensions, normalizedQuery],
+    [extensions, normalizedQuery, i18n.language],
   );
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -102,18 +105,18 @@ export function CustomizePage({
       <div className="conversation settings-view">
         <header className="view-header">
           <div>
-            <h1 className="view-header__title">Skills and extensions</h1>
+            <h1 className="view-header__title">{t("Skills and extensions")}</h1>
             <p className="view-header__body">
-              Reusable workflows and runtime add-ons pi loads for{" "}
-              {workspace?.name ?? "this workspace"}.
+              {t("Reusable workflows and runtime add-ons pi loads for")}{" "}
+              {workspace?.name ?? t("this workspace")}.
             </p>
           </div>
           <div className="view-header__actions">
             {workspacePicker}
             <button
-              aria-label="Refresh"
+              aria-label={t("Refresh")}
               className="icon-button resource-refresh"
-              title="Refresh"
+              title={t("Refresh")}
               type="button"
               onClick={onRefresh}
             >
@@ -125,7 +128,7 @@ export function CustomizePage({
                 type="button"
                 onClick={() => onTryCommand(NEW_SKILL_PROMPT)}
               >
-                New skill
+                {t("New skill")}
               </button>
             ) : null}
           </div>
@@ -133,21 +136,21 @@ export function CustomizePage({
 
         <div className="resource-toolbar">
           <div
-            aria-label="Skills and extensions"
+            aria-label={t("Skills and extensions")}
             className="resource-tabs"
             role="tablist"
             onKeyDown={handleTabKeyDown}
           >
             <ResourceTab
               count={skills.length}
-              label="Skills"
+              label={t("Skills")}
               selected={tab === "skills"}
               tab="skills"
               onSelect={() => onSelectTab("skills")}
             />
             <ResourceTab
               count={extensions.length}
-              label="Extensions"
+              label={t("Extensions")}
               selected={tab === "extensions"}
               tab="extensions"
               onSelect={() => onSelectTab("extensions")}
@@ -156,8 +159,8 @@ export function CustomizePage({
           <label className="resource-search">
             <SearchIcon />
             <input
-              aria-label={`Search ${tab}`}
-              placeholder={`Search ${tab}`}
+              aria-label={t("Search {{value0}}", { value0: tab })}
+              placeholder={t("Search {{value0}}", { value0: tab })}
               spellCheck={false}
               type="search"
               value={query}
@@ -178,9 +181,9 @@ export function CustomizePage({
         >
           {!workspace ? (
             <div className="settings-group resource-empty">
-              <div className="resource-empty__title">Open a folder first</div>
+              <div className="resource-empty__title">{t("Open a folder first")}</div>
               <p className="resource-empty__body">
-                Skills and extensions are discovered per workspace, plus your user folders.
+                {t("Skills and extensions are discovered per workspace, plus your user folders.")}
               </p>
             </div>
           ) : tab === "skills" ? (
@@ -231,6 +234,7 @@ function ResourceTab({
   readonly selected: boolean;
   readonly onSelect: () => void;
 }) {
+  useLocale();
   return (
     <button
       aria-controls={TAB_PANEL_ID}

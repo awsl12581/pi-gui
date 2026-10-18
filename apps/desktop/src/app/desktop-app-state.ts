@@ -7,6 +7,7 @@ import {
   type SetStateAction,
 } from "react";
 import type { DesktopAppState, SelectedTranscriptRecord } from "../../contracts/desktop-state";
+import { setLanguage } from "../../i18n";
 import type { PiDesktopApi } from "../../contracts/ipc";
 
 export type HydrationOperation = "state" | "selected-transcript";
@@ -351,6 +352,10 @@ export function useDesktopAppState(): DesktopAppSession {
 
   const apply = useCallback((event: DesktopHydrationEvent) => {
     const next = reduceDesktopHydration(modelRef.current, event);
+    if (next.liveSnapshot) {
+      setLanguage(next.liveSnapshot.language);
+      document.documentElement.lang = next.liveSnapshot.language;
+    }
     modelRef.current = next;
     setModel(next);
   }, []);
@@ -438,6 +443,10 @@ export function useDesktopAppState(): DesktopAppSession {
       type: "state-patched",
       snapshot: next,
     });
+    if (reduced.liveSnapshot) {
+      setLanguage(reduced.liveSnapshot.language);
+      document.documentElement.lang = reduced.liveSnapshot.language;
+    }
     modelRef.current = reduced;
     setModel(reduced);
   }, []);

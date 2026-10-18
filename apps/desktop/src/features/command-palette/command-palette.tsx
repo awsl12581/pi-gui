@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import {
   useEffect,
   useId,
@@ -63,6 +65,7 @@ export function CommandPalette<F extends string>({
   onBack,
   onClose,
 }: CommandPaletteProps<F>) {
+  useLocale();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -202,7 +205,7 @@ export function CommandPalette<F extends string>({
             onChange={(event) => onQueryChange(event.target.value)}
           />
           <button
-            aria-label="Close"
+            aria-label={t("Close")}
             className="command-palette__close"
             type="button"
             onClick={onClose}
@@ -212,7 +215,7 @@ export function CommandPalette<F extends string>({
         </div>
 
         {filters && filters.length > 0 ? (
-          <div aria-label="Filters" className="command-palette__filters" role="tablist">
+          <div aria-label={t("Filters")} className="command-palette__filters" role="tablist">
             {filters.map((filter) => (
               <button
                 key={filter.id}
@@ -295,23 +298,23 @@ export function CommandPalette<F extends string>({
         <div className="command-palette__footer" aria-hidden="true">
           <span>
             <kbd>↑</kbd>
-            <kbd>↓</kbd> Navigate
+            <kbd>↓</kbd> {t("Navigate")}
           </span>
           <span>
-            <kbd>↵</kbd> Open
+            <kbd>↵</kbd> {t("Open")}
           </span>
           {filters && filters.length > 0 ? (
             <span>
-              <kbd>Tab</kbd> Filters
+              <kbd>Tab</kbd> {t("Filters")}
             </span>
           ) : null}
           {onBack ? (
             <span>
-              <kbd>⌫</kbd> Back
+              <kbd>⌫</kbd> {t("Back")}
             </span>
           ) : null}
           <span>
-            <kbd>Esc</kbd> Close
+            <kbd>Esc</kbd> {t("Close")}
           </span>
         </div>
       </div>
@@ -326,6 +329,7 @@ function HighlightedText({
   readonly text: string;
   readonly positions?: readonly number[];
 }) {
+  useLocale();
   if (!positions || positions.length === 0) {
     return <>{text}</>;
   }

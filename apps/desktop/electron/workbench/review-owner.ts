@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { createHash, randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import type { SessionRef } from "@pi-gui/session-driver/types";
@@ -88,7 +89,7 @@ export class ReviewOwner {
   async getTurnChanges(input: TurnChangesInput): Promise<TurnChangesResult> {
     try {
       if (!this.options.validateTask(input.target)) {
-        return unavailable("task-unavailable", "This task is unavailable.");
+        return unavailable("task-unavailable", t("This task is unavailable."));
       }
       const turns = (await this.options.checkpoints?.listTurns?.(input.target)) ?? [];
       const summaries = await Promise.all(
@@ -134,7 +135,7 @@ export class ReviewOwner {
   async getReview(input: GetReviewInput): Promise<ReviewResult> {
     try {
       if (!this.options.validateTask(input.target)) {
-        return unavailable("task-unavailable", "This task is unavailable.");
+        return unavailable("task-unavailable", t("This task is unavailable."));
       }
       let checkoutPath: string | null = null;
       let gitPath: string;
@@ -144,7 +145,7 @@ export class ReviewOwner {
         if (!this.options.checkpoints) {
           return unavailable(
             "checkpoint-unavailable",
-            "No captured turn is available for this task.",
+            t("No captured turn is available for this task."),
           );
         }
         const checkpoint = await this.options.checkpoints.resolve({
@@ -156,7 +157,7 @@ export class ReviewOwner {
         if (checkpoint.checkoutId !== input.checkoutId) {
           return unavailable(
             "checkpoint-checkout-mismatch",
-            "The captured turn belongs to another checkout.",
+            t("The captured turn belongs to another checkout."),
           );
         }
         gitPath = checkpoint.repositoryPath;
@@ -261,7 +262,7 @@ export class ReviewOwner {
       ) {
         return unavailable(
           "read-only-comparison",
-          "Staging is available only for Uncommitted, Staged and Unstaged changes.",
+          t("Staging is available only for Uncommitted, Staged and Unstaged changes."),
         );
       }
       return await this.withMutation(resolved.review.checkoutPath, async () => {
@@ -281,10 +282,10 @@ export class ReviewOwner {
     if (!review)
       return unavailable(
         "review-expired",
-        "This comparison expired. Refresh to review current changes.",
+        t("This comparison expired. Refresh to review current changes."),
       );
     if (!this.options.validateTask(review.target)) {
-      return unavailable("task-unavailable", "This task is unavailable.");
+      return unavailable("task-unavailable", t("This task is unavailable."));
     }
     if (review.snapshot.scope.kind !== "turn") {
       const currentPath = await this.checkoutPath(review.target, review.checkoutId);
@@ -293,14 +294,17 @@ export class ReviewOwner {
         return {
           state: "stale",
           code: "checkout-changed",
-          message: "The checkout moved. Refresh this comparison.",
+          message: t("The checkout moved. Refresh this comparison."),
         };
       }
     }
     const file = review.snapshot.files.find((entry) => entry.id === input.fileId);
     return file
       ? { review, file }
-      : unavailable("review-file-unavailable", "This file is not part of the selected comparison.");
+      : unavailable(
+          "review-file-unavailable",
+          t("This file is not part of the selected comparison."),
+        );
   }
 
   private async checkoutPath(
@@ -308,15 +312,15 @@ export class ReviewOwner {
     checkoutId: string,
   ): Promise<string | ReviewIssue> {
     if (!this.options.validateTask(target))
-      return unavailable("task-unavailable", "This task is unavailable.");
+      return unavailable("task-unavailable", t("This task is unavailable."));
     const path = this.options.resolveCheckoutPath(checkoutId);
-    if (!path) return unavailable("checkout-unavailable", "This checkout is unavailable.");
+    if (!path) return unavailable("checkout-unavailable", t("This checkout is unavailable."));
     try {
       return await realpath(path);
     } catch {
       return unavailable(
         "checkout-unavailable",
-        "This checkout no longer exists or cannot be read.",
+        t("This checkout no longer exists or cannot be read."),
       );
     }
   }

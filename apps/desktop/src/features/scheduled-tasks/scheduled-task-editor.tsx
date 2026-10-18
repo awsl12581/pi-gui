@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import {
   useEffect,
   useMemo,
@@ -84,6 +86,7 @@ export function ScheduledTaskEditor({
   onSubmit,
   onOpenChat,
 }: ScheduledTaskEditorProps) {
+  useLocale();
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const source = editor.mode === "edit" ? task : undefined;
   const prefill = editor.mode === "create" ? editor.prefill : undefined;
@@ -136,7 +139,7 @@ export function ScheduledTaskEditor({
   const workspace = workspaces.find((entry) => entry.id === workspaceId) ?? workspaces[0];
   const sessions = useMemo(
     () => (workspace?.sessions ?? []).filter((session) => !session.archivedAt),
-    [workspace],
+    [workspace, i18n.language],
   );
   const canSubmit =
     title.trim().length > 0 &&
@@ -225,35 +228,35 @@ export function ScheduledTaskEditor({
       >
         <header className="scheduled-editor__header">
           <h2 id="scheduled-editor-title">
-            {editor.mode === "edit" ? "Edit scheduled task" : "Set up scheduled task"}
+            {editor.mode === "edit" ? t("Edit scheduled task") : t("Set up scheduled task")}
           </h2>
-          <button className="icon-button" type="button" aria-label="Close" onClick={onClose}>
+          <button className="icon-button" type="button" aria-label={t("Close")} onClick={onClose}>
             ×
           </button>
         </header>
 
         <label className="scheduled-editor__field">
-          <span>Title</span>
+          <span>{t("Title")}</span>
           <input
             data-testid="scheduled-task-title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder="Weekly status"
+            placeholder={t("Weekly status")}
           />
         </label>
         <label className="scheduled-editor__field">
-          <span>Instructions</span>
+          <span>{t("Instructions")}</span>
           <textarea
             data-testid="scheduled-task-instruction"
             value={instruction}
             onChange={(event) => setInstruction(event.target.value)}
-            placeholder="What should pi do when this runs?"
+            placeholder={t("What should pi do when this runs?")}
             rows={5}
           />
         </label>
 
         <label className="scheduled-editor__field">
-          <span>Workspace</span>
+          <span>{t("Workspace")}</span>
           <select
             data-testid="scheduled-task-workspace"
             value={workspaceId}
@@ -271,7 +274,7 @@ export function ScheduledTaskEditor({
         </label>
 
         <fieldset className="scheduled-editor__field">
-          <legend>Runs in</legend>
+          <legend>{t("Runs in")}</legend>
           <label className="scheduled-editor__choice">
             <input
               type="radio"
@@ -279,7 +282,7 @@ export function ScheduledTaskEditor({
               checked={targetKind === "new-thread"}
               onChange={() => setTargetKind("new-thread")}
             />
-            New thread for this task
+            {t("New thread for this task")}
           </label>
           <label className="scheduled-editor__choice">
             <input
@@ -288,7 +291,7 @@ export function ScheduledTaskEditor({
               checked={targetKind === "existing-thread"}
               onChange={() => setTargetKind("existing-thread")}
             />
-            Existing thread
+            {t("Existing thread")}
           </label>
           {targetKind === "existing-thread" ? (
             <select
@@ -296,7 +299,7 @@ export function ScheduledTaskEditor({
               value={sessionId}
               onChange={(event) => setSessionId(event.target.value)}
             >
-              <option value="">Select a thread</option>
+              <option value="">{t("Select a thread")}</option>
               {sessions.map((session) => (
                 <option key={session.id} value={session.id}>
                   {session.title}
@@ -307,22 +310,22 @@ export function ScheduledTaskEditor({
         </fieldset>
 
         <label className="scheduled-editor__field">
-          <span>Frequency</span>
+          <span>{t("Frequency")}</span>
           <select
             data-testid="scheduled-task-frequency"
             value={frequency}
             onChange={(event) => setFrequency(event.target.value as FrequencyKind)}
           >
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="interval">Interval</option>
-            <option value="once">Once</option>
+            <option value="daily">{t("Daily")}</option>
+            <option value="weekly">{t("Weekly")}</option>
+            <option value="interval">{t("Interval")}</option>
+            <option value="once">{t("Once")}</option>
           </select>
         </label>
 
         {frequency === "once" ? (
           <label className="scheduled-editor__field">
-            <span>Run at</span>
+            <span>{t("Run at")}</span>
             <input
               data-testid="scheduled-task-once-at"
               type="datetime-local"
@@ -333,7 +336,7 @@ export function ScheduledTaskEditor({
         ) : null}
         {frequency === "daily" || frequency === "weekly" ? (
           <label className="scheduled-editor__field">
-            <span>Time</span>
+            <span>{t("Time")}</span>
             <input
               data-testid="scheduled-task-time"
               type="time"
@@ -344,7 +347,7 @@ export function ScheduledTaskEditor({
         ) : null}
         {frequency === "weekly" ? (
           <fieldset className="scheduled-editor__field">
-            <legend>Days</legend>
+            <legend>{t("Days")}</legend>
             <div className="scheduled-editor__days">
               {WEEKDAY_NAMES.map((name, index) => {
                 const day = index as Weekday;
@@ -353,6 +356,7 @@ export function ScheduledTaskEditor({
                   <button
                     className={`scheduled-editor__day${selected ? " scheduled-editor__day--active" : ""}`}
                     key={name}
+                    aria-label={t(name)}
                     type="button"
                     aria-pressed={selected}
                     onClick={() =>
@@ -363,7 +367,7 @@ export function ScheduledTaskEditor({
                       )
                     }
                   >
-                    {name.slice(0, 3)}
+                    {t(name.slice(0, 3))}
                   </button>
                 );
               })}
@@ -372,7 +376,7 @@ export function ScheduledTaskEditor({
         ) : null}
         {frequency === "interval" ? (
           <label className="scheduled-editor__field">
-            <span>Every (minutes)</span>
+            <span>{t("Every (minutes)")}</span>
             <input
               data-testid="scheduled-task-interval"
               type="number"
@@ -393,11 +397,11 @@ export function ScheduledTaskEditor({
               type="button"
               onClick={() => onOpenChat(openChatTarget)}
             >
-              Open chat
+              {t("Open chat")}
             </button>
           ) : null}
           <button className="button button--secondary" type="button" onClick={onClose}>
-            Cancel
+            {t("Cancel")}
           </button>
           <button
             className="button button--primary"
@@ -418,7 +422,7 @@ export function ScheduledTaskEditor({
               });
             }}
           >
-            {editor.mode === "edit" ? "Save" : "Create"}
+            {editor.mode === "edit" ? t("Save") : t("Create")}
           </button>
         </div>
       </div>

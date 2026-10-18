@@ -1,3 +1,5 @@
+import { t, i18n } from "../../i18n";
+import { useLocale } from "./use-locale";
 import { useMemo } from "react";
 import { HighlightedLine } from "./highlighted-line";
 import { MAX_HIGHLIGHTED_LINES } from "./syntax-highlight";
@@ -18,7 +20,11 @@ export function InlineDiff({
   /** Replace hunk headers with "N unmodified lines" rows for the new-file lines they skip. */
   readonly unmodifiedGaps?: boolean;
 }) {
-  const lines = useMemo(() => parseDiff(diff, unmodifiedGaps), [diff, unmodifiedGaps]);
+  useLocale();
+  const lines = useMemo(
+    () => parseDiff(diff, unmodifiedGaps),
+    [diff, unmodifiedGaps, i18n.language],
+  );
   const highlightActive = language !== undefined && lines.length <= MAX_HIGHLIGHTED_LINES;
 
   if (lines.length === 0) {
@@ -77,7 +83,10 @@ function parseDiff(diff: string, unmodifiedGaps: boolean): DiffLine[] {
       if (skipped > 0)
         result.push({
           type: "unmodified",
-          content: `${skipped} unmodified ${skipped === 1 ? "line" : "lines"}`,
+          content: t("{{value0}} unmodified {{value1}}", {
+            value0: skipped,
+            value1: skipped === 1 ? "line" : "lines",
+          }),
         });
       if (deletesOnly) lineNumber += 1;
       nextUnshown = lineNumber;

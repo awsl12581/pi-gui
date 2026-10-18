@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../../i18n";
+import { useLocale } from "../../../ui/use-locale";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CloseIcon } from "../../../ui/icons";
 import { ANNOTATION_ROOT_ATTRIBUTE, type OpenAnnotation } from "./annotation-markers";
@@ -139,6 +141,7 @@ export function useAnnotationSelection({
   readonly annotations: TranscriptAnnotations | undefined;
   readonly platform: NodeJS.Platform;
 }) {
+  useLocale();
   const [selection, setSelection] = useState<TranscriptSelection | null>(null);
   const [editor, setEditor] = useState<OpenEditor | null>(null);
   const pointerDownRef = useRef(false);
@@ -155,7 +158,7 @@ export function useAnnotationSelection({
           ? current
           : { ...current, anchor };
       }),
-    [paneRef],
+    [paneRef, i18n.language],
   );
 
   useEffect(() => {
@@ -205,7 +208,7 @@ export function useAnnotationSelection({
     window.getSelection()?.removeAllRanges();
     setSelection(null);
     setEditor({ id, anchor: selection.rect });
-  }, [annotations, selection]);
+  }, [annotations, selection, i18n.language]);
 
   useEffect(() => {
     if (!selection) return undefined;
@@ -230,10 +233,13 @@ export function useAnnotationSelection({
     return () => cancelAnimationFrame(frame);
   }, [editorId, snapEditorToMarker]);
 
-  const openAnnotation: OpenAnnotation = useCallback((id, anchor) => {
-    setSelection(null);
-    setEditor({ id, anchor });
-  }, []);
+  const openAnnotation: OpenAnnotation = useCallback(
+    (id, anchor) => {
+      setSelection(null);
+      setEditor({ id, anchor });
+    },
+    [i18n.language],
+  );
 
   const editing = editor ? annotations?.list.find((entry) => entry.id === editor.id) : undefined;
   const editorOrphaned = editor !== null && !editing;
@@ -272,6 +278,7 @@ function AddToChatButton({
   readonly platform: NodeJS.Platform;
   readonly onAdd: () => void;
 }) {
+  useLocale();
   return (
     <div
       className="annotation-popover annotation-add"
@@ -285,7 +292,7 @@ function AddToChatButton({
         onMouseDown={(event) => event.preventDefault()}
         onClick={onAdd}
       >
-        <span>Add to Chat</span>
+        <span>{t("Add to Chat")}</span>
         <span className="annotation-add__keys" aria-hidden="true">
           {addToChatShortcutKeys(platform).map((key) => (
             <kbd key={key}>{key}</kbd>
@@ -309,6 +316,7 @@ function AnnotationEditor({
   readonly onRemove: () => void;
   readonly onClose: () => void;
 }) {
+  useLocale();
   const [value, setValue] = useState(note);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const closingRef = useRef(false);
@@ -337,9 +345,9 @@ function AnnotationEditor({
       style={{ top: popoverTop(anchor, 44), left: Math.max(POPOVER_GAP, anchor.left - 24) }}
     >
       <input
-        aria-label="Annotation comment"
+        aria-label={t("Annotation comment")}
         className="annotation-editor__input"
-        placeholder="Add an optional comment…"
+        placeholder={t("Add an optional comment…")}
         ref={inputRef}
         value={value}
         onBlur={() => finish(true)}
@@ -356,10 +364,10 @@ function AnnotationEditor({
         }}
       />
       <button
-        aria-label="Remove annotation"
+        aria-label={t("Remove annotation")}
         className="annotation-editor__remove"
         data-testid="annotation-remove"
-        title="Remove annotation"
+        title={t("Remove annotation")}
         type="button"
         onMouseDown={(event) => event.preventDefault()}
         onClick={() => {

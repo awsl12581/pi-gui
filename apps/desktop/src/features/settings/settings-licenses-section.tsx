@@ -1,8 +1,11 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useState } from "react";
 const notices = __PI_GUI_LICENSE_NOTICES__;
 import { SettingsGroup } from "./settings-utils";
 
 export function SettingsLicensesSection() {
+  useLocale();
   const [query, setQuery] = useState("");
   const [chromium, setChromium] = useState<string>();
   const [chromiumError, setChromiumError] = useState(false);
@@ -20,20 +23,22 @@ export function SettingsLicensesSection() {
   return (
     <>
       <SettingsGroup
-        title="Licenses and copyright"
+        title={t("Licenses and copyright")}
         plain
-        description="Original notices for pi-gui, installed dependencies and development tools. GitHub CLI is bundled on Windows. Independently installed extensions have their own licenses."
+        description={t(
+          "Original notices for pi-gui, installed dependencies and development tools. GitHub CLI is bundled on Windows. Independently installed extensions have their own licenses.",
+        )}
       >
         <input
           className="settings-text-input licenses-search"
-          aria-label="Search licenses"
-          placeholder="Search packages, licenses or copyright holders"
+          aria-label={t("Search licenses")}
+          placeholder={t("Search packages, licenses or copyright holders")}
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
         <p className="settings-section__description" role="status">
-          {matches.length} of {notices.length} components
+          {t("{{shown}} of {{total}} components", { shown: matches.length, total: notices.length })}
         </p>
         <div className="settings-group">
           {matches.map((entry) => (
@@ -45,7 +50,7 @@ export function SettingsLicensesSection() {
                 <span className="license-notice__metadata">{entry.license}</span>
               </summary>
               <div className="license-notice__body">
-                {entry.author ? <p>Author: {entry.author}</p> : null}
+                {entry.author ? <p>{t("Author: {{author}}", { author: entry.author })}</p> : null}
                 {entry.notices.length ? (
                   entry.notices.map((notice) => (
                     <div key={notice.file}>
@@ -55,19 +60,20 @@ export function SettingsLicensesSection() {
                   ))
                 ) : (
                   <p>
-                    No license or copyright notice file was supplied in this installed package. See
-                    its upstream distribution for additional terms.
+                    {t(
+                      "No license or copyright notice file was supplied in this installed package. See its upstream distribution for additional terms.",
+                    )}
                   </p>
                 )}
               </div>
             </details>
           ))}
           {matches.length === 0 ? (
-            <p className="license-notice__body">No matching components.</p>
+            <p className="license-notice__body">{t("No matching components.")}</p>
           ) : null}
         </div>
       </SettingsGroup>
-      <SettingsGroup title="Chromium and Electron third-party notices" plain>
+      <SettingsGroup title={t("Chromium and Electron third-party notices")} plain>
         <button
           className="button button--secondary"
           type="button"
@@ -78,13 +84,15 @@ export function SettingsLicensesSection() {
               .catch(() => setChromiumError(true));
           }}
         >
-          View Chromium notices
+          {t("View Chromium notices")}
         </button>
-        {chromiumError ? <p role="alert">Could not load Chromium notices. Try again.</p> : null}
+        {chromiumError ? (
+          <p role="alert">{t("Could not load Chromium notices. Try again.")}</p>
+        ) : null}
         {chromium ? (
           <iframe
             className="license-notice__chromium"
-            title="Chromium third-party notices"
+            title={t("Chromium third-party notices")}
             sandbox=""
             srcDoc={chromium}
           />

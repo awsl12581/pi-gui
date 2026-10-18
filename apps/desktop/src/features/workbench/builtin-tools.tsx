@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { ComponentType, ReactNode } from "react";
 import { BUILTIN_TOOL_KINDS, type BuiltinToolKind } from "../../../contracts/workbench";
 import { DiffIcon, FileIcon, TerminalIcon } from "../../ui/icons";
@@ -13,16 +14,32 @@ interface BuiltinToolDefinition {
 
 /** Presentation for every built-in tool; a missing kind fails the build. */
 export const BUILTIN_TOOLS = {
-  files: { label: "Files", description: "Browse files in this checkout", Icon: FileIcon },
+  files: {
+    get label() {
+      return t("Files");
+    },
+    get description() {
+      return t("Browse files in this checkout");
+    },
+    Icon: FileIcon,
+  },
   changes: {
-    label: "Review",
-    description: "Review uncommitted, branch or turn changes",
+    get label() {
+      return t("Review");
+    },
+    get description() {
+      return t("Review uncommitted, branch or turn changes");
+    },
     Icon: DiffIcon,
     shortcutKey: "R",
   },
   terminal: {
-    label: "Terminal",
-    description: "Run commands in this task's checkout",
+    get label() {
+      return t("Terminal");
+    },
+    get description() {
+      return t("Run commands in this task's checkout");
+    },
     Icon: TerminalIcon,
     shortcutKey: "J",
   },

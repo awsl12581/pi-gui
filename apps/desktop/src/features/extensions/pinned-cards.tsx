@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useMemo, useState } from "react";
 import type { SessionTranscriptPin } from "@pi-gui/session-driver";
 import type { TranscriptMessage } from "../../../contracts/timeline-types";
@@ -14,30 +16,34 @@ export type { PinnedCard } from "./pinned-cards-model";
  * threads. A hidden pin remembers the write it hid; the extension writing it again shows it.
  */
 export function usePinnedCards(sessionKey: string, transcript: readonly TranscriptMessage[]) {
+  useLocale();
   const [dismissedAt, setDismissedAt] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
-  const { timeline, pins } = useMemo(() => splitPinnedCards(transcript), [transcript]);
+  const { timeline, pins } = useMemo(
+    () => splitPinnedCards(transcript),
+    [transcript, i18n.language],
+  );
   const visiblePins = useMemo(
     () =>
       visiblePinnedCards(
         pins,
         (pin) => dismissedAt.get(pinStateKey(sessionKey, pin)) === pin.createdAt,
       ),
-    [dismissedAt, pins, sessionKey],
+    [dismissedAt, pins, sessionKey, i18n.language],
   );
   const collapsedPinIds = useMemo(
     () =>
       new Set(
         visiblePins.flatMap((pin) => (collapsed.has(pinStateKey(sessionKey, pin)) ? [pin.id] : [])),
       ),
-    [collapsed, sessionKey, visiblePins],
+    [collapsed, sessionKey, visiblePins, i18n.language],
   );
   const dismissPin = useCallback(
     (pin: PinnedCard) =>
       setDismissedAt((current) =>
         new Map(current).set(pinStateKey(sessionKey, pin), pin.createdAt),
       ),
-    [sessionKey],
+    [sessionKey, i18n.language],
   );
   const togglePin = useCallback(
     (pin: PinnedCard) =>
@@ -47,7 +53,7 @@ export function usePinnedCards(sessionKey: string, transcript: readonly Transcri
         if (!next.delete(key)) next.add(key);
         return next;
       }),
-    [sessionKey],
+    [sessionKey, i18n.language],
   );
   return { timeline, visiblePins, collapsedPinIds, dismissPin, togglePin };
 }
@@ -70,6 +76,7 @@ export function PinnedCards({
   readonly onDismiss: (pin: PinnedCard) => void;
   readonly onAction: RunExtensionAction;
 }) {
+  useLocale();
   if (pins.length === 0) return null;
   return (
     <div className="pinned-cards" data-testid="pinned-cards">
@@ -87,10 +94,10 @@ export function PinnedCards({
                 {canCollapse ? (
                   <button
                     aria-expanded={!collapsed}
-                    aria-label={`${collapsed ? "Expand" : "Collapse"} ${pin.card.title}`}
+                    aria-label={`${collapsed ? t("Expand") : t("Collapse")} ${pin.card.title}`}
                     className="pinned-card__control icon-button"
                     data-testid="pinned-card-toggle"
-                    title={collapsed ? "Expand" : "Collapse"}
+                    title={collapsed ? t("Expand") : t("Collapse")}
                     type="button"
                     onClick={() => onToggle(pin)}
                   >
@@ -98,10 +105,10 @@ export function PinnedCards({
                   </button>
                 ) : null}
                 <button
-                  aria-label={`Hide ${pin.card.title}`}
+                  aria-label={t("Hide {{value0}}", { value0: pin.card.title })}
                   className="pinned-card__control icon-button"
                   data-testid="pinned-card-dismiss"
-                  title="Hide until it changes"
+                  title={t("Hide until it changes")}
                   type="button"
                   onClick={(event) => focusComposerAfter(event.currentTarget, () => onDismiss(pin))}
                 >

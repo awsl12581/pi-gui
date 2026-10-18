@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
@@ -150,7 +151,7 @@ export class DesktopExtensionViewOwner {
     for (const [registeredKey, view] of runtime.views) {
       if (declarations.has(view.declaration)) continue;
       runtime.views.delete(registeredKey);
-      this.closeViewConnections(runtime, view, "Extension view was removed");
+      this.closeViewConnections(runtime, view, t("Extension view was removed"));
       if (view.host)
         view.host.close().catch((error: unknown) => {
           this.options.onDiagnostic?.(runtime.target, view.source.sourcePath, messageOf(error));
@@ -196,7 +197,7 @@ export class DesktopExtensionViewOwner {
     const runtime = this.runtimes.get(sessionKey(input.target));
     const view = runtime?.views.get(viewKey(input.extensionId, input.viewId));
     if (!runtime?.alive || !view?.host || !view.assets) {
-      throw new Error(view?.info.error ?? "Desktop extension view is unavailable");
+      throw new Error(view?.info.error ?? t("Desktop extension view is unavailable"));
     }
     const connectionId = randomUUID();
     const context: DesktopExtensionConnectionContext = {
@@ -265,14 +266,14 @@ export class DesktopExtensionViewOwner {
     const connection = this.connections.get(connectionId);
     if (!connection) return;
     if (connection.context.senderId !== senderId)
-      throw new Error("Desktop view connection belongs to another window");
-    this.close(connection, "Desktop view was closed");
+      throw new Error(t("Desktop view connection belongs to another window"));
+    this.close(connection, t("Desktop view was closed"));
   }
 
   closeSender(senderId: number): void {
     for (const connection of [...this.connections.values()]) {
       if (connection.context.senderId === senderId)
-        this.close(connection, "Desktop window was closed");
+        this.close(connection, t("Desktop window was closed"));
     }
   }
 
@@ -287,11 +288,11 @@ export class DesktopExtensionViewOwner {
         url.port ||
         url.search
       ) {
-        return new Response("Unavailable", { status: 404 });
+        return new Response(t("Unavailable"), { status: 404 });
       }
       const connection = this.connections.get(url.hostname);
       if (!connection || !connection.runtime.alive)
-        return new Response("Unavailable", { status: 404 });
+        return new Response(t("Unavailable"), { status: 404 });
       const headers = new Headers({
         "Cache-Control": "no-store",
         "Access-Control-Allow-Origin": "*",
@@ -333,27 +334,28 @@ export class DesktopExtensionViewOwner {
           this.options.hostAssets && Object.hasOwn(this.options.hostAssets, assetName)
             ? this.options.hostAssets[assetName]
             : undefined;
-        if (!asset) return new Response("Unavailable", { status: 404 });
+        if (!asset) return new Response(t("Unavailable"), { status: 404 });
         headers.set("Content-Type", asset.contentType);
         return new Response(
           typeof asset.body === "string" ? asset.body : new Uint8Array(asset.body),
           { headers },
         );
       }
-      if (!url.pathname.startsWith("/assets/")) return new Response("Unavailable", { status: 404 });
+      if (!url.pathname.startsWith("/assets/"))
+        return new Response(t("Unavailable"), { status: 404 });
       const assetPath = await resolveDesktopExtensionAsset(
         connection.assets.assetRoot,
         url.pathname.slice("/assets/".length),
       );
       const contents = await readFile(assetPath);
       if (this.connections.get(url.hostname) !== connection)
-        return new Response("Unavailable", { status: 404 });
+        return new Response(t("Unavailable"), { status: 404 });
       const contentType = assetContentType(assetPath);
       if (!contentType) return new Response("Unsupported asset", { status: 415 });
       headers.set("Content-Type", contentType);
       return new Response(new Uint8Array(contents), { headers });
     } catch {
-      return new Response("Unavailable", { status: 404 });
+      return new Response(t("Unavailable"), { status: 404 });
     }
   }
 
@@ -420,7 +422,7 @@ export class DesktopExtensionViewOwner {
             timer = setTimeout(() => {
               expired = true;
               reject(
-                new Error("Desktop view activation timed out. Reload the extension to retry."),
+                new Error(t("Desktop view activation timed out. Reload the extension to retry.")),
               );
             }, this.options.activationTimeoutMs ?? 10_000);
             timer.unref();
@@ -480,9 +482,9 @@ export class DesktopExtensionViewOwner {
   private requireConnection(connectionId: string, senderId: number): ConnectionEntry {
     const connection = this.connections.get(connectionId);
     if (!connection || !connection.runtime.alive)
-      throw new Error("Desktop view connection is unavailable");
+      throw new Error(t("Desktop view connection is unavailable"));
     if (connection.context.senderId !== senderId)
-      throw new Error("Desktop view connection belongs to another window");
+      throw new Error(t("Desktop view connection belongs to another window"));
     return connection;
   }
 
@@ -507,7 +509,7 @@ export class DesktopExtensionViewOwner {
     runtime.alive = false;
     for (const connection of [...this.connections.values()]) {
       if (connection.runtime === runtime)
-        this.close(connection, "Pi extension runtime was replaced");
+        this.close(connection, t("Pi extension runtime was replaced"));
     }
     await Promise.allSettled(runtime.pending.values());
     const hosts = [...runtime.views.values()].flatMap(({ host }) => (host ? [host] : []));

@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { WorkspaceRecord, WorktreeRecord } from "../../../contracts/desktop-state";
 import type { PiDesktopApi, WorkspaceFilePreview } from "../../../contracts/ipc";
@@ -53,6 +55,7 @@ export function FileEditorPane({
   onActivate,
   onClose,
 }: FileEditorPaneProps) {
+  useLocale();
   const activePath = tabs.active;
   const lineMark = tabs.line;
   const [preview, setPreview] = useState<WorkspaceFilePreview | null>(null);
@@ -107,7 +110,7 @@ export function FileEditorPane({
   const showSource = !markdown || sourceMode;
 
   return (
-    <section className="file-editor" data-testid="file-editor" aria-label="Open file">
+    <section className="file-editor" data-testid="file-editor" aria-label={t("Open file")}>
       <div className="file-editor__tab-strip">
         {worktreeLabel ? (
           <span className="file-editor__worktree-chip" data-testid="file-editor-worktree-chip">
@@ -133,7 +136,7 @@ export function FileEditorPane({
                   {fileNameFromPath(path)}
                 </button>
                 <button
-                  aria-label={`Close ${fileNameFromPath(path)}`}
+                  aria-label={t("Close {{value0}}", { value0: fileNameFromPath(path) })}
                   className="file-editor__tab-close"
                   type="button"
                   onClick={() => onClose(path)}
@@ -157,11 +160,11 @@ export function FileEditorPane({
                 type="button"
                 onClick={() => setSourceMode((current) => !current)}
               >
-                View source
+                {t("View source")}
               </button>
             ) : null}
             <button
-              aria-label="Copy file"
+              aria-label={t("Copy file")}
               className="icon-button"
               disabled={!preview || preview.binary || Boolean(viewerError)}
               type="button"
@@ -185,14 +188,14 @@ export function FileEditorPane({
                 });
               }}
             >
-              Open
+              {t("Open")}
             </button>
           </div>
         ) : null}
       </div>
       {activePath ? (
         <nav
-          aria-label="File path"
+          aria-label={t("File path")}
           className="file-editor__breadcrumb"
           data-testid="file-editor-breadcrumb"
         >
@@ -239,19 +242,21 @@ function renderEditorBody({
   readonly viewerLoading: boolean;
 }): ReactNode {
   if (!activePath) {
-    return <div className="diff-panel__empty">Select a file from the explorer.</div>;
+    return <div className="diff-panel__empty">{t("Select a file from the explorer.")}</div>;
   }
   if (viewerLoading) {
-    return <div className="diff-panel__empty">Loading file...</div>;
+    return <div className="diff-panel__empty">{t("Loading file...")}</div>;
   }
   if (viewerError) {
     return <div className="diff-panel__empty">{viewerError}</div>;
   }
   if (!preview) {
-    return <div className="diff-panel__empty">No preview available.</div>;
+    return <div className="diff-panel__empty">{t("No preview available.")}</div>;
   }
   if (preview.binary) {
-    return <div className="diff-panel__empty">Binary or directory preview is not available.</div>;
+    return (
+      <div className="diff-panel__empty">{t("Binary or directory preview is not available.")}</div>
+    );
   }
   return (
     <>
@@ -262,7 +267,7 @@ function renderEditorBody({
       )}
       {preview.truncated ? (
         <div className="file-editor__truncated" role="status">
-          Preview truncated
+          {t("Preview truncated")}
         </div>
       ) : null}
     </>
@@ -270,6 +275,7 @@ function renderEditorBody({
 }
 
 function FileMarkdown({ text }: { readonly text: string }) {
+  useLocale();
   return (
     <div className="file-editor__markdown message__content" data-testid="file-workbench-preview">
       <ReactMarkdown remarkPlugins={FILE_MARKDOWN_PLUGINS} components={FILE_MARKDOWN_COMPONENTS}>
@@ -288,6 +294,7 @@ function SourceView({
   readonly content: string;
   readonly lineMark: FileLineMark | null;
 }) {
+  useLocale();
   const language = extensionToLanguage(path);
   const lines = content.split("\n");
   const highlightActive = language !== undefined && lines.length <= MAX_HIGHLIGHTED_LINES;

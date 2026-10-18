@@ -1,3 +1,4 @@
+import { labelFields, type UiLabel } from "../../contracts/language";
 import { randomUUID } from "node:crypto";
 import type {
   SessionCatalogEntry,
@@ -454,7 +455,7 @@ function normalizeComposerAttachment(value: Record<string, unknown>): ComposerAt
 }
 
 export function makeActivityItem(
-  label: string,
+  label: string | UiLabel,
   options: Pick<
     Extract<TranscriptMessage, { kind: "activity" }>,
     "detail" | "metadata" | "tone"
@@ -464,13 +465,13 @@ export function makeActivityItem(
     kind: "activity",
     id: randomUUID(),
     createdAt: new Date().toISOString(),
-    label,
+    ...labelFields(label),
     ...options,
   };
 }
 
 export function makeSummaryItem(
-  label: string,
+  label: string | UiLabel,
   options: Partial<
     Pick<Extract<TranscriptMessage, { kind: "summary" }>, "metadata" | "presentation">
   > = {},
@@ -479,7 +480,7 @@ export function makeSummaryItem(
     kind: "summary",
     id: randomUUID(),
     createdAt: new Date().toISOString(),
-    label,
+    ...labelFields(label),
     presentation: options.presentation ?? "inline",
     ...(options.metadata ? { metadata: options.metadata } : {}),
   };
@@ -489,7 +490,7 @@ export function makeToolItem(
   callId: string,
   toolName: string,
   status: "running" | "success" | "error",
-  label: string,
+  label: string | UiLabel,
   options: Pick<
     Extract<TranscriptMessage, { kind: "tool" }>,
     "detail" | "metadata" | "input" | "output"
@@ -501,7 +502,7 @@ export function makeToolItem(
     callId,
     toolName,
     status,
-    label,
+    ...labelFields(label),
     createdAt: new Date().toISOString(),
     ...options,
   };

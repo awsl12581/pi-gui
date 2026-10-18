@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
 import type {
   RuntimeSettingsSnapshot,
@@ -16,7 +18,7 @@ export function labelForThinking(
   level: NonNullable<RuntimeSettingsSnapshot["defaultThinkingLevel"]>,
 ): string {
   if (level === "xhigh") {
-    return "Extra High";
+    return t("Extra High");
   }
   return level.charAt(0).toUpperCase() + level.slice(1);
 }
@@ -65,6 +67,7 @@ export function SettingsGroup({
   readonly plain?: boolean;
   readonly children: ReactNode;
 }) {
+  useLocale();
   return (
     <div className="settings-section">
       {title ? <h3 className="settings-section__title">{title}</h3> : null}
@@ -83,6 +86,7 @@ export function SettingsRow({
   readonly description?: string;
   readonly children?: ReactNode;
 }) {
+  useLocale();
   return (
     <div className="settings-row">
       <div className="settings-row__label">
@@ -105,6 +109,7 @@ export function ProviderRow({
   readonly onLogoutProvider: (providerId: string) => void;
   readonly onConfigureApiKey: (provider: RuntimeSnapshot["providers"][number]) => void;
 }) {
+  useLocale();
   const actions = resolveProviderActions(
     provider,
     onLoginProvider,
@@ -139,21 +144,21 @@ export function ProviderRow({
 function describeProviderStatus(provider: RuntimeSnapshot["providers"][number]): string {
   switch (provider.authSource) {
     case "oauth":
-      return "OAuth · connected";
+      return t("OAuth · connected");
     case "auth_file":
-      return "API key · connected";
+      return t("API key · connected");
     case "env":
-      return "Environment variable · connected";
+      return t("Environment variable · connected");
     case "external":
-      return provider.hasAuth ? "Configured externally · connected" : "Configure externally";
+      return provider.hasAuth ? t("Configured externally · connected") : t("Configure externally");
     default:
       if (provider.oauthSupported) {
-        return provider.apiKeySetupSupported ? "OAuth or API key" : "OAuth";
+        return provider.apiKeySetupSupported ? t("OAuth or API key") : "OAuth";
       }
       if (provider.apiKeySetupSupported) {
-        return "API key";
+        return t("API key");
       }
-      return provider.authType === "api_key" ? "API key" : "Built in";
+      return provider.authType === "api_key" ? t("API key") : t("Built in");
   }
 }
 
@@ -171,12 +176,16 @@ function resolveProviderActions(
   onConfigureApiKey: (provider: RuntimeSnapshot["providers"][number]) => void,
 ): readonly ProviderAction[] {
   if (provider.authSource === "oauth") {
-    return [{ disabled: false, label: "Logout", onClick: () => onLogoutProvider(provider.id) }];
+    return [{ disabled: false, label: t("Logout"), onClick: () => onLogoutProvider(provider.id) }];
   }
 
   const actions: ProviderAction[] = [];
   if (provider.oauthSupported && provider.authSource === "none") {
-    actions.push({ disabled: false, label: "Login", onClick: () => onLoginProvider(provider.id) });
+    actions.push({
+      disabled: false,
+      label: t("Login"),
+      onClick: () => onLoginProvider(provider.id),
+    });
   }
   if (
     provider.apiKeySetupSupported &&
@@ -184,7 +193,7 @@ function resolveProviderActions(
   ) {
     actions.push({
       disabled: false,
-      label: provider.authSource === "auth_file" ? "Manage" : "Set API key",
+      label: provider.authSource === "auth_file" ? t("Manage") : t("Set API key"),
       onClick: () => onConfigureApiKey(provider),
     });
   }
@@ -192,5 +201,5 @@ function resolveProviderActions(
     return actions;
   }
 
-  return [{ disabled: true, label: "Configure externally" }];
+  return [{ disabled: true, label: t("Configure externally") }];
 }

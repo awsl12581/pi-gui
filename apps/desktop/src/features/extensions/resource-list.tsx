@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useState, type ReactNode } from "react";
 import { SettingsSwitch } from "../settings/settings-controls";
 
@@ -32,6 +34,7 @@ export function ResourceList({
   readonly testId: string;
   readonly onOpen: (id: string) => void;
 }) {
+  useLocale();
   return (
     <div className="resource-list" data-testid={testId}>
       {groups.map((group) => (
@@ -58,6 +61,7 @@ function ResourceGroup({
   readonly expanded: boolean;
   readonly onOpen: (id: string) => void;
 }) {
+  useLocale();
   const [showAll, setShowAll] = useState(false);
   const visible = expanded || showAll ? group.items : group.items.slice(0, COLLAPSED_ROW_COUNT);
   const hiddenCount = group.items.length - visible.length;
@@ -87,7 +91,7 @@ function ResourceGroup({
             <SettingsSwitch
               checked={item.enabled}
               disabled={!item.onToggle}
-              label={`Enable ${item.title}`}
+              label={t("Enable {{value0}}", { value0: item.title })}
               onChange={(enabled) => item.onToggle?.(enabled)}
             />
           </div>
@@ -95,7 +99,7 @@ function ResourceGroup({
       </div>
       {hiddenCount > 0 ? (
         <button className="resource-list__more" type="button" onClick={() => setShowAll(true)}>
-          Show {hiddenCount} more
+          {t("Show {{value0}} more", { value0: hiddenCount })}
         </button>
       ) : null}
     </section>
@@ -109,6 +113,7 @@ export function ResourceEmptyState({
   readonly title: string;
   readonly body: string;
 }) {
+  useLocale();
   return (
     <div className="settings-group resource-empty">
       <div className="resource-empty__title">{title}</div>

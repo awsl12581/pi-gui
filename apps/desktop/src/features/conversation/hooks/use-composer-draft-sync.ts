@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../../i18n";
+import { useLocale } from "../../../ui/use-locale";
 import { useCallback, useEffect, useRef, useState, type SetStateAction } from "react";
 import type { SessionRef } from "@pi-gui/session-driver/types";
 import type { ComposerDraftSyncSource, DesktopAppState } from "../../../../contracts/desktop-state";
@@ -34,6 +36,7 @@ interface PendingComposerDraftWrite {
  * flush so a pending write lands before the active session changes.
  */
 export function useComposerDraftSync(params: UseComposerDraftSyncParams) {
+  useLocale();
   const { api, snapshot, selectedSession } = params;
   const selectedSessionKey = selectedSession
     ? `${selectedSession.workspaceId}:${selectedSession.sessionId}`
@@ -58,16 +61,19 @@ export function useComposerDraftSync(params: UseComposerDraftSyncParams) {
 
   composerDraftRef.current = composerDraft;
   const persistedComposerDraft = snapshot?.composerDraft ?? "";
-  const setComposerDraft = useCallback((nextDraft: SetStateAction<string>) => {
-    const currentDraft = composerDraftRef.current;
-    const resolvedDraft = typeof nextDraft === "function" ? nextDraft(currentDraft) : nextDraft;
-    if (resolvedDraft === currentDraft) {
-      return;
-    }
-    composerDraftRef.current = resolvedDraft;
-    localEditGenerationRef.current += 1;
-    setComposerDraftState(resolvedDraft);
-  }, []);
+  const setComposerDraft = useCallback(
+    (nextDraft: SetStateAction<string>) => {
+      const currentDraft = composerDraftRef.current;
+      const resolvedDraft = typeof nextDraft === "function" ? nextDraft(currentDraft) : nextDraft;
+      if (resolvedDraft === currentDraft) {
+        return;
+      }
+      composerDraftRef.current = resolvedDraft;
+      localEditGenerationRef.current += 1;
+      setComposerDraftState(resolvedDraft);
+    },
+    [i18n.language],
+  );
 
   useEffect(() => {
     if (!snapshot) {
@@ -219,14 +225,14 @@ export function useComposerDraftSync(params: UseComposerDraftSyncParams) {
 
   const flushComposerDraftAsync = useCallback(
     async (target: SessionRef): Promise<void> => {
-      if (!api) throw new Error("The desktop connection is unavailable.");
+      if (!api) throw new Error(t("The desktop connection is unavailable."));
       const sessionKey = `${target.workspaceId}:${target.sessionId}`;
       const requireCurrentSession = () => {
         if (
           currentSessionKeyRef.current !== sessionKey ||
           hydratedComposerSessionKeyRef.current !== sessionKey
         )
-          throw new Error("The task changed before its draft could be saved.");
+          throw new Error(t("The task changed before its draft could be saved."));
       };
       const cancelPendingWrite = () => {
         if (composerDraftWriteTimerRef.current !== null) {
@@ -279,7 +285,7 @@ export function useComposerDraftSync(params: UseComposerDraftSyncParams) {
         }
       }
     },
-    [api],
+    [api, i18n.language],
   );
 
   flushComposerDraftAsyncRef.current = flushComposerDraftAsync;

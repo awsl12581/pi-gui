@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import {
   memo,
   useCallback,
@@ -73,6 +75,7 @@ export function ConversationTimeline({
   annotations,
   platform,
 }: ConversationTimelineProps) {
+  useLocale();
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const annotationSelection = useAnnotationSelection({
     paneRef: surfaceRef,
@@ -91,7 +94,7 @@ export function ConversationTimeline({
       }
     });
     return markers;
-  }, [annotationList]);
+  }, [annotationList, i18n.language]);
   const [expandedToolCallIds, setExpandedToolCallIds] = useState<Set<string>>(() => new Set());
   const toggleToolCall = useCallback(
     (id: string) =>
@@ -101,7 +104,7 @@ export function ConversationTimeline({
         else next.add(id);
         return next;
       }),
-    [],
+    [i18n.language],
   );
   useLayoutEffect(() => {
     const available = new Set(
@@ -117,7 +120,7 @@ export function ConversationTimeline({
     let index = 0;
     for (const item of transcript) if (item.kind === "message") indices.set(item.id, index++);
     return indices;
-  }, [transcript]);
+  }, [transcript, i18n.language]);
   return (
     <ExtensionToolLabelsContext.Provider value={extensionToolLabels}>
       <div className="timeline-surface" ref={surfaceRef}>
@@ -201,7 +204,7 @@ export function ConversationTimeline({
                 type="button"
                 onClick={viewport.jumpToLatest}
               >
-                New activity below
+                {t("New activity below")}
               </button>
             ) : null}
           </div>
@@ -213,6 +216,7 @@ export function ConversationTimeline({
 }
 
 function TranscriptSkeleton() {
+  useLocale();
   return (
     <div className="transcript-skeleton" data-testid="transcript-skeleton" aria-hidden="true">
       <div className="transcript-skeleton__row transcript-skeleton__row--user">
@@ -230,7 +234,7 @@ function TranscriptSkeleton() {
         <span className="skeleton-line" style={{ width: "80%" }} />
         <span className="skeleton-line" style={{ width: "72%" }} />
       </div>
-      <span className="sr-only">Loading transcript…</span>
+      <span className="sr-only">{t("Loading transcript…")}</span>
     </div>
   );
 }
@@ -242,10 +246,11 @@ function TranscriptHydrateError({
   readonly retrying: boolean;
   readonly onRetry?: () => void;
 }) {
+  useLocale();
   return (
     <div className="transcript-hydrate-error" data-testid="transcript-hydrate-error">
-      <h2>Couldn't load this thread</h2>
-      <p>The selected conversation couldn't be restored. Retry to try again.</p>
+      <h2>{t("Couldn't load this thread")}</h2>
+      <p>{t("The selected conversation couldn't be restored. Retry to try again.")}</p>
       <div className="transcript-hydrate-error__actions">
         <button
           className="button button--primary"
@@ -254,7 +259,7 @@ function TranscriptHydrateError({
           disabled={retrying || !onRetry}
           onClick={onRetry}
         >
-          {retrying ? "Retrying…" : "Retry"}
+          {retrying ? t("Retrying…") : t("Retry")}
         </button>
       </div>
     </div>
@@ -262,13 +267,14 @@ function TranscriptHydrateError({
 }
 
 function TranscriptEmptyState() {
+  useLocale();
   return (
     <div className="transcript-empty" data-testid="transcript-empty">
       <span className="transcript-empty__glyph" aria-hidden="true">
         <SparkIcon />
       </span>
-      <p className="transcript-empty__title">Start the conversation</p>
-      <p className="transcript-empty__hint">Send a prompt below to begin this session.</p>
+      <p className="transcript-empty__title">{t("Start the conversation")}</p>
+      <p className="transcript-empty__hint">{t("Send a prompt below to begin this session.")}</p>
     </div>
   );
 }
@@ -315,6 +321,7 @@ function MeasuredTimelineItemBase({
   annotationMarkers,
   onOpenAnnotation,
 }: MeasuredTimelineItemProps) {
+  useLocale();
   const rowRef = useRef<HTMLDivElement | null>(null);
 
   useLayoutEffect(() => {

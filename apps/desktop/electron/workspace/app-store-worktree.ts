@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { randomUUID } from "node:crypto";
 import { realpath } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
@@ -23,7 +24,7 @@ export async function createWorktree(
   await store.initialize();
   const rootWorkspace = store.workspaceRefFromState(input.workspaceId);
   if (!rootWorkspace) {
-    return store.withError(`Unknown workspace: ${input.workspaceId}`);
+    return store.withError(t("Unknown workspace: {{value0}}", { value0: input.workspaceId }));
   }
 
   return store.withErrorHandling(async () => {
@@ -67,7 +68,7 @@ export async function removeWorktree(
   await store.initialize();
   const rootWorkspace = store.workspaceRefFromState(input.workspaceId);
   if (!rootWorkspace) {
-    return store.withError(`Unknown workspace: ${input.workspaceId}`);
+    return store.withError(t("Unknown workspace: {{value0}}", { value0: input.workspaceId }));
   }
 
   return store.withErrorHandling(async () => {
@@ -101,7 +102,7 @@ export async function startThread(
   await store.initialize();
   const rootWorkspace = store.workspaceRefFromState(input.rootWorkspaceId);
   if (!rootWorkspace) {
-    return store.withError(`Unknown workspace: ${input.rootWorkspaceId}`);
+    return store.withError(t("Unknown workspace: {{value0}}", { value0: input.rootWorkspaceId }));
   }
 
   return store.withErrorHandling(async () => {
@@ -226,7 +227,7 @@ export async function forkThread(
   await store.initialize();
   const sourceWorkspace = store.workspaceRefFromState(input.sourceWorkspaceId);
   if (!sourceWorkspace) {
-    return store.withError(`Unknown workspace: ${input.sourceWorkspaceId}`);
+    return store.withError(t("Unknown workspace: {{value0}}", { value0: input.sourceWorkspaceId }));
   }
 
   return store.withErrorHandling(async () => {
@@ -248,7 +249,9 @@ export async function forkThread(
     if (input.environment === "worktree") {
       const rootWorkspace = store.workspaceRefFromState(input.rootWorkspaceId);
       if (!rootWorkspace) {
-        return store.withError(`Unknown workspace: ${input.rootWorkspaceId}`);
+        return store.withError(
+          t("Unknown workspace: {{value0}}", { value0: input.rootWorkspaceId }),
+        );
       }
       const worktreeOptions = buildWorktreeOptions(
         store,

@@ -1,3 +1,5 @@
+import { t, i18n } from "../../i18n";
+import { useLocale } from "../ui/use-locale";
 import { useCallback, useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import type { AppView, DesktopAppState, WorkspaceRecord } from "../../contracts/desktop-state";
@@ -56,6 +58,7 @@ export function SecondarySurfaces({
   onSelectView,
   onTrySkill,
 }: SecondarySurfacesProps) {
+  useLocale();
   const [notificationPermissionStatus, setNotificationPermissionStatus] =
     useState<DesktopNotificationPermissionStatus>("unknown");
   const [notificationPermissionPending, setNotificationPermissionPending] = useState(false);
@@ -101,7 +104,7 @@ export function SecondarySurfaces({
       setNotificationPermissionStatus(status);
       return status;
     });
-  }, [api]);
+  }, [api, i18n.language]);
 
   useEffect(() => {
     if (activeView !== "settings" || settingsSection !== "notifications") {
@@ -193,7 +196,7 @@ export function SecondarySurfaces({
     apiKey: string,
   ): Promise<string | undefined> => {
     if (!settingsWorkspace) {
-      return "Select a workspace first.";
+      return t("Select a workspace first.");
     }
     const state = await updateSnapshot(setSnapshot, () =>
       api.setProviderApiKey(settingsWorkspace.id, providerId, apiKey),
@@ -203,7 +206,7 @@ export function SecondarySurfaces({
 
   const handleRemoveProviderApiKey = async (providerId: string): Promise<string | undefined> => {
     if (!settingsWorkspace) {
-      return "Select a workspace first.";
+      return t("Select a workspace first.");
     }
     const state = await updateSnapshot(setSnapshot, () =>
       api.logoutProvider(settingsWorkspace.id, providerId),
@@ -215,7 +218,7 @@ export function SecondarySurfaces({
     config: CustomProviderConfig,
   ): Promise<string | undefined> => {
     if (!settingsWorkspace) {
-      return "Select a workspace first.";
+      return t("Select a workspace first.");
     }
     const state = await updateSnapshot(setSnapshot, () =>
       api.setCustomProvider(settingsWorkspace.id, config),
@@ -225,7 +228,7 @@ export function SecondarySurfaces({
 
   const handleDeleteCustomProvider = async (providerId: string): Promise<string | undefined> => {
     if (!settingsWorkspace) {
-      return "Select a workspace first.";
+      return t("Select a workspace first.");
     }
     const state = await updateSnapshot(setSnapshot, () =>
       api.deleteCustomProvider(settingsWorkspace.id, providerId),
@@ -237,7 +240,7 @@ export function SecondarySurfaces({
     update: (workspaceId: string) => Promise<DesktopAppState>,
   ): Promise<string | undefined> => {
     if (!settingsWorkspace) {
-      return "Select a workspace first.";
+      return t("Select a workspace first.");
     }
     const state = await updateSnapshot(setSnapshot, () => update(settingsWorkspace.id));
     return state.lastError;
@@ -369,7 +372,7 @@ export function SecondarySurfaces({
   ) =>
     rootWorkspaceOptions.length > 0 ? (
       <SettingsSelect
-        label="Workspace"
+        label={t("Workspace")}
         options={rootWorkspaceOptions.map((workspace) => ({
           value: workspace.id,
           label: workspace.name,
@@ -395,7 +398,7 @@ export function SecondarySurfaces({
         if (customizeTab) onSelectView("settings");
       }}
       testId={customizeTab ? `${customizeTab}-surface` : "settings-surface"}
-      title="Settings"
+      title={t("Settings")}
     >
       {customizeTab ? (
         <CustomizePage
@@ -447,6 +450,14 @@ export function SecondarySurfaces({
           notificationPermissionStatus={notificationPermissionStatus}
           notificationPermissionPending={notificationPermissionPending}
           modelSettingsScopeMode={snapshot.modelSettingsScopeMode}
+          languagePreference={snapshot.languagePreference}
+          onSetLanguagePreference={(preference) => {
+            void updateSnapshot(setSnapshot, () => api.setLanguagePreference(preference)).catch(
+              (error: unknown) => {
+                console.error("[renderer] setLanguagePreference failed", error);
+              },
+            );
+          }}
           integratedTerminalShell={snapshot.integratedTerminalShell}
           themeMode={snapshot.themeMode}
           themePresetId={snapshot.themePresetId}

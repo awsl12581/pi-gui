@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { RuntimeSkillRecord } from "@pi-gui/session-driver/runtime-types";
 import type { WorkspaceRecord } from "../../../contracts/desktop-state";
 import { titleCase } from "../../lib/string-utils";
@@ -31,15 +33,18 @@ export function SkillsTab({
   onOpenSkillFolder,
   onTrySkill,
 }: SkillsTabProps) {
+  useLocale();
   // The list stays mounted under an open detail so expanded groups, scroll and focus survive.
   const list =
     skills.length === 0 ? (
       <ResourceEmptyState
-        title={searching ? "No skills match" : "No skills yet"}
+        title={searching ? t("No skills match") : t("No skills yet")}
         body={
           searching
-            ? "Try another name, description or slash command."
-            : "Skills are discovered in this workspace and your user skill folders. Create one, or refresh after adding one."
+            ? t("Try another name, description or slash command.")
+            : t(
+                "Skills are discovered in this workspace and your user skill folders. Create one, or refresh after adding one.",
+              )
         }
       />
     ) : (
@@ -63,18 +68,18 @@ export function SkillsTab({
                 type="button"
                 onClick={() => onOpenSkillFolder(selected.filePath)}
               >
-                Open folder
+                {t("Open folder")}
               </button>
               <button
                 className="button button--primary"
                 type="button"
                 onClick={() => onTrySkill(selected)}
               >
-                Try
+                {t("Try")}
               </button>
             </>
           }
-          backLabel="All skills"
+          backLabel={t("All skills")}
           enabled={selected.enabled}
           icon={<SkillIcon />}
           subtitle={selected.slashCommand}
@@ -85,24 +90,24 @@ export function SkillsTab({
           <p className="resource-detail__description">{selected.description}</p>
           <SettingsGroup>
             <SettingsRow
-              title="Slash command"
-              description="Type it in the composer to run the skill."
+              title={t("Slash command")}
+              description={t("Type it in the composer to run the skill.")}
             >
               <code className="resource-detail__code">{selected.slashCommand}</code>
             </SettingsRow>
             <SettingsRow
-              title="Model invocation"
+              title={t("Model invocation")}
               description={
                 selected.disableModelInvocation
-                  ? "Only runs when you type its slash command."
-                  : "pi can also choose this skill on its own when it fits the task."
+                  ? t("Only runs when you type its slash command.")
+                  : t("pi can also choose this skill on its own when it fits the task.")
               }
             >
               <span className="settings-row__value">
-                {selected.disableModelInvocation ? "Slash command only" : "Automatic"}
+                {selected.disableModelInvocation ? t("Slash command only") : t("Automatic")}
               </span>
             </SettingsRow>
-            <SettingsRow title="Location" description={sourceScopeGroupLabel(selected.scope)}>
+            <SettingsRow title={t("Location")} description={sourceScopeGroupLabel(selected.scope)}>
               <code className="resource-detail__code" title={selected.filePath}>
                 {displayPath(selected.filePath, workspace.path)}
               </code>
@@ -119,16 +124,19 @@ function groupSkills(
   skills: readonly RuntimeSkillRecord[],
   onToggleSkill: (filePath: string, enabled: boolean) => void,
 ): readonly ResourceListGroup[] {
-  return GROUP_ORDER.map((label) => ({
-    label,
-    items: skills
-      .filter((skill) => sourceScopeGroupLabel(skill.scope) === label)
-      .map((skill) => ({
-        id: skill.filePath,
-        title: titleCase(skill.name),
-        description: skill.description,
-        enabled: skill.enabled,
-        onToggle: (enabled: boolean) => onToggleSkill(skill.filePath, enabled),
-      })),
-  })).filter((group) => group.items.length > 0);
+  return GROUP_ORDER.map((sourceLabel) => {
+    const label = t(sourceLabel);
+    return {
+      label,
+      items: skills
+        .filter((skill) => sourceScopeGroupLabel(skill.scope) === label)
+        .map((skill) => ({
+          id: skill.filePath,
+          title: titleCase(skill.name),
+          description: skill.description,
+          enabled: skill.enabled,
+          onToggle: (enabled: boolean) => onToggleSkill(skill.filePath, enabled),
+        })),
+    };
+  }).filter((group) => group.items.length > 0);
 }

@@ -1,3 +1,5 @@
+import { t, i18n } from "../../i18n";
+import { useLocale } from "../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import {
@@ -11,7 +13,11 @@ import {
   scheduledOriginsByMessageId,
 } from "../../contracts/scheduled-tasks";
 import { updateSnapshot, useDesktopAppState } from "./desktop-app-state";
-import { DesktopStartupSurface, toStartupSurfaceState } from "./desktop-recovery";
+import {
+  DesktopStartupSurface,
+  WorkspaceRefreshNotice,
+  toStartupSurfaceState,
+} from "./desktop-recovery";
 import { buildFileWorkbenchContexts } from "./file-workbench-contexts";
 import { canTogglePrimarySidebar } from "./app-shell-utils";
 import { useDesktopCommands } from "./use-desktop-commands";
@@ -95,6 +101,7 @@ import { useSessionComposer } from "../features/conversation/hooks/use-session-c
 import { useTranscriptAnnotations } from "../features/conversation/annotations/use-transcript-annotations";
 
 export default function App() {
+  useLocale();
   const desktop = useDesktopAppState();
   const workbenchWidth = useWorkbenchWidth();
   const snapshot = desktop.snapshot;
@@ -162,7 +169,7 @@ export default function App() {
       foreground: activeTheme.tokens["--text"] ?? "",
       accent: activeTheme.tokens["--accent"] ?? "",
     }),
-    [activeTheme],
+    [activeTheme, i18n.language],
   );
 
   const {
@@ -172,7 +179,7 @@ export default function App() {
     rootWorkspaceOptions,
     selectedWorkspace,
     visibleWorkspaces,
-  } = useMemo(() => deriveWorkspaceContext(snapshot), [snapshot]);
+  } = useMemo(() => deriveWorkspaceContext(snapshot), [snapshot, i18n.language]);
   const selectedSession = snapshot
     ? (getSelectedSession(snapshot) ?? selectedWorkspace?.sessions[0])
     : undefined;
@@ -216,7 +223,7 @@ export default function App() {
       selectedWorkspace && selectedSession
         ? { workspaceId: selectedWorkspace.id, sessionId: selectedSession.id }
         : null,
-    [selectedWorkspace?.id, selectedSession?.id],
+    [selectedWorkspace?.id, selectedSession?.id, i18n.language],
   );
   const {
     composerDraft,
@@ -270,7 +277,7 @@ export default function App() {
       selectedSession.id,
       pins.timeline,
     );
-  }, [pins.timeline, selectedSession, selectedWorkspace, snapshot]);
+  }, [pins.timeline, selectedSession, selectedWorkspace, snapshot, i18n.language]);
   const scheduledBinding = selectedSession
     ? nonCompletedBindingForSession(snapshot?.scheduledTasks ?? [], selectedSession.id)
     : undefined;
@@ -291,7 +298,7 @@ export default function App() {
         lastTurnRunning: selectedSessionRunning,
         turnChanges: turnChanges.turns,
       }),
-    [pins.timeline, selectedSessionRunning, turnChanges.turns],
+    [pins.timeline, selectedSessionRunning, turnChanges.turns, i18n.language],
   );
   const viewport = useTimelineViewport({
     sessionKey: selectedSessionKey,
@@ -334,11 +341,13 @@ export default function App() {
       selectedSession?.title,
       selectedWorkspace,
       snapshot?.workspaces,
+      ,
+      i18n.language,
     ],
   );
   const selectedExtensionDock = useMemo(
     () => buildExtensionDockModel(selectedExtensionUi),
-    [selectedExtensionUi],
+    [selectedExtensionUi, i18n.language],
   );
   const shownExtensionDock = useDismissibleExtensionDock(
     selectedSessionKey,
@@ -354,7 +363,7 @@ export default function App() {
     dockExpandedBySession[selectedSessionKey] === selectedExtensionUiInstance;
   const threadSidebarModel = useMemo(
     () => (snapshot ? buildThreadSidebarModel(snapshot) : undefined),
-    [snapshot],
+    [snapshot, i18n.language],
   );
   const threadSidebarModelRef = useRef(threadSidebarModel);
   threadSidebarModelRef.current = threadSidebarModel;
@@ -395,21 +404,24 @@ export default function App() {
       composerRef.current?.focus();
     });
   };
-  const handleViewFileInDiff = useCallback((path: string) => {
-    const workspace = selectedWorkspaceRef.current;
-    if (!workspace) return;
-    const current = workbenchRef.current;
-    current.setChanges({
-      workspaceId: workspace.id,
-      selectedPath: path,
-      scope: { kind: "uncommitted" },
-    });
-    current.openTool({ kind: "changes" });
-    setDiffFileRequest({
-      sessionKey: selectedSessionKeyRef.current,
-      request: { workspaceId: workspace.id, path, nonce: Date.now() },
-    });
-  }, []);
+  const handleViewFileInDiff = useCallback(
+    (path: string) => {
+      const workspace = selectedWorkspaceRef.current;
+      if (!workspace) return;
+      const current = workbenchRef.current;
+      current.setChanges({
+        workspaceId: workspace.id,
+        selectedPath: path,
+        scope: { kind: "uncommitted" },
+      });
+      current.openTool({ kind: "changes" });
+      setDiffFileRequest({
+        sessionKey: selectedSessionKeyRef.current,
+        request: { workspaceId: workspace.id, path, nonce: Date.now() },
+      });
+    },
+    [i18n.language],
+  );
   const selectedSessionKeyRef = useRef(selectedSessionKey);
   selectedSessionKeyRef.current = selectedSessionKey;
   const selectedWorkspaceRef = useRef(selectedWorkspace);
@@ -433,7 +445,7 @@ export default function App() {
           // Missing, unreadable, or outside the workspace: leave the panel unchanged.
         });
     },
-    [api],
+    [api, i18n.language],
   );
   const runExtensionCardAction = useExtensionCardActions({
     api,
@@ -444,16 +456,19 @@ export default function App() {
     focusComposer,
   });
 
-  const dismissSchemaSkewNotice = useCallback((sessionKey: string) => {
-    setDismissedSchemaSkewSessionKeys((current) => {
-      if (current.has(sessionKey)) {
-        return current;
-      }
-      const next = new Set(current);
-      next.add(sessionKey);
-      return next;
-    });
-  }, []);
+  const dismissSchemaSkewNotice = useCallback(
+    (sessionKey: string) => {
+      setDismissedSchemaSkewSessionKeys((current) => {
+        if (current.has(sessionKey)) {
+          return current;
+        }
+        const next = new Set(current);
+        next.add(sessionKey);
+        return next;
+      });
+    },
+    [i18n.language],
+  );
 
   const openSettings = (workspaceId?: string, section?: SettingsSection) => {
     if (!api) {
@@ -528,7 +543,7 @@ export default function App() {
         api.setExtensionEnabled(selectedWorkspace.id, filePath, true),
       ).then(() => undefined);
     },
-    [api, selectedWorkspace],
+    [api, selectedWorkspace, i18n.language],
   );
 
   const mentionMenu = useMentionMenu({
@@ -1029,7 +1044,7 @@ export default function App() {
                 <button
                   aria-haspopup="menu"
                   aria-expanded={threadMenu.openMenu?.surface === "header"}
-                  aria-label="Thread actions"
+                  aria-label={t("Thread actions")}
                   className="icon-button"
                   data-testid="thread-header-menu"
                   type="button"
@@ -1048,22 +1063,7 @@ export default function App() {
           ) : null}
         </Topbar>
 
-        {snapshot.startupDiagnostics.length > 0 ? (
-          <div className="startup-diagnostics" role="status" data-testid="startup-diagnostics">
-            <strong>Some saved workspaces could not be refreshed.</strong>
-            <span>
-              {snapshot.startupDiagnostics
-                .map((diagnostic) => {
-                  const workspaceName = diagnostic.workspacePath
-                    ?.split(/[\\/]/)
-                    .filter(Boolean)
-                    .at(-1);
-                  return workspaceName ? `${workspaceName} is unavailable.` : diagnostic.message;
-                })
-                .join(" ")}
-            </span>
-          </div>
-        ) : null}
+        <WorkspaceRefreshNotice diagnostics={snapshot.startupDiagnostics} />
 
         <>
           {snapshot.activeView === "scheduled" ? (
@@ -1136,9 +1136,9 @@ export default function App() {
             ) : (
               <section className="canvas canvas--empty">
                 <div className="empty-panel">
-                  <div className="session-header__eyebrow">Workspace</div>
-                  <h1>Open a folder to start</h1>
-                  <p>Add a project folder before creating a new thread.</p>
+                  <div className="session-header__eyebrow">{t("Workspace")}</div>
+                  <h1>{t("Open a folder to start")}</h1>
+                  <p>{t("Add a project folder before creating a new thread.")}</p>
                 </div>
               </section>
             )
@@ -1153,16 +1153,17 @@ export default function App() {
                       data-testid="schema-skew-notice"
                     >
                       <span className="schema-skew-notice__text">
-                        This session was written by a newer version of pi — some content may not
-                        display. Update pi-gui (or open it with the pi CLI) to see everything.
+                        {t(
+                          "This session was written by a newer version of pi — some content may not display. Update pi-gui (or open it with the pi CLI) to see everything.",
+                        )}
                       </span>
                       <button
                         type="button"
                         className="schema-skew-notice__dismiss"
-                        aria-label="Dismiss notice"
+                        aria-label={t("Dismiss notice")}
                         onClick={() => dismissSchemaSkewNotice(selectedSessionKey)}
                       >
-                        Dismiss
+                        {t("Dismiss")}
                       </button>
                     </div>
                   ) : null}
@@ -1303,9 +1304,13 @@ export default function App() {
           ) : selectedWorkspace ? (
             <section className="canvas canvas--empty">
               <div className="empty-panel">
-                <div className="session-header__eyebrow">Workspace</div>
+                <div className="session-header__eyebrow">{t("Workspace")}</div>
                 <h1>{selectedWorkspace.name}</h1>
-                <p>Create a thread for this folder, then jump between sessions from the sidebar.</p>
+                <p>
+                  {t(
+                    "Create a thread for this folder, then jump between sessions from the sidebar.",
+                  )}
+                </p>
                 <div className="empty-panel__actions">
                   <button
                     className="button button--primary"
@@ -1316,7 +1321,7 @@ export default function App() {
                       )
                     }
                   >
-                    New thread
+                    {t("New thread")}
                   </button>
                 </div>
               </div>
@@ -1324,11 +1329,12 @@ export default function App() {
           ) : (
             <section className="canvas canvas--empty">
               <div className="empty-panel">
-                <div className="session-header__eyebrow">Workspace</div>
-                <h1>Open a folder to start</h1>
+                <div className="session-header__eyebrow">{t("Workspace")}</div>
+                <h1>{t("Open a folder to start")}</h1>
                 <p>
-                  Add project folders, group sessions under them, and jump between threads from the
-                  sidebar.
+                  {t(
+                    "Add project folders, group sessions under them, and jump between threads from the sidebar.",
+                  )}
                 </p>
               </div>
             </section>
@@ -1397,7 +1403,7 @@ export default function App() {
                     />
                   ) : (
                     <p className="workbench__unavailable" role="status">
-                      This file checkout is unavailable.
+                      {t("This file checkout is unavailable.")}
                     </p>
                   ),
                 terminal: () => (

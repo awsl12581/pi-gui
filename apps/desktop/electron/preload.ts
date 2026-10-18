@@ -584,6 +584,8 @@ contextBridge.exposeInMainWorld("piApp", {
     ipcRenderer.invoke(desktopIpc.getThemeMode) as Promise<"system" | "light" | "dark">,
   getResolvedTheme: () =>
     ipcRenderer.invoke(desktopIpc.getResolvedTheme) as Promise<"light" | "dark">,
+  setLanguagePreference: (preference) =>
+    ipcRenderer.invoke(desktopIpc.setLanguagePreference, preference) as Promise<DesktopAppState>,
   setThemeMode: (mode: "system" | "light" | "dark") =>
     ipcRenderer.invoke(desktopIpc.setThemeMode, mode) as Promise<DesktopAppState>,
   onWindowFocused: (listener: () => void) => subscribeIpc(desktopIpc.windowFocused, listener),

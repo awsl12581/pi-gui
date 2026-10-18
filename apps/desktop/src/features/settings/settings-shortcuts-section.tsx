@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { SettingsGroup, SettingsRow } from "./settings-utils";
 
 /**
@@ -20,41 +22,157 @@ const SHORTCUT_GROUPS: readonly {
   readonly shortcuts: readonly Shortcut[];
 }[] = [
   {
-    title: "App",
+    get title() {
+      return t("App");
+    },
     shortcuts: [
-      { title: "Command palette", modifiers: ["Mod"], key: "K" },
-      { title: "Go to file", modifiers: ["Mod"], key: "P" },
-      { title: "Open settings", modifiers: ["Mod"], key: "," },
-      { title: "Toggle sidebar", modifiers: ["Mod"], key: "B" },
-      { title: "Toggle side panel", modifiers: ["Mod", "Alt"], key: "B" },
-      { title: "New window", modifiers: ["Mod", "Shift"], key: "N" },
+      {
+        get title() {
+          return t("Command palette");
+        },
+        modifiers: ["Mod"],
+        key: "K",
+      },
+      {
+        get title() {
+          return t("Go to file");
+        },
+        modifiers: ["Mod"],
+        key: "P",
+      },
+      {
+        get title() {
+          return t("Open settings");
+        },
+        modifiers: ["Mod"],
+        key: ",",
+      },
+      {
+        get title() {
+          return t("Toggle sidebar");
+        },
+        modifiers: ["Mod"],
+        key: "B",
+      },
+      {
+        get title() {
+          return t("Toggle side panel");
+        },
+        modifiers: ["Mod", "Alt"],
+        key: "B",
+      },
+      {
+        get title() {
+          return t("New window");
+        },
+        modifiers: ["Mod", "Shift"],
+        key: "N",
+      },
     ],
   },
   {
-    title: "Threads",
+    get title() {
+      return t("Threads");
+    },
     shortcuts: [
-      { title: "New thread", modifiers: ["Mod"], key: "N" },
-      { title: "Switch to recent thread", modifiers: ["Mod"], key: "1–9" },
-      { title: "Cycle through threads", modifiers: ["Ctrl"], key: "Tab" },
-      { title: "Find in thread", modifiers: ["Mod"], key: "F" },
+      {
+        get title() {
+          return t("New thread");
+        },
+        modifiers: ["Mod"],
+        key: "N",
+      },
+      {
+        get title() {
+          return t("Switch to recent thread");
+        },
+        modifiers: ["Mod"],
+        key: "1–9",
+      },
+      {
+        get title() {
+          return t("Cycle through threads");
+        },
+        modifiers: ["Ctrl"],
+        key: "Tab",
+      },
+      {
+        get title() {
+          return t("Find in thread");
+        },
+        modifiers: ["Mod"],
+        key: "F",
+      },
     ],
   },
   {
-    title: "Composer",
+    get title() {
+      return t("Composer");
+    },
     shortcuts: [
-      { title: "Send message, or queue it during a run", modifiers: [], key: "Enter" },
-      { title: "Steer the running agent", modifiers: ["Mod"], key: "Enter" },
-      { title: "New line", modifiers: ["Shift"], key: "Enter" },
+      {
+        get title() {
+          return t("Send message, or queue it during a run");
+        },
+        modifiers: [],
+        key: "Enter",
+      },
+      {
+        get title() {
+          return t("Steer the running agent");
+        },
+        modifiers: ["Mod"],
+        key: "Enter",
+      },
+      {
+        get title() {
+          return t("New line");
+        },
+        modifiers: ["Shift"],
+        key: "Enter",
+      },
     ],
   },
   {
-    title: "Workbench",
+    get title() {
+      return t("Workbench");
+    },
     shortcuts: [
-      { title: "Toggle terminal", modifiers: ["Mod"], key: "J" },
-      { title: "New terminal tab", modifiers: ["Mod"], key: "T" },
-      { title: "Toggle review", modifiers: ["Mod"], key: "R" },
-      { title: "Switch to side panel tab", modifiers: ["TabMod"], key: "1–9" },
-      { title: "Close workbench tab", modifiers: ["Mod"], key: "W" },
+      {
+        get title() {
+          return t("Toggle terminal");
+        },
+        modifiers: ["Mod"],
+        key: "J",
+      },
+      {
+        get title() {
+          return t("New terminal tab");
+        },
+        modifiers: ["Mod"],
+        key: "T",
+      },
+      {
+        get title() {
+          return t("Toggle review");
+        },
+        modifiers: ["Mod"],
+        key: "R",
+      },
+      {
+        get title() {
+          return t("Switch to side panel tab");
+        },
+        modifiers: ["TabMod"],
+        key: "1–9",
+      },
+      {
+        get title() {
+          return t("Close workbench tab");
+        },
+        modifiers: ["Mod"],
+        key: "W",
+      },
     ],
   },
 ];
@@ -84,6 +202,7 @@ function shortcutKeys(platform: NodeJS.Platform, shortcut: Shortcut): readonly s
 }
 
 export function SettingsShortcutsSection({ platform }: { readonly platform: NodeJS.Platform }) {
+  useLocale();
   return (
     <>
       {SHORTCUT_GROUPS.map((group) => (

@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { app, net, Notification, shell } from "electron";
 
 // /releases/latest skips drafts and prereleases, so stable installs are only
@@ -38,7 +39,10 @@ export function showUpdateNotification(
   }
   const notification = new Notification({
     title: "pi-gui Release Available",
-    body: `Version ${latestVersion} is available (you have ${currentVersion}). Click to view the release.`,
+    body: t("Version {{value0}} is available (you have {{value1}}). Click to view the release.", {
+      value0: latestVersion,
+      value1: currentVersion,
+    }),
   });
   notification.on("click", () => {
     void openReleasesPage(releaseUrl).catch((error: unknown) => {
@@ -65,22 +69,22 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
   } catch (error) {
     const message =
       error instanceof Error && error.name === "AbortError"
-        ? "The update check timed out."
+        ? t("The update check timed out.")
         : error instanceof Error
           ? error.message
-          : "The update check could not reach GitHub.";
+          : t("The update check could not reach GitHub.");
     return { status: "error", message };
   } finally {
     clearTimeout(timeout);
   }
 
   if (res.status === 404) {
-    return { status: "error", message: "No stable pi-gui release has been published yet." };
+    return { status: "error", message: t("No stable pi-gui release has been published yet.") };
   }
   if (!res.ok) {
     return {
       status: "error",
-      message: `GitHub Releases returned ${res.status}.`,
+      message: t("GitHub Releases returned {{value0}}.", { value0: res.status }),
     };
   }
 
@@ -88,13 +92,13 @@ export async function checkForUpdate(): Promise<UpdateCheckResult> {
   try {
     release = (await res.json()) as GitHubRelease;
   } catch {
-    return { status: "error", message: "GitHub Releases returned an unreadable response." };
+    return { status: "error", message: t("GitHub Releases returned an unreadable response.") };
   }
 
   if (!release?.tag_name) {
     return {
       status: "error",
-      message: "GitHub Releases did not return any published versions.",
+      message: t("GitHub Releases did not return any published versions."),
     };
   }
 

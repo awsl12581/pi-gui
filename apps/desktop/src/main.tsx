@@ -1,3 +1,5 @@
+import { i18n, setLanguage } from "../i18n";
+import { resolveAppLanguage } from "../contracts/language";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { earlyModifierChords, getSidePanelTabCommand } from "../contracts/ipc";
@@ -32,6 +34,8 @@ window.addEventListener(
 );
 
 applyLastTheme();
+setLanguage(resolveAppLanguage("system", navigator.languages));
+document.documentElement.lang = i18n.language;
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>

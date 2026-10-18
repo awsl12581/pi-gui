@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { ThemeMode, ThemePresetId } from "../../../contracts/desktop-state";
 import { SettingsSelect, SettingsSwitch } from "./settings-controls";
 import { SettingsGroup, SettingsRow } from "./settings-utils";
@@ -15,9 +17,24 @@ interface SettingsAppearanceSectionProps {
 }
 
 const THEME_MODES: readonly { readonly mode: ThemeMode; readonly label: string }[] = [
-  { mode: "system", label: "System" },
-  { mode: "light", label: "Light" },
-  { mode: "dark", label: "Dark" },
+  {
+    mode: "system",
+    get label() {
+      return t("System");
+    },
+  },
+  {
+    mode: "light",
+    get label() {
+      return t("Light");
+    },
+  },
+  {
+    mode: "dark",
+    get label() {
+      return t("Dark");
+    },
+  },
 ];
 
 export function SettingsAppearanceSection({
@@ -28,13 +45,14 @@ export function SettingsAppearanceSection({
   enableTransparency,
   onSetEnableTransparency,
 }: SettingsAppearanceSectionProps) {
+  useLocale();
   const activePreset = themePreset(themePresetId);
   const { variant } = useActiveTheme();
   return (
     <>
-      <SettingsGroup title="Theme" plain>
+      <SettingsGroup title={t("Theme")} plain>
         <div
-          aria-label="Theme"
+          aria-label={t("Theme")}
           className="theme-mode-tiles"
           role="radiogroup"
           style={tilePalette(themePresetId)}
@@ -64,7 +82,7 @@ export function SettingsAppearanceSection({
       </SettingsGroup>
 
       <SettingsGroup>
-        <SettingsRow title="Color preset" description={activePreset.description}>
+        <SettingsRow title={t("Color preset")} description={activePreset.description}>
           <span className="settings-preset-control">
             <span aria-hidden="true" className="settings-preset-swatches">
               {themeSwatches(themePresetId, variant).map((swatch, index) => (
@@ -72,7 +90,7 @@ export function SettingsAppearanceSection({
               ))}
             </span>
             <SettingsSelect
-              label="Color preset"
+              label={t("Color preset")}
               options={themePresets.map((preset) => ({ value: preset.id, label: preset.name }))}
               value={themePresetId}
               onChange={onSetThemePresetId}
@@ -80,12 +98,12 @@ export function SettingsAppearanceSection({
           </span>
         </SettingsRow>
         <SettingsRow
-          title="Window transparency"
-          description="Let desktop colors show through supported surfaces."
+          title={t("Window transparency")}
+          description={t("Let desktop colors show through supported surfaces.")}
         >
           <SettingsSwitch
             checked={enableTransparency}
-            label="Window transparency"
+            label={t("Window transparency")}
             onChange={onSetEnableTransparency}
           />
         </SettingsRow>

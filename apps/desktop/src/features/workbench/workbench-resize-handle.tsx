@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { PaneResizeHandle, type PaneWidthBounds } from "../../ui/pane-resize-handle";
 
 function workbenchBounds(_panel: HTMLElement, main: HTMLElement): PaneWidthBounds {
@@ -10,10 +12,11 @@ export function WorkbenchResizeHandle({
 }: {
   readonly onResize: (width: number) => void;
 }) {
+  useLocale();
   return (
     <PaneResizeHandle
       className="workbench__resize-handle"
-      label="Side panel width"
+      label={t("Side panel width")}
       controls="task-workbench"
       edge="left"
       bounds={workbenchBounds}

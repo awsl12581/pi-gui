@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 /// <reference lib="dom" />
 
 import { type KeyboardEvent } from "react";
@@ -96,7 +97,7 @@ export function hasFilesInDataTransfer(dataTransfer: DataTransfer | null | undef
   }
 
   const types = Array.from(dataTransfer.types ?? []);
-  if (types.includes("Files")) {
+  if (types.includes(t("Files"))) {
     return true;
   }
 

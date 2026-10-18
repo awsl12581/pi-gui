@@ -1,3 +1,5 @@
+import { t } from "../../i18n";
+import { useLocale } from "../ui/use-locale";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SearchIcon } from "../ui/icons";
 
@@ -29,6 +31,7 @@ export function SecondarySurface({
   testId,
   children,
 }: SecondarySurfaceProps) {
+  useLocale();
   const backRef = useRef(onBack);
   backRef.current = onBack;
   useEffect(() => {
@@ -55,14 +58,14 @@ export function SecondarySurface({
       <aside className="secondary-surface__sidebar">
         <button className="secondary-surface__back" type="button" onClick={onBack}>
           <span aria-hidden="true">←</span>
-          <span>Back to app</span>
+          <span>{t("Back to app")}</span>
         </button>
         {navItems.length > 0 ? (
           <SecondarySurfaceNav
             activeNavId={activeNavId}
             items={navItems}
-            label={`${title} sections`}
-            searchLabel={`Search ${title.toLowerCase()}`}
+            label={t("{{value0}} sections", { value0: title })}
+            searchLabel={t("Search {{value0}}", { value0: title.toLowerCase() })}
             onSelect={(id) => onSelectNav?.(id)}
           />
         ) : (
@@ -89,6 +92,7 @@ function SecondarySurfaceNav({
   readonly searchLabel: string;
   readonly onSelect: (id: string) => void;
 }) {
+  useLocale();
   const [query, setQuery] = useState("");
   const matches = filterNavItems(items, query);
   const groups = [...new Set(matches.map((item) => item.group))];
@@ -99,7 +103,7 @@ function SecondarySurfaceNav({
         <SearchIcon />
         <input
           aria-label={searchLabel}
-          placeholder="Search"
+          placeholder={t("Search")}
           spellCheck={false}
           type="search"
           value={query}
@@ -137,7 +141,10 @@ function SecondarySurfaceNav({
           </div>
         ))}
         {matches.length === 0 ? (
-          <p className="secondary-surface__nav-empty">No matches for “{query.trim()}”</p>
+          <p className="secondary-surface__nav-empty">
+            {t("No matches for “")}
+            {query.trim()}”
+          </p>
         ) : null}
       </nav>
     </>
@@ -153,7 +160,14 @@ function filterNavItems(
     return items;
   }
   return items.filter((item) => {
-    const haystack = [item.title, item.group, ...item.keywords].join(" ").toLowerCase();
+    const haystack = [
+      item.title,
+      item.group,
+      ...item.keywords,
+      ...item.keywords.map((keyword) => t(keyword)),
+    ]
+      .join(" ")
+      .toLowerCase();
     return terms.every((term) => haystack.includes(term));
   });
 }

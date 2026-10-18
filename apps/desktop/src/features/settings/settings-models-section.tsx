@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useState, type ReactNode } from "react";
 import type {
   RuntimeModelRecord,
@@ -41,6 +43,7 @@ export function SettingsModelsSection({
   onSetScopedModelPatterns,
   onOpenProviders,
 }: SettingsModelsSectionProps) {
+  useLocale();
   const [query, setQuery] = useState("");
   const [showUnconnected, setShowUnconnected] = useState(false);
 
@@ -77,9 +80,9 @@ export function SettingsModelsSection({
   return (
     <>
       <SettingsGroup>
-        <SettingsRow title="Default model" description="Used for new threads.">
+        <SettingsRow title={t("Default model")} description={t("Used for new threads.")}>
           <SettingsSelect
-            label="Default model"
+            label={t("Default model")}
             options={enabledModels.map((model) => ({
               value: `${model.providerId}:${model.modelId}`,
               label: `${model.providerName} · ${model.label}`,
@@ -91,9 +94,12 @@ export function SettingsModelsSection({
             }}
           />
         </SettingsRow>
-        <SettingsRow title="Reasoning" description="Default reasoning effort for new threads.">
+        <SettingsRow
+          title={t("Reasoning")}
+          description={t("Default reasoning effort for new threads.")}
+        >
           <SettingsSelect
-            label="Reasoning"
+            label={t("Reasoning")}
             options={THINKING_OPTIONS}
             value={runtime?.settings.defaultThinkingLevel ?? undefined}
             onChange={onSetThinkingLevel}
@@ -102,8 +108,10 @@ export function SettingsModelsSection({
         {defaultValue && !defaultIsEnabled ? (
           <div className="settings-row">
             <span className="settings-warning">
-              Your default model ({defaultProvider}/{defaultModelId}) is turned off or its provider
-              is not connected. Choose a new default.
+              {t(
+                "Your default model ({{model}}) is turned off or its provider is not connected. Choose a new default.",
+                { model: `${defaultProvider}/${defaultModelId}` },
+              )}
             </span>
           </div>
         ) : null}
@@ -112,16 +120,19 @@ export function SettingsModelsSection({
       <section className="settings-section">
         <div className="settings-section__header">
           <h3 className="settings-section__title">
-            Enabled models{" "}
+            {t("Enabled models")}{" "}
             <span className="resource-list__count">
-              {enabledModels.length} of {availableModels.length}
+              {t("{{shown}} of {{total}}", {
+                shown: enabledModels.length,
+                total: availableModels.length,
+              })}
             </span>
           </h3>
           <label className="resource-search">
             <SearchIcon />
             <input
-              aria-label="Search models"
-              placeholder="Search models"
+              aria-label={t("Search models")}
+              placeholder={t("Search models")}
               spellCheck={false}
               type="search"
               value={query}
@@ -130,15 +141,15 @@ export function SettingsModelsSection({
           </label>
         </div>
         <p className="settings-section__description">
-          Only enabled models appear in model pickers.
+          {t("Only enabled models appear in model pickers.")}
         </p>
         <div className="settings-group" data-testid="settings-model-list">
           {visibleAvailable.length === 0 ? (
             <div className="settings-row">
               <span className="settings-row__description">
                 {availableModels.length === 0
-                  ? "No connected models available yet. Connect a provider to add models."
-                  : `No connected models match “${query.trim()}”.`}
+                  ? t("No connected models available yet. Connect a provider to add models.")
+                  : t("No connected models match “{{value0}}”.", { value0: query.trim() })}
               </span>
             </div>
           ) : (
@@ -156,7 +167,7 @@ export function SettingsModelsSection({
                   <SettingsSwitch
                     checked={enabled}
                     disabled={enabled && activePatterns.length <= 1}
-                    label={`Enable ${pattern}`}
+                    label={t("Enable {{value0}}", { value0: pattern })}
                     onChange={(next) => setEnabled(pattern, next)}
                   />
                 </ModelRow>
@@ -170,15 +181,15 @@ export function SettingsModelsSection({
         <section className="settings-section">
           <div className="settings-section__header">
             <h3 className="settings-section__title">
-              Not connected{" "}
+              {t("Not connected")}{" "}
               <span className="resource-list__count">{visibleUnconnected.length}</span>
             </h3>
             <button className="button button--secondary" type="button" onClick={onOpenProviders}>
-              Connect a provider
+              {t("Connect a provider")}
             </button>
           </div>
           <p className="settings-section__description">
-            Models from providers you have not signed in to.
+            {t("Models from providers you have not signed in to.")}
           </p>
           {searching || showUnconnected ? (
             <div className="settings-group" data-testid="settings-unconnected-model-list">
@@ -192,7 +203,7 @@ export function SettingsModelsSection({
               type="button"
               onClick={() => setShowUnconnected(true)}
             >
-              Show {unconnectedModels.length} models
+              {t("Show {{count}} models", { count: unconnectedModels.length })}
             </button>
           )}
         </section>
@@ -210,17 +221,18 @@ function ModelRow({
   readonly isDefault: boolean;
   readonly children?: ReactNode;
 }) {
+  useLocale();
   return (
     <div className="settings-row model-row">
       <div className="settings-row__label">
         <div className="settings-row__title">
           {model.label}
-          {isDefault ? <span className="model-row__badge">Default</span> : null}
+          {isDefault ? <span className="model-row__badge">{t("Default")}</span> : null}
         </div>
         <div className="settings-row__description">
           {model.providerName} · {modelPattern(model)}
-          {model.reasoning ? <span className="model-row__tag">Reasoning</span> : null}
-          {model.supportsImages ? <span className="model-row__tag">Images</span> : null}
+          {model.reasoning ? <span className="model-row__tag">{t("Reasoning")}</span> : null}
+          {model.supportsImages ? <span className="model-row__tag">{t("Images")}</span> : null}
         </div>
       </div>
       {children ? <div className="settings-row__control">{children}</div> : null}

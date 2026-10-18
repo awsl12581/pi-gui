@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { sessionKey } from "@pi-gui/session-driver";
 import type { PiSdkDriver } from "@pi-gui/pi-sdk-driver";
 import type { JsonCatalogStore } from "@pi-gui/catalogs/node";
@@ -205,7 +206,7 @@ async function renameWorkspace(
   await store.initialize();
   const nextName = displayName.trim();
   if (!nextName) {
-    return store.withError("Workspace name cannot be empty.");
+    return store.withError(t("Workspace name cannot be empty."));
   }
 
   return store.withErrorHandling(async () => {
@@ -283,13 +284,18 @@ async function renameSession(
   await store.initialize();
   const nextTitle = title.trim();
   if (!nextTitle) {
-    return store.withError("Thread title cannot be empty.");
+    return store.withError(t("Thread title cannot be empty."));
   }
 
   return store.withErrorHandling(async () => {
     const sessionRef = toSessionRef(target);
     if (!store.sessionFromState(sessionRef)) {
-      return store.withError(`Unknown session: ${target.workspaceId}:${target.sessionId}`);
+      return store.withError(
+        t("Unknown session: {{value0}}:{{value1}}", {
+          value0: target.workspaceId,
+          value1: target.sessionId,
+        }),
+      );
     }
     store.clearPendingAutoTitle(sessionRef);
     await store.driver.renameSession(sessionRef, nextTitle);
@@ -405,7 +411,7 @@ async function createSession(
   await store.initialize();
   const ws = store.workspaceRefFromState(input.workspaceId);
   if (!ws) {
-    return store.withError(`Unknown workspace: ${input.workspaceId}`);
+    return store.withError(t("Unknown workspace: {{value0}}", { value0: input.workspaceId }));
   }
 
   return store.withErrorHandling(async () => {

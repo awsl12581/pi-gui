@@ -1,3 +1,5 @@
+import { message, type UiLabel } from "../../contracts/language";
+import { t } from "../../i18n";
 import { randomUUID } from "node:crypto";
 import { sessionKey } from "@pi-gui/session-driver";
 import type { SessionConfig, SessionQueuedMessage, SessionRef } from "@pi-gui/session-driver";
@@ -467,7 +469,7 @@ async function submitComposer(
     return store.emit();
   }
   if (!sessionRef || !store.sessionFromState(sessionRef)) {
-    return store.withError("Create or select a session before sending a message.");
+    return store.withError(t("Create or select a session before sending a message."));
   }
 
   return submitComposerToSession(store, sessionRef, textInput, attachments, options);
@@ -680,7 +682,12 @@ async function setSessionModel(
   return store.withErrorHandling(async () => {
     await store.driver.setSessionModel(sessionRef, { provider, modelId });
     syncSessionConfig(store, key, { provider, modelId });
-    return finishSessionChange(store, sessionRef, key, `Model set to ${provider}:${modelId}`);
+    return finishSessionChange(
+      store,
+      sessionRef,
+      key,
+      message("Model set to {{value0}}:{{value1}}", { value0: provider, value1: modelId }),
+    );
   });
 }
 
@@ -694,7 +701,12 @@ async function setSessionThinkingLevel(
   return store.withErrorHandling(async () => {
     await store.driver.setSessionThinkingLevel(sessionRef, thinkingLevel);
     syncSessionConfig(store, key, { thinkingLevel });
-    return finishSessionChange(store, sessionRef, key, `Thinking set to ${thinkingLevel}`);
+    return finishSessionChange(
+      store,
+      sessionRef,
+      key,
+      message("Thinking set to {{value0}}", { value0: thinkingLevel }),
+    );
   });
 }
 
@@ -729,15 +741,20 @@ async function deliverBackgroundInstruction(
 ): Promise<string | undefined> {
   const instruction = text.trim();
   if (!instruction) {
-    throw new Error("Scheduled task instruction is empty.");
+    throw new Error(t("Scheduled task instruction is empty."));
   }
   await store.ensureSessionReady(sessionRef);
   const session = store.sessionFromState(sessionRef);
   if (!session) {
-    throw new Error(`Unknown session: ${sessionRef.workspaceId}:${sessionRef.sessionId}`);
+    throw new Error(
+      t("Unknown session: {{value0}}:{{value1}}", {
+        value0: sessionRef.workspaceId,
+        value1: sessionRef.sessionId,
+      }),
+    );
   }
   if (session.archivedAt) {
-    throw new Error("Scheduled task target thread is archived.");
+    throw new Error(t("Scheduled task target thread is archived."));
   }
 
   store.recordUserMessageRecency(sessionRef);
@@ -895,14 +912,22 @@ async function runComposerCommand(
       store,
       sessionRef,
       key,
-      `Model set to ${parsed.provider}:${parsed.modelId}`,
+      message("Model set to {{value0}}:{{value1}}", {
+        value0: parsed.provider,
+        value1: parsed.modelId,
+      }),
     );
   }
 
   if (parsed.type === "thinking") {
     await store.driver.setSessionThinkingLevel(sessionRef, parsed.thinkingLevel);
     syncSessionConfig(store, key, { thinkingLevel: parsed.thinkingLevel });
-    return finishComposerCommand(store, sessionRef, key, `Thinking set to ${parsed.thinkingLevel}`);
+    return finishComposerCommand(
+      store,
+      sessionRef,
+      key,
+      message("Thinking set to {{value0}}", { value0: parsed.thinkingLevel }),
+    );
   }
 
   if (parsed.type === "status") {
@@ -928,28 +953,41 @@ async function runComposerCommand(
   if (parsed.type === "name") {
     store.clearPendingAutoTitle(sessionRef);
     await store.driver.renameSession(sessionRef, parsed.title);
-    return finishComposerCommand(store, sessionRef, key, `Session renamed to ${parsed.title}`, {
-      sessionTitle: parsed.title,
-    });
+    return finishComposerCommand(
+      store,
+      sessionRef,
+      key,
+      message("Session renamed to {{value0}}", { value0: parsed.title }),
+      {
+        sessionTitle: parsed.title,
+      },
+    );
   }
 
   if (parsed.type === "compact") {
     await store.driver.compactSession(sessionRef, parsed.customInstructions);
     await store.reloadTranscriptFromDriver(sessionRef);
-    return finishComposerCommand(store, sessionRef, key, "Compacted session context");
+    return finishComposerCommand(store, sessionRef, key, message("Compacted session context"));
   }
 
   if (parsed.type === "reload") {
     store.clearExtensionUiForSession(sessionRef);
     await store.driver.reloadSession(sessionRef);
     await store.refreshSessionCommandsFor(sessionRef);
-    return finishComposerCommand(store, sessionRef, key, "Reloaded session resources");
+    return finishComposerCommand(store, sessionRef, key, message("Reloaded session resources"));
   }
 
-  return store.withSessionError(sessionRef, `Unsupported slash command: ${commandText}`);
+  return store.withSessionError(
+    sessionRef,
+    t("Unsupported slash command: {{value0}}", { value0: commandText }),
+  );
 }
 
-function appendLocalActivity(store: ComposerStore, sessionRef: SessionRef, label: string): void {
+function appendLocalActivity(
+  store: ComposerStore,
+  sessionRef: SessionRef,
+  label: string | UiLabel,
+): void {
   const key = sessionKey(sessionRef);
   const transcript = [...(store.conversationState.transcriptCache.get(key) ?? [])];
   transcript.push(makeActivityItem(label));
@@ -964,7 +1002,7 @@ function finishComposerCommand(
   store: ComposerStore,
   sessionRef: SessionRef,
   key: string,
-  label: string,
+  label: string | UiLabel,
   options: { readonly sessionTitle?: string } = {},
 ): DesktopAppState {
   store.setComposerDraftForSession(sessionRef, "", "command");
@@ -976,7 +1014,7 @@ function finishSessionChange(
   store: ComposerStore,
   sessionRef: SessionRef,
   key: string,
-  label: string,
+  label: string | UiLabel,
   options: { readonly sessionTitle?: string } = {},
 ): DesktopAppState {
   appendLocalActivity(store, sessionRef, label);

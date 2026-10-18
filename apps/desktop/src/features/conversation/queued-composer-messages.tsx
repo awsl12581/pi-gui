@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { ComposerAttachment, QueuedComposerMessage } from "../../../contracts/desktop-state";
 import { FileIcon } from "../../ui/icons";
 import { ImageAttachmentThumb } from "./image-attachment-thumb";
@@ -7,7 +9,10 @@ function queuedPreview(text: string): string {
   const annotated = parseAnnotatedPrompt(text);
   if (!annotated) return text;
   const count = annotated.annotations.length;
-  const label = `${count} annotation${count === 1 ? "" : "s"}`;
+  const label = t("{{value0}} annotation{{value1}}", {
+    value0: count,
+    value1: count === 1 ? "" : "s",
+  });
   return annotated.body.trim() ? `${annotated.body.trim()} · ${label}` : label;
 }
 
@@ -28,6 +33,7 @@ export function QueuedComposerMessages({
   onSteerMessage,
   onCancelEdit,
 }: QueuedComposerMessagesProps) {
+  useLocale();
   if (messages.length === 0 && !editingQueuedMessageId) {
     return null;
   }
@@ -36,9 +42,9 @@ export function QueuedComposerMessages({
     <div className="queued-composer-messages" data-testid="queued-composer-messages">
       {editingQueuedMessageId ? (
         <div className="queued-composer-messages__editing" data-testid="queued-composer-editing">
-          <span>Editing queued message</span>
+          <span>{t("Editing queued message")}</span>
           <button type="button" onClick={onCancelEdit}>
-            Cancel
+            {t("Cancel")}
           </button>
         </div>
       ) : null}
@@ -55,21 +61,23 @@ export function QueuedComposerMessages({
             <div className="queued-composer-message__actions">
               {message.mode !== "steer" ? (
                 <button type="button" onClick={() => onSteerMessage(message.id)}>
-                  Steer
+                  {t("Steer")}
                 </button>
               ) : null}
               {/* Its annotations cannot be reattached to the transcript, so it is not editable. */}
               {parseAnnotatedPrompt(message.text) ? null : (
                 <button type="button" onClick={() => onEditMessage(message.id)}>
-                  Edit
+                  {t("Edit")}
                 </button>
               )}
               <button
-                aria-label={`Delete queued message ${message.text || message.id}`}
+                aria-label={t("Delete queued message {{value0}}", {
+                  value0: message.text || message.id,
+                })}
                 type="button"
                 onClick={() => onRemoveMessage(message.id)}
               >
-                Delete
+                {t("Delete")}
               </button>
             </div>
           </div>
@@ -90,6 +98,7 @@ export function QueuedComposerMessages({
 }
 
 function QueuedAttachmentPreview({ attachment }: { readonly attachment: ComposerAttachment }) {
+  useLocale();
   return (
     <div className={`queued-composer-attachment queued-composer-attachment--${attachment.kind}`}>
       {attachment.kind === "image" ? (

@@ -1,3 +1,4 @@
+import type { UiLabel } from "./language";
 import type {
   SessionTranscriptCard,
   SessionTranscriptCustomMessage,
@@ -17,6 +18,7 @@ export interface TimelineActivity {
   readonly id: string;
   readonly createdAt: string;
   readonly label: string;
+  readonly labelMessage?: UiLabel;
   readonly detail?: string;
   readonly metadata?: string;
   readonly tone?: TimelineTone;
@@ -29,6 +31,7 @@ export interface TimelineToolCall {
   readonly toolName: string;
   readonly status: TimelineToolStatus;
   readonly label: string;
+  readonly labelMessage?: UiLabel;
   readonly detail?: string;
   readonly metadata?: string;
   readonly createdAt: string;
@@ -41,6 +44,7 @@ export interface TimelineSummary {
   readonly id: string;
   readonly createdAt: string;
   readonly label: string;
+  readonly labelMessage?: UiLabel;
   readonly metadata?: string;
   readonly presentation: TimelineSummaryPresentation;
 }

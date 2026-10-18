@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import { buildModelOptions } from "../conversation/composer-commands";
 
@@ -48,26 +49,28 @@ export function deriveModelOnboardingState(
     return {
       hasSelectableModels: false,
       requiresModelSelection: true,
-      unselectedModelLabel: "No models available",
-      emptyModelTitle: "No models available",
+      unselectedModelLabel: t("No models available"),
+      emptyModelTitle: t("No models available"),
       emptyModelDescription:
         connectedProviderCount > 0
-          ? "Open Settings > Models to enable models."
-          : "Open Settings > Providers to connect a provider and make models available.",
+          ? t("Open Settings > Models to enable models.")
+          : t("Open Settings > Providers to connect a provider and make models available."),
       notice:
         connectedProviderCount > 0
           ? {
-              title: "No models available",
-              description:
+              title: t("No models available"),
+              description: t(
                 "All available models are currently disabled. Open Settings > Models to enable models.",
-              actionLabel: "Open Settings > Models",
+              ),
+              actionLabel: t("Open Settings > Models"),
               actionSection: "models",
             }
           : {
-              title: "No models available",
-              description:
+              title: t("No models available"),
+              description: t(
                 "Connect a provider in Settings > Providers before choosing a model or setting a default.",
-              actionLabel: "Open Settings > Providers",
+              ),
+              actionLabel: t("Open Settings > Providers"),
               actionSection: "providers",
             },
     };
@@ -77,15 +80,19 @@ export function deriveModelOnboardingState(
     return {
       hasSelectableModels: true,
       requiresModelSelection: true,
-      unselectedModelLabel: "Pick a model",
-      emptyModelTitle: "No models available",
-      emptyModelDescription: "Pick a model.",
+      unselectedModelLabel: t("Pick a model"),
+      emptyModelTitle: t("No models available"),
+      emptyModelDescription: t("Pick a model."),
       notice: {
-        title: "Selected model unavailable",
+        title: t("Selected model unavailable"),
         description: hasDefaultModel
-          ? "The model selected for this thread is no longer available. Choose another model, then open Settings > Models to update the default."
-          : "The model selected for this thread is no longer available. Choose another model, then open Settings > Models to choose the app default.",
-        actionLabel: "Open Settings > Models",
+          ? t(
+              "The model selected for this thread is no longer available. Choose another model, then open Settings > Models to update the default.",
+            )
+          : t(
+              "The model selected for this thread is no longer available. Choose another model, then open Settings > Models to choose the app default.",
+            ),
+        actionLabel: t("Open Settings > Models"),
         actionSection: "models",
       },
     };
@@ -95,15 +102,15 @@ export function deriveModelOnboardingState(
     return {
       hasSelectableModels: true,
       requiresModelSelection: !currentSelectionUsable,
-      unselectedModelLabel: "Pick a model",
-      emptyModelTitle: "No default model set",
-      emptyModelDescription: "Pick a model.",
+      unselectedModelLabel: t("Pick a model"),
+      emptyModelTitle: t("No default model set"),
+      emptyModelDescription: t("Pick a model."),
       notice: currentSelectionUsable
         ? undefined
         : {
-            title: "No default model set",
-            description: "Set a default model in Settings > Models.",
-            actionLabel: "Open Settings > Models",
+            title: t("No default model set"),
+            description: t("Set a default model in Settings > Models."),
+            actionLabel: t("Open Settings > Models"),
             actionSection: "models",
           },
     };
@@ -114,15 +121,21 @@ export function deriveModelOnboardingState(
     return {
       hasSelectableModels: true,
       requiresModelSelection: !currentSelectionUsable,
-      unselectedModelLabel: "Pick a model",
-      emptyModelTitle: "Default model unavailable",
-      emptyModelDescription: "Pick a model.",
+      unselectedModelLabel: t("Pick a model"),
+      emptyModelTitle: t("Default model unavailable"),
+      emptyModelDescription: t("Pick a model."),
       notice: {
-        title: "Default model unavailable",
+        title: t("Default model unavailable"),
         description: currentSelectionUsable
-          ? `Your saved default (${defaultLabel}) is no longer available. Open Settings > Models to update it.`
-          : `Your saved default (${defaultLabel}) is no longer available. Choose a model for this thread, then open Settings > Models to update it.`,
-        actionLabel: "Open Settings > Models",
+          ? t(
+              "Your saved default ({{value0}}) is no longer available. Open Settings > Models to update it.",
+              { value0: defaultLabel },
+            )
+          : t(
+              "Your saved default ({{value0}}) is no longer available. Choose a model for this thread, then open Settings > Models to update it.",
+              { value0: defaultLabel },
+            ),
+        actionLabel: t("Open Settings > Models"),
         actionSection: "models",
       },
     };
@@ -131,9 +144,9 @@ export function deriveModelOnboardingState(
   return {
     hasSelectableModels: true,
     requiresModelSelection: false,
-    unselectedModelLabel: "Pick a model",
-    emptyModelTitle: "No models available",
-    emptyModelDescription: "Pick a model.",
+    unselectedModelLabel: t("Pick a model"),
+    emptyModelTitle: t("No models available"),
+    emptyModelDescription: t("Pick a model."),
   };
 }
 

@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef, useState } from "react";
 import type { ExtensionFlagValues } from "@pi-gui/session-driver";
 import type { RuntimeExtensionFlag, RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
@@ -22,7 +24,7 @@ function setFlagEntries(values: ExtensionFlagValues | undefined): [string, true 
 }
 
 function flagsBadgeLabel(count: number): string {
-  return count > 0 ? `Flags · ${count}` : "Flags";
+  return count > 0 ? t("Flags · {{value0}}", { value0: count }) : t("Flags");
 }
 
 /**
@@ -38,6 +40,7 @@ export function ExtensionFlagsSelector({
   readonly values: ExtensionFlagValues;
   readonly onSetFlag: (name: string, value: boolean | string) => void;
 }) {
+  useLocale();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLSpanElement | null>(null);
   const groups = flagGroups(runtime);
@@ -130,6 +133,7 @@ export function ExtensionFlagsBadge({
 }: {
   readonly values: ExtensionFlagValues | undefined;
 }) {
+  useLocale();
   const entries = setFlagEntries(values);
   if (entries.length === 0) return null;
   const summary = entries
@@ -139,7 +143,7 @@ export function ExtensionFlagsBadge({
     <span
       className="model-selector__badge extension-flags__badge--readonly"
       data-testid="extension-flags-session-badge"
-      title={`Started with:\n${summary}`}
+      title={t("Started with:\n{{value0}}", { value0: summary })}
     >
       {flagsBadgeLabel(entries.length)}
     </span>

@@ -1,3 +1,4 @@
+import { message, type UiMessage, type UiLabel } from "../../contracts/language";
 import { isCardEntryItem, sessionKey } from "@pi-gui/session-driver";
 import type { SessionTranscriptItem, SessionTranscriptPin } from "@pi-gui/session-driver";
 import type { SessionDriverEvent, SessionQueuedMessage, SessionRef } from "@pi-gui/session-driver";
@@ -189,7 +190,7 @@ export function applyTimelineEvent(
     case "sessionOpened":
       state.pendingAssistantMessageBySession.delete(key);
       transcript.push(
-        makeActivityItem("Resumed session", { metadata: relativeDetail(event.timestamp) }),
+        makeActivityItem(message("Resumed session"), { metadata: relativeDetail(event.timestamp) }),
       );
       break;
     case "sessionUpdated":
@@ -205,7 +206,7 @@ export function applyTimelineEvent(
           searchCount: 0,
           fileCount: 0,
         });
-        const activity = makeActivityItem("Working…");
+        const activity = makeActivityItem(message("Working…"));
         state.activeWorkingActivityBySession.set(key, activity.id);
         transcript.push(activity);
       }
@@ -280,7 +281,7 @@ export function applyTimelineEvent(
         // timestamps and places it above the turn's final reply.
       } else {
         transcript.push(
-          makeSummaryItem("Completed", {
+          makeSummaryItem(message("Completed"), {
             presentation: "divider",
             metadata: relativeDetail(event.timestamp),
           }),
@@ -307,7 +308,9 @@ export function applyTimelineEvent(
     }
     case "sessionClosed":
       clearRunState(transcript, key, event.sessionRef, state);
-      transcript.push(makeActivityItem("Stopped", { metadata: relativeDetail(event.timestamp) }));
+      transcript.push(
+        makeActivityItem(message("Stopped"), { metadata: relativeDetail(event.timestamp) }),
+      );
       break;
     case "transcriptItemAppended": {
       // A pin shows above the composer, so it never ends or moves a streaming reply.
@@ -376,7 +379,7 @@ function upsertToolRow(
   callId: string,
   toolName?: string,
   status?: "running" | "success" | "error",
-  label?: string,
+  label?: string | UiLabel,
   detail?: string,
   input?: unknown,
   output?: unknown,
@@ -388,7 +391,7 @@ function upsertToolRow(
     callId,
     toolName ?? existingTool?.toolName ?? "tool",
     status ?? existingTool?.status ?? "running",
-    label ?? existingTool?.label ?? "Working",
+    label ?? existingTool?.labelMessage ?? existingTool?.label ?? message("Working"),
     {
       detail: detail ?? existingTool?.detail,
       metadata: existingTool?.metadata,
@@ -435,30 +438,40 @@ function clearRunState(
   state.runMetricsBySession.delete(key);
 }
 
-function toolLabel(toolName: string, input: unknown): string {
+function toolLabel(toolName: string, input: unknown): UiMessage {
   const detail = toolInputSummary(input);
   if (toolName === createChildThreadToolName) {
-    return detail ? `Started child thread: ${detail}` : "Started child thread";
+    return detail
+      ? message("Started child thread: {{detail}}", { detail })
+      : message("Started child thread");
   }
   if (toolName === listThreadsToolName) {
-    return "Listed threads";
+    return message("Listed threads");
   }
   if (toolName === readThreadToolName) {
-    return detail ? `Read thread: ${detail}` : "Read thread";
+    return detail ? message("Read thread: {{detail}}", { detail }) : message("Read thread");
   }
   if (toolName === sendMessageToThreadToolName) {
-    return detail ? `Sent message to thread: ${detail}` : "Sent message to thread";
+    return detail
+      ? message("Sent message to thread: {{detail}}", { detail })
+      : message("Sent message to thread");
   }
   if (looksLikeSearch(toolName, input)) {
-    return detail ? `Searched ${detail}` : `Searched with ${toolName}`;
+    return detail
+      ? message("Searched {{detail}}", { detail })
+      : message("Searched with {{toolName}}", { toolName });
   }
   if (looksLikeFileExplore(toolName, input)) {
     if (toolName.toLowerCase() === "read") {
-      return detail ? `Read ${detail}` : "Read a file";
+      return detail ? message("Read {{detail}}", { detail }) : message("Read a file");
     }
-    return detail ? `Explored ${detail}` : `Explored files with ${toolName}`;
+    return detail
+      ? message("Explored {{detail}}", { detail })
+      : message("Explored files with {{toolName}}", { toolName });
   }
-  return detail ? `Ran ${toolName}: ${detail}` : `Ran ${toolName}`;
+  return detail
+    ? message("Ran {{toolName}}: {{detail}}", { toolName, detail })
+    : message("Ran {{toolName}}", { toolName });
 }
 
 function progressLabel(progress: number | undefined): string | undefined {
@@ -524,18 +537,33 @@ function looksLikeFileExplore(toolName: string, input: unknown): boolean {
   return typeof input === "string" && /\/|\.md|\.ts|file/i.test(input);
 }
 
-function summaryLabel(metrics: RunMetrics): string | undefined {
-  const parts: string[] = [];
+function summaryLabel(metrics: RunMetrics): readonly UiMessage[] | undefined {
+  const parts: UiMessage[] = [];
   if (metrics.fileCount > 0) {
-    parts.push(`Explored ${metrics.fileCount} file${metrics.fileCount === 1 ? "" : "s"}`);
+    parts.push(
+      message("Explored {{count}} file{{suffix}}", {
+        count: metrics.fileCount,
+        suffix: metrics.fileCount === 1 ? "" : "s",
+      }),
+    );
   }
   if (metrics.searchCount > 0) {
-    parts.push(`${metrics.searchCount} search${metrics.searchCount === 1 ? "" : "es"}`);
+    parts.push(
+      message("{{count}} search{{suffix}}", {
+        count: metrics.searchCount,
+        suffix: metrics.searchCount === 1 ? "" : "es",
+      }),
+    );
   }
   if (parts.length === 0 && metrics.toolCount > 0) {
-    parts.push(`Used ${metrics.toolCount} tool${metrics.toolCount === 1 ? "" : "s"}`);
+    parts.push(
+      message("Used {{count}} tool{{suffix}}", {
+        count: metrics.toolCount,
+        suffix: metrics.toolCount === 1 ? "" : "s",
+      }),
+    );
   }
-  return parts.length > 0 ? parts.join(", ") : undefined;
+  return parts.length > 0 ? parts : undefined;
 }
 
 function workedForLabel(startedAt: string, endedAt: string): string {

@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type {
   RuntimeExtensionRecord,
   RuntimeSourceScope,
@@ -28,8 +29,8 @@ export function isPiAddonExtension(extension: RuntimeExtensionRecord): boolean {
 }
 
 export function extensionScopeLabel(extension: RuntimeExtensionRecord): string {
-  if (isPiGuiBuiltinExtension(extension)) return PI_GUI_TOOLS_LABEL;
-  if (isPiAddonExtension(extension)) return PI_ADDONS_LABEL;
+  if (isPiGuiBuiltinExtension(extension)) return t(PI_GUI_TOOLS_LABEL);
+  if (isPiAddonExtension(extension)) return t(PI_ADDONS_LABEL);
   return extension.sourceInfo.scope;
 }
 
@@ -37,16 +38,16 @@ export function extensionScopeLabel(extension: RuntimeExtensionRecord): string {
 export function sourceScopeGroupLabel(scope: RuntimeSourceScope): string {
   switch (scope) {
     case "project":
-      return "Workspace";
+      return t("Workspace");
     case "user":
-      return "User";
+      return t("User");
     case "temporary":
-      return "This session";
+      return t("This session");
   }
 }
 
 export function extensionGroupLabel(extension: RuntimeExtensionRecord): string {
-  if (isPiGuiBuiltinExtension(extension)) return PI_GUI_TOOLS_LABEL;
-  if (isPiAddonExtension(extension)) return PI_ADDONS_LABEL;
+  if (isPiGuiBuiltinExtension(extension)) return t(PI_GUI_TOOLS_LABEL);
+  if (isPiAddonExtension(extension)) return t(PI_ADDONS_LABEL);
   return sourceScopeGroupLabel(extension.sourceInfo.scope);
 }

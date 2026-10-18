@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useRef, useState } from "react";
 import type { TurnChangeSummary, TurnChangedFile } from "../../../contracts/review";
 import { FileDiffIcon } from "../../ui/icons";
@@ -14,6 +16,7 @@ export function TurnChangesCard({
   readonly turn: TurnChangeSummary;
   readonly onOpen?: OpenTurnChange;
 }) {
+  useLocale();
   const [expanded, setExpanded] = useState(false);
   const listRef = useRef<HTMLUListElement | null>(null);
   const { files } = turn;
@@ -31,7 +34,7 @@ export function TurnChangesCard({
   return (
     <section
       className="turn-changes"
-      aria-label="Files changed in this turn"
+      aria-label={t("Files changed in this turn")}
       data-testid="turn-changes"
     >
       <header className="turn-changes__header">
@@ -40,7 +43,10 @@ export function TurnChangesCard({
         </span>
         <div className="turn-changes__summary">
           <span className="turn-changes__title">
-            {`Edited ${files.length} ${files.length === 1 ? "file" : "files"}`}
+            {t("Edited {{value0}} {{value1}}", {
+              value0: files.length,
+              value1: files.length === 1 ? "file" : "files",
+            })}
           </span>
           <LineStats lines={totals} />
         </div>
@@ -50,7 +56,7 @@ export function TurnChangesCard({
             className="turn-changes__review"
             onClick={() => onOpen(turn, firstFile.path)}
           >
-            Review
+            {t("Review")}
           </button>
         ) : null}
       </header>
@@ -85,7 +91,7 @@ export function TurnChangesCard({
                 );
               }}
             >
-              {`Show ${hidden} more`}
+              {t("Show {{value0}} more", { value0: hidden })}
             </button>
           </li>
         ) : null}
@@ -95,6 +101,7 @@ export function TurnChangesCard({
 }
 
 function FilePath({ path }: { readonly path: string }) {
+  useLocale();
   const slash = path.lastIndexOf("/");
   return (
     <span className="turn-changes__path">
@@ -105,10 +112,11 @@ function FilePath({ path }: { readonly path: string }) {
 }
 
 function FileStats({ file }: { readonly file: TurnChangedFile }) {
+  useLocale();
   return file.lines ? (
     <LineStats lines={file.lines} />
   ) : (
-    <span className="turn-changes__stats turn-changes__binary">Binary</span>
+    <span className="turn-changes__stats turn-changes__binary">{t("Binary")}</span>
   );
 }
 
@@ -117,6 +125,7 @@ function LineStats({
 }: {
   readonly lines: { readonly added: number; readonly removed: number };
 }) {
+  useLocale();
   return (
     <span className="turn-changes__stats">
       <span className="turn-changes__added">+{lines.added}</span>

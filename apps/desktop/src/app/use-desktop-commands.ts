@@ -1,3 +1,5 @@
+import { t, i18n } from "../../i18n";
+import { useLocale } from "../ui/use-locale";
 import {
   useCallback,
   useEffect,
@@ -92,6 +94,7 @@ interface DesktopCommandsInput {
  * command palette. Every command has one handler; palette entries call the same actions.
  */
 export function useDesktopCommands(input: DesktopCommandsInput) {
+  useLocale();
   const {
     api,
     snapshot,
@@ -169,7 +172,7 @@ export function useDesktopCommands(input: DesktopCommandsInput) {
       console.error("[renderer] updateSnapshot failed", error);
     });
     return true;
-  }, []);
+  }, [i18n.language]);
   const togglePalette = (mode: "commands" | "files", source: ChordSource) => {
     if (threadSidebarModel && paletteGates.current[mode](source, performance.now())) {
       setPaletteMode((current) => (current === mode ? null : mode));

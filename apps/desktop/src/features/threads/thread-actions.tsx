@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
 import type { SessionRecord } from "../../../contracts/desktop-state";
 import { formatShortcut } from "../../../contracts/ipc";
@@ -69,7 +71,7 @@ export function buildThreadActions(
   const actions: ThreadAction[] = [
     {
       id: "rename-thread",
-      title: "Rename thread",
+      title: t("Rename thread"),
       icon: <PencilIcon />,
       hint: renameThreadShortcut(handlers.platform),
       run: () => handlers.startRename(subject),
@@ -78,7 +80,7 @@ export function buildThreadActions(
   if (archived) {
     actions.push({
       id: "restore-thread",
-      title: "Restore thread",
+      title: t("Restore thread"),
       icon: <RestoreIcon />,
       run: () => handlers.restore(subject),
     });
@@ -86,13 +88,13 @@ export function buildThreadActions(
     actions.push(
       {
         id: "pin-thread",
-        title: pinned ? "Unpin thread" : "Pin thread",
+        title: pinned ? t("Unpin thread") : t("Pin thread"),
         icon: <PinIcon filled={pinned} />,
         run: () => handlers.setPinned(subject, !pinned),
       },
       {
         id: "archive-thread",
-        title: "Archive thread",
+        title: t("Archive thread"),
         icon: <ArchiveIcon />,
         hint: archiveThreadShortcut(handlers.platform),
         run: () => handlers.archive(subject),
@@ -102,7 +104,7 @@ export function buildThreadActions(
   if (session.hasUnseenUpdate) {
     actions.push({
       id: "mark-read",
-      title: "Mark as read",
+      title: t("Mark as read"),
       icon: <CheckIcon />,
       run: () => handlers.markRead(subject),
     });
@@ -110,13 +112,15 @@ export function buildThreadActions(
   actions.push(
     {
       id: "scheduled-task",
-      title: handlers.hasScheduledTask(subject) ? "Edit scheduled task…" : "Add scheduled task…",
+      title: handlers.hasScheduledTask(subject)
+        ? t("Edit scheduled task…")
+        : t("Add scheduled task…"),
       icon: <ClockIcon />,
       run: () => handlers.openScheduledTask(subject),
     },
     {
       id: "copy-session-id",
-      title: "Copy session ID",
+      title: t("Copy session ID"),
       icon: <CopyIcon />,
       run: () => handlers.copySessionId(subject),
     },
@@ -130,6 +134,7 @@ interface ThreadActionsMenuProps {
 }
 
 export function ThreadActionsMenu({ actions, className }: ThreadActionsMenuProps) {
+  useLocale();
   return (
     <div className={`workspace-menu ${className}`} role="menu">
       {actions.map((action) => (

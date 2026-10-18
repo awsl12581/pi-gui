@@ -1,3 +1,5 @@
+import { t } from "../../../../i18n";
+import { useLocale } from "../../../ui/use-locale";
 import { ChatIcon, CloseIcon } from "../../../ui/icons";
 import type { TranscriptAnnotation } from "./annotation-prompt";
 
@@ -9,8 +11,12 @@ export function AnnotationChip({
   readonly annotations: readonly TranscriptAnnotation[];
   readonly onRemove: (id: string) => void;
 }) {
+  useLocale();
   if (annotations.length === 0) return null;
-  const label = `${annotations.length} annotation${annotations.length === 1 ? "" : "s"}`;
+  const label = t("{{value0}} annotation{{value1}}", {
+    value0: annotations.length,
+    value1: annotations.length === 1 ? "" : "s",
+  });
   return (
     <div className="annotation-chip" data-testid="annotation-chip">
       <button className="annotation-chip__button" type="button">
@@ -29,7 +35,7 @@ export function AnnotationChip({
                 ) : null}
               </div>
               <button
-                aria-label={`Remove annotation ${index + 1}`}
+                aria-label={t("Remove annotation {{value0}}", { value0: index + 1 })}
                 className="annotation-chip__remove"
                 type="button"
                 onClick={() => onRemove(annotation.id)}

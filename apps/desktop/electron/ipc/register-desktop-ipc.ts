@@ -1,3 +1,4 @@
+import { isLanguagePreference } from "../../contracts/language";
 import { ipcMain, shell, type BrowserWindow, type IpcMainInvokeEvent } from "electron";
 import path from "node:path";
 import type { SessionRef } from "@pi-gui/session-driver";
@@ -75,6 +76,7 @@ type StateOwner = Pick<
   | "setSidebarCollapsed"
   | "setThreadGrouping"
   | "setWorkspaceCollapsed"
+  | "setLanguagePreference"
   | "setThemeMode"
   | "setThemePresetId"
 >;
@@ -284,6 +286,14 @@ export function registerDesktopIpc({
     windows.windowForSender(event.sender);
     return capabilities.theme.getResolvedTheme();
   });
+  handleMainFrame(
+    desktopIpc.setLanguagePreference,
+    (preference: unknown) => {
+      if (!isLanguagePreference(preference)) throw new TypeError("Unsupported language preference");
+      return preference;
+    },
+    (preference, { event }) => run(event, () => owners.state.setLanguagePreference(preference)),
+  );
   ipcMain.handle(desktopIpc.setThemeMode, (event, rawMode: unknown) => {
     windows.windowForSender(event.sender);
     const mode = expectThemeMode(rawMode);

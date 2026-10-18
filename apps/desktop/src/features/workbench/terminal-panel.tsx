@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { ClipboardAddon } from "@xterm/addon-clipboard";
@@ -27,6 +29,7 @@ interface TerminalPanelProps {
 }
 
 export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelProps) {
+  useLocale();
   const api = window.piApp;
   const panelRef = useRef<HTMLElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -53,7 +56,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
 
   const activeSession = useMemo(
     () => panel?.sessions.find((session) => session.id === panel.activeSessionId),
-    [panel],
+    [panel, i18n.language],
   );
 
   const requestPanel = useCallback(async () => {
@@ -67,7 +70,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [api, sessionId, workspace.id]);
+  }, [api, sessionId, workspace.id, i18n.language]);
 
   useEffect(() => {
     setPanel(null);
@@ -83,7 +86,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     }
     const nextPanel = await api.createTerminalSession(workspace.id, sessionId, lastSizeRef.current);
     setPanel(nextPanel);
-  }, [api, sessionId, workspace.id]);
+  }, [api, sessionId, workspace.id, i18n.language]);
 
   const setActiveTerminal = useCallback(
     async (terminalId: string) => {
@@ -93,7 +96,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
       const nextPanel = await api.setActiveTerminalSession(workspace.id, sessionId, terminalId);
       setPanel(nextPanel);
     },
-    [api, sessionId, workspace.id],
+    [api, sessionId, workspace.id, i18n.language],
   );
 
   const closeTerminal = useCallback(
@@ -111,7 +114,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
         if (mountedRef.current) onHide();
       }
     },
-    [api, onHide],
+    [api, onHide, i18n.language],
   );
 
   const restartTerminal = useCallback(async () => {
@@ -121,7 +124,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     const nextPanel = await api.restartTerminalSession(activeSession.id, lastSizeRef.current);
     terminalRef.current?.reset();
     setPanel(nextPanel);
-  }, [activeSession, api]);
+  }, [activeSession, api, i18n.language]);
 
   const fitAndResize = useCallback(() => {
     const terminal = terminalRef.current;
@@ -139,7 +142,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
     void api.resizeTerminal(terminalId, nextSize).catch((error: unknown) => {
       setError(error instanceof Error ? error.message : String(error));
     });
-  }, [api]);
+  }, [api, i18n.language]);
 
   useEffect(() => {
     const panelElement = panelRef.current;
@@ -342,7 +345,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
       data-testid="integrated-terminal"
     >
       <div className="terminal-panel__toolbar">
-        <div className="terminal-panel__tabs" role="tablist" aria-label="Terminal sessions">
+        <div className="terminal-panel__tabs" role="tablist" aria-label={t("Terminal sessions")}>
           {(panel?.sessions ?? []).map((session) => (
             <div
               key={session.id}
@@ -368,7 +371,7 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
               <button
                 type="button"
                 className="terminal-panel__tab-close"
-                aria-label={`Close ${session.title}`}
+                aria-label={t("Close {{value0}}", { value0: session.title })}
                 onClick={(event) => {
                   event.stopPropagation();
                   void closeTerminal(session.id).catch((error: unknown) => {
@@ -385,8 +388,8 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
           <button
             type="button"
             className="icon-button terminal-panel__action"
-            title="New terminal"
-            aria-label="New terminal"
+            title={t("New terminal")}
+            aria-label={t("New terminal")}
             onClick={() =>
               void createTerminal().catch((error: unknown) => {
                 setError(error instanceof Error ? error.message : String(error));
@@ -398,8 +401,8 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
           <button
             type="button"
             className="icon-button terminal-panel__action"
-            title="Restart terminal"
-            aria-label="Restart terminal"
+            title={t("Restart terminal")}
+            aria-label={t("Restart terminal")}
             onClick={() =>
               void restartTerminal().catch((error: unknown) => {
                 setError(error instanceof Error ? error.message : String(error));

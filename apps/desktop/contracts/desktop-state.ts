@@ -29,6 +29,8 @@ export type AppView = "threads" | "new-thread" | "scheduled" | "skills" | "exten
 export type WorkspaceKind = "primary" | "worktree";
 export type WorktreeStatus = "ready" | "missing" | "error";
 export type NewThreadEnvironment = "local" | "worktree";
+import type { AppLanguage, LanguagePreference } from "./language";
+
 export type ThemeMode = "system" | "light" | "dark";
 export const themePresetIds = [
   "default",
@@ -370,6 +372,8 @@ export interface DesktopAppState {
   readonly workspaceOrder: readonly string[];
   readonly modelSettingsScopeMode: ModelSettingsScopeMode;
   readonly globalModelSettings: ModelSettingsSnapshot;
+  readonly languagePreference: LanguagePreference;
+  readonly language: AppLanguage;
   readonly themeMode: ThemeMode;
   readonly themePresetId: ThemePresetId;
   readonly sidebarCollapsed: boolean;
@@ -428,6 +432,8 @@ export function createEmptyDesktopAppState(): DesktopAppState {
     globalModelSettings: {
       enabledModelPatterns: [],
     },
+    languagePreference: "system",
+    language: "en",
     themeMode: "system",
     themePresetId: "default",
     sidebarCollapsed: false,

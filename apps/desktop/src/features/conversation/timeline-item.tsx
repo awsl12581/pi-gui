@@ -1,3 +1,5 @@
+import { t, i18n, translateMessage } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useMemo, useRef } from "react";
 import type {
   SessionTranscriptCustomMessage,
@@ -67,6 +69,7 @@ export function TimelineItem({
   readonly annotationMarkers?: readonly AnnotationMarker[];
   readonly onOpenAnnotation?: OpenAnnotation;
 }) {
+  useLocale();
   switch (item.kind) {
     case "turn-marker":
       return <TimelineTurnMarkerItem item={item} />;
@@ -114,6 +117,7 @@ function unhandledTimelineItem(item: never): null {
 
 /** An extension message, drawn like terminal pi: its customType labels the markdown. */
 function TimelineCustomMessage({ item }: { readonly item: SessionTranscriptCustomMessage }) {
+  useLocale();
   return (
     <article className="timeline-item timeline-item--custom" data-testid="timeline-custom-message">
       <div className="timeline-item__custom-type">{item.customType}</div>
@@ -141,10 +145,11 @@ function TimelineMessage({
   readonly annotationMarkers?: readonly AnnotationMarker[];
   readonly onOpenAnnotation?: OpenAnnotation;
 }) {
+  useLocale();
   const articleRef = useRef<HTMLElement | null>(null);
   const annotated = useMemo(
     () => (item.role === "user" ? parseAnnotatedPrompt(item.text) : null),
-    [item.role, item.text],
+    [item.role, item.text, i18n.language],
   );
   const markers =
     annotationMarkers?.length && onOpenAnnotation ? (
@@ -163,7 +168,7 @@ function TimelineMessage({
         <div className="timeline-item__user-stack">
           {scheduledOrigin ? (
             <div className="timeline-item__scheduled-origin" data-testid="sent-by-scheduled-task">
-              Sent by scheduled task
+              {t("Sent by scheduled task")}
             </div>
           ) : null}
           <div className="timeline-item__bubble">
@@ -174,7 +179,7 @@ function TimelineMessage({
                     <ImageAttachmentThumb
                       className="timeline-item__attachment timeline-item__attachment--image"
                       key={`${item.id}:${index}`}
-                      name={attachment.name ?? `Attachment ${index + 1}`}
+                      name={attachment.name ?? t("Attachment {{value0}}", { value0: index + 1 })}
                       src={`data:${attachment.mimeType};base64,${attachment.data}`}
                     />
                   ) : (
@@ -205,7 +210,7 @@ function TimelineMessage({
     return (
       <article className="timeline-item timeline-item--summary-card">
         <div className="timeline-item__summary-eyebrow">
-          {item.role === "branchSummary" ? "Branch summary" : "Compaction summary"}
+          {item.role === "branchSummary" ? t("Branch summary") : t("Compaction summary")}
         </div>
         <MessageMarkdown text={item.text} />
       </article>
@@ -230,16 +235,16 @@ function TimelineMessage({
             className="timeline-item__action"
             title={
               onForkFromMessage
-                ? "Fork conversation from this point"
-                : "Fork is available when the run finishes"
+                ? t("Fork conversation from this point")
+                : t("Fork is available when the run finishes")
             }
-            aria-label="Fork conversation from this point"
+            aria-label={t("Fork conversation from this point")}
             data-testid="fork-from-message"
             disabled={!onForkFromMessage}
             onClick={() => onForkFromMessage?.(sourceMessageIndex, item.text)}
           >
             <ForkIcon />
-            <span className="timeline-item__action-label">Fork</span>
+            <span className="timeline-item__action-label">{t("Fork")}</span>
           </button>
         </div>
       ) : null}
@@ -249,9 +254,12 @@ function TimelineMessage({
 }
 
 function TimelineActivityItem({ item }: { readonly item: TimelineActivity }) {
+  useLocale();
   return (
     <div className={`timeline-activity timeline-activity--${item.tone ?? "neutral"}`}>
-      <span className="timeline-activity__label">{item.label}</span>
+      <span className="timeline-activity__label">
+        {item.labelMessage ? translateMessage(item.labelMessage) : item.label}
+      </span>
       {item.detail ? <span className="timeline-activity__detail">{item.detail}</span> : null}
       {item.metadata ? <span className="timeline-activity__meta">{item.metadata}</span> : null}
     </div>
@@ -269,6 +277,7 @@ function TimelineToolCallItem({
   readonly onToggle?: (callId: string) => void;
   readonly onViewFileInDiff?: (path: string) => void;
 }) {
+  useLocale();
   const hasContent = item.input !== undefined || item.output !== undefined;
   // An extension's tool shows the label it registered instead of a guess from its name.
   const extensionLabel = useExtensionToolLabel(item.toolName);
@@ -326,7 +335,7 @@ function TimelineToolCallItem({
         </button>
         {filePath && onViewFileInDiff ? (
           <button
-            aria-label={`View ${filePath} in changes`}
+            aria-label={t("View {{value0}} in changes", { value0: filePath })}
             className="icon-button timeline-tool__view-in-diff"
             data-testid="timeline-tool-view-in-diff"
             type="button"
@@ -346,7 +355,7 @@ function TimelineToolCallItem({
             <ImageAttachmentThumb
               className="timeline-tool__image"
               key={`${item.callId}:${index}`}
-              name={`${item.toolName} image ${index + 1}`}
+              name={t("{{value0}} image {{value1}}", { value0: item.toolName, value1: index + 1 })}
               src={toolOutputImageSrc(image)}
             />
           ))}
@@ -371,7 +380,7 @@ function TimelineToolCallItem({
                   className="icon-button timeline-tool__copy"
                   type="button"
                   onClick={handleCopy}
-                  aria-label="Copy"
+                  aria-label={t("Copy")}
                 >
                   <CopyIcon />
                 </button>
@@ -385,7 +394,7 @@ function TimelineToolCallItem({
                   className="icon-button timeline-tool__copy"
                   type="button"
                   onClick={handleCopy}
-                  aria-label="Copy"
+                  aria-label={t("Copy")}
                 >
                   <CopyIcon />
                 </button>
@@ -423,10 +432,10 @@ function buildCompactLabel(
   if (isWriteTool(item.toolName)) {
     const filename = extractFilename(item.input);
     if (filename) {
-      return `Edited ${shortenPath(filename)}`;
+      return t("Edited {{value0}}", { value0: shortenPath(filename) });
     }
   }
-  return item.label;
+  return item.labelMessage ? translateMessage(item.labelMessage) : item.label;
 }
 
 function extractFilename(input: unknown): string {
@@ -474,15 +483,18 @@ function formatToolContent(input: unknown, output: unknown): string {
 }
 
 function statusLabel(status: "running" | "success" | "error") {
-  if (status === "running") return "running";
-  if (status === "success") return "done";
-  return "failed";
+  if (status === "running") return t("running");
+  if (status === "success") return t("done");
+  return t("failed");
 }
 
 function TimelineTurnMarkerItem({ item }: { readonly item: TimelineTurnMarker }) {
+  useLocale();
   return (
     <div className="timeline-turn-marker" data-testid="timeline-turn-marker">
-      <span className="timeline-turn-marker__label">{`Worked for ${formatWorkedDuration(item.durationMs)}`}</span>
+      <span className="timeline-turn-marker__label">
+        {t("Worked for {{value0}}", { value0: formatWorkedDuration(item.durationMs) })}
+      </span>
     </div>
   );
 }
@@ -490,23 +502,28 @@ function TimelineTurnMarkerItem({ item }: { readonly item: TimelineTurnMarker })
 function formatWorkedDuration(durationMs: number): string {
   const totalSeconds = Math.max(1, Math.round(durationMs / 1000));
   if (totalSeconds < 60) {
-    return `${totalSeconds}s`;
+    return t("{{value0}}s", { value0: totalSeconds });
   }
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   if (minutes < 60) {
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+    return seconds > 0
+      ? t("{{value0}}m {{value1}}s", { value0: minutes, value1: seconds })
+      : t("{{value0}}m", { value0: minutes });
   }
   const hours = Math.floor(minutes / 60);
   const remMinutes = minutes % 60;
-  return remMinutes > 0 ? `${hours}h ${remMinutes}m` : `${hours}h`;
+  return remMinutes > 0
+    ? t("{{value0}}h {{value1}}m", { value0: hours, value1: remMinutes })
+    : t("{{value0}}h", { value0: hours });
 }
 
 function TimelineSummaryItem({ item }: { readonly item: TimelineSummary }) {
+  useLocale();
   if (item.presentation === "divider") {
     return (
       <div className="timeline-summary">
-        <span>{item.label}</span>
+        <span>{item.labelMessage ? translateMessage(item.labelMessage) : item.label}</span>
         {item.metadata ? <span className="timeline-summary__meta">{item.metadata}</span> : null}
       </div>
     );
@@ -514,7 +531,9 @@ function TimelineSummaryItem({ item }: { readonly item: TimelineSummary }) {
 
   return (
     <div className="timeline-activity timeline-activity--summary">
-      <span className="timeline-activity__label">{item.label}</span>
+      <span className="timeline-activity__label">
+        {item.labelMessage ? translateMessage(item.labelMessage) : item.label}
+      </span>
       {item.metadata ? <span className="timeline-activity__meta">{item.metadata}</span> : null}
     </div>
   );

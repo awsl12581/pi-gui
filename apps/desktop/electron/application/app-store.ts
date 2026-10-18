@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { JsonCatalogStore } from "@pi-gui/catalogs/node";
 import { sessionKey } from "@pi-gui/session-driver";
 import type { ExtensionFlagValues, SessionSchemaInfo } from "@pi-gui/session-driver";
@@ -160,6 +161,12 @@ import {
   isSessionVisibleInWindow,
 } from "../conversation/session-visibility";
 
+import {
+  isLanguagePreference,
+  resolveAppLanguage,
+  type LanguagePreference,
+} from "../../contracts/language";
+
 type StateListener = (state: DesktopAppState) => void;
 type SelectedTranscriptListener = (payload: SelectedTranscriptRecord | null) => void;
 type SessionEventListener = (
@@ -174,6 +181,7 @@ type ExtensionUiDialogRequest = Extract<
   readonly timeoutMs?: number;
 };
 export interface DesktopAppStoreOptions {
+  readonly systemLanguages?: readonly string[];
   readonly userDataDir: string;
   readonly initialWorkspacePaths: readonly string[];
   readonly getWindow?: () => BrowserWindow | null;
@@ -194,6 +202,7 @@ export interface DesktopAppStoreOptions {
 
 export class DesktopAppStore {
   private state = createEmptyDesktopAppState();
+  private readonly systemLanguages: readonly string[];
   private readonly listeners = new Set<StateListener>();
   /** Monotonic publish counter; emit() stamps every published state with it. */
   private publishRevision = 1;
@@ -285,6 +294,8 @@ export class DesktopAppStore {
   private readonly extensionFlagsByWorkspace = new Map<string, ExtensionFlagValues>();
 
   constructor(options: DesktopAppStoreOptions) {
+    this.systemLanguages = options.systemLanguages ?? ["en"];
+    this.state = { ...this.state, language: resolveAppLanguage("system", this.systemLanguages) };
     const catalogFilePath = join(options.userDataDir, "catalogs.json");
     this.catalogStore = new JsonCatalogStore({ catalogFilePath });
     const driverOptions: PiSdkDriverConfig = {
@@ -608,9 +619,11 @@ export class DesktopAppStore {
 
   private requireWorkbenchTask(target: SessionRef): void {
     if (this.persistenceReadiness !== "ready")
-      throw new Error("Saved UI state is unavailable; repair or restore it before saving layouts.");
+      throw new Error(
+        t("Saved UI state is unavailable; repair or restore it before saving layouts."),
+      );
     if (!this.sessionFromState(target))
-      throw new Error("Workbench task does not exist in this workspace.");
+      throw new Error(t("Workbench task does not exist in this workspace."));
   }
 
   snapshot(): DesktopAppState {
@@ -978,7 +991,12 @@ export class DesktopAppStore {
     await this.initialize();
     const sessionRef = toSessionRef(target);
     if (!this.sessionFromState(sessionRef)) {
-      return this.withError(`Unknown session: ${target.workspaceId}:${target.sessionId}`);
+      return this.withError(
+        t("Unknown session: {{value0}}:{{value1}}", {
+          value0: target.workspaceId,
+          value1: target.sessionId,
+        }),
+      );
     }
     if (!this.markSessionViewed(sessionRef)) {
       return structuredClone(this.state);
@@ -1000,11 +1018,19 @@ export class DesktopAppStore {
     const sessionRef = toSessionRef(target);
     const session = this.sessionFromState(sessionRef);
     if (!session) {
-      return this.withError(`Unknown session: ${target.workspaceId}:${target.sessionId}`);
+      return this.withError(
+        t("Unknown session: {{value0}}:{{value1}}", {
+          value0: target.workspaceId,
+          value1: target.sessionId,
+        }),
+      );
     }
     if (pinned && session.archivedAt) {
       return this.withError(
-        `Cannot pin archived session: ${target.workspaceId}:${target.sessionId}`,
+        t("Cannot pin archived session: {{value0}}:{{value1}}", {
+          value0: target.workspaceId,
+          value1: target.sessionId,
+        }),
       );
     }
 
@@ -1122,7 +1148,7 @@ export class DesktopAppStore {
     this.addExtensionNotice(sessionRef, {
       id: `action-failure:${randomUUID()}`,
       level: "error",
-      message: `Couldn't run that button: ${message}`,
+      message: t("Couldn't run that button: {{value0}}", { value0: message }),
       createdAt: new Date().toISOString(),
     });
     this.state = this.syncDerivedSessionState(
@@ -1416,10 +1442,26 @@ export class DesktopAppStore {
     return this.emit();
   }
 
+  async setLanguagePreference(languagePreference: LanguagePreference): Promise<DesktopAppState> {
+    await this.initialize();
+    if (!isLanguagePreference(languagePreference))
+      throw new TypeError(t("Unsupported language preference"));
+    if (this.state.languagePreference === languagePreference) return structuredClone(this.state);
+    this.state = {
+      ...this.state,
+      languagePreference,
+      language: resolveAppLanguage(languagePreference, this.systemLanguages),
+      lastError: undefined,
+      revision: this.state.revision + 1,
+    };
+    await this.persistUiState();
+    return this.emit();
+  }
+
   async setThemeMode(themeMode: ThemeMode): Promise<DesktopAppState> {
     await this.initialize();
     if (!isThemeMode(themeMode)) {
-      throw new Error(`Unsupported theme mode: ${String(themeMode)}`);
+      throw new Error(t("Unsupported theme mode: {{value0}}", { value0: String(themeMode) }));
     }
     if (this.state.themeMode === themeMode) {
       return structuredClone(this.state);
@@ -1437,7 +1479,7 @@ export class DesktopAppStore {
   async setThemePresetId(themePresetId: ThemePresetId): Promise<DesktopAppState> {
     await this.initialize();
     if (!isThemePresetId(themePresetId)) {
-      throw new Error(`Unsupported theme preset: ${String(themePresetId)}`);
+      throw new Error(t("Unsupported theme preset: {{value0}}", { value0: String(themePresetId) }));
     }
     if (this.state.themePresetId === themePresetId) {
       return structuredClone(this.state);
@@ -1491,7 +1533,7 @@ export class DesktopAppStore {
       return reloaded
         ? state
         : this.withError(
-            "Some open threads could not reload; they pick up the change when reopened.",
+            t("Some open threads could not reload; they pick up the change when reopened."),
           );
     });
   }
@@ -1518,7 +1560,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(targetWorkspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${targetWorkspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
     }
     return this.withErrorHandling(async () => {
       const snapshot = await this.driver.runtimeSupervisor.setProjectDefaultModel(ws, {
@@ -1544,7 +1586,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(targetWorkspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${targetWorkspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
     }
     return this.withErrorHandling(async () => {
       const snapshot = await this.driver.runtimeSupervisor.setProjectDefaultThinkingLevel(
@@ -1573,7 +1615,7 @@ export class DesktopAppStore {
     const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${workspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
 
     return this.withErrorHandling(async () => {
@@ -1664,7 +1706,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(targetWorkspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${targetWorkspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
     }
     return this.withErrorHandling(async () => {
       const snapshot = await this.driver.runtimeSupervisor.setProjectScopedModelPatterns(
@@ -1767,7 +1809,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${workspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
     const wasDisabled = this.disabledBuiltinExtensions.has(name);
     const setDisabled = (disabled: boolean) =>
@@ -1794,7 +1836,9 @@ export class DesktopAppStore {
       return reloaded
         ? state
         : this.withError(
-            "Some open threads could not reload; they pick up the pi-gui tools change when reopened.",
+            t(
+              "Some open threads could not reload; they pick up the pi-gui tools change when reopened.",
+            ),
           );
     });
   }
@@ -1825,7 +1869,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      throw new Error(`Unknown workspace: ${workspaceId}`);
+      throw new Error(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
     const listing = this.driver.runtimeSupervisor.listMcpServers(ws);
     return {
@@ -1876,7 +1920,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${workspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
     return this.withErrorHandling(async () => {
       await this.driver.runtimeSupervisor.setCodemodeAlwaysOn(ws, alwaysOn);
@@ -1889,7 +1933,9 @@ export class DesktopAppStore {
       const state = await this.refreshState({ clearLastError: true });
       return reloaded
         ? state
-        : this.withError("Some open threads could not reload; they get code mode when reopened.");
+        : this.withError(
+            t("Some open threads could not reload; they get code mode when reopened."),
+          );
     });
   }
 
@@ -1906,7 +1952,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${workspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
     return this.withErrorHandling(async () => {
       await change(ws);
@@ -1918,7 +1964,7 @@ export class DesktopAppStore {
       return reloaded
         ? state
         : this.withError(
-            "Some open threads could not reload; they pick up the MCP change when reopened.",
+            t("Some open threads could not reload; they pick up the MCP change when reopened."),
           );
     });
   }
@@ -1934,7 +1980,7 @@ export class DesktopAppStore {
     await this.initialize();
     const ws = this.workspaceRefFromState(workspaceId);
     if (!ws) {
-      return this.withError(`Unknown workspace: ${workspaceId}`);
+      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
     }
 
     return this.withErrorHandling(async () => {
@@ -1963,7 +2009,7 @@ export class DesktopAppStore {
       return reloaded
         ? state
         : this.withError(
-            "Some open threads could not reload; they pick up the change when reopened.",
+            t("Some open threads could not reload; they pick up the change when reopened."),
           );
     });
   }
@@ -2051,7 +2097,9 @@ export class DesktopAppStore {
       this.blockPersistence();
       startupDiagnostics.push({
         scope: "application",
-        message: `Persisted UI state could not be fully restored: ${message}`,
+        message: t("Persisted UI state could not be fully restored: {{value0}}", {
+          value0: message,
+        }),
       });
       this.state = {
         ...this.state,
@@ -2076,7 +2124,7 @@ export class DesktopAppStore {
       this.blockPersistence();
       startupDiagnostics.push({
         scope: "application",
-        message: `Saved attachments could not be validated: ${message}`,
+        message: t("Saved attachments could not be validated: {{value0}}", { value0: message }),
       });
       this.state = {
         ...this.state,
@@ -2103,7 +2151,7 @@ export class DesktopAppStore {
       this.state = { ...this.state, scheduledTasks: [] };
       startupDiagnostics.push({
         scope: "application",
-        message: `Scheduled tasks could not be loaded: ${message}`,
+        message: t("Scheduled tasks could not be loaded: {{value0}}", { value0: message }),
       });
     }
 
@@ -2200,6 +2248,8 @@ export class DesktopAppStore {
       pinnedAtBySession: persisted.pinnedAtBySession ?? {},
       pinnedSessionOrder: persisted.pinnedSessionOrder ?? [],
       workspaceOrder: persisted.workspaceOrder ?? [],
+      languagePreference: persisted.languagePreference ?? "system",
+      language: resolveAppLanguage(persisted.languagePreference ?? "system", this.systemLanguages),
       themeMode: persisted.themeMode ?? this.state.themeMode,
       themePresetId: persisted.themePresetId ?? this.state.themePresetId,
       sidebarCollapsed: persisted.sidebarCollapsed ?? this.state.sidebarCollapsed,
@@ -2260,7 +2310,7 @@ export class DesktopAppStore {
     try {
       const workspaceStat = await stat(workspacePath);
       if (!workspaceStat.isDirectory()) {
-        throw new Error("Path is not a directory.");
+        throw new Error(t("Path is not a directory."));
       }
       await this.driver.syncWorkspace(workspacePath, displayName);
       return undefined;
@@ -3957,6 +4007,7 @@ export class DesktopAppStore {
       appGlobalModelSettings: hasStoredModelSettings(this.state.globalModelSettings)
         ? this.state.globalModelSettings
         : undefined,
+      languagePreference: this.state.languagePreference,
       themeMode: this.state.themeMode,
       themePresetId: this.state.themePresetId,
       sidebarCollapsed: this.state.sidebarCollapsed || undefined,

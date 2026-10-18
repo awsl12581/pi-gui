@@ -1,3 +1,4 @@
+import { t } from "../../../i18n";
 import type { ReactNode } from "react";
 import {
   BellIcon,
@@ -26,74 +27,117 @@ export interface SettingsSectionDefinition {
 export const SETTINGS_SECTIONS = [
   {
     id: "general",
-    title: "General",
-    group: "App",
+    get title() {
+      return t("General");
+    },
+    get group() {
+      return t("App");
+    },
     icon: <SettingsIcon />,
-    keywords: ["model settings scope", "per repo", "skill slash commands", "terminal", "shell"],
-    description: () => "App and runtime defaults.",
+    keywords: [
+      "Language",
+      "Preferences",
+      "语言",
+      "偏好",
+      "model settings scope",
+      "per repo",
+      "skill slash commands",
+      "terminal",
+      "shell",
+    ],
+    description: () => t("App and runtime defaults."),
     needsWorkspace: false,
   },
   {
     id: "appearance",
-    title: "Appearance",
-    group: "App",
+    get title() {
+      return t("Appearance");
+    },
+    get group() {
+      return t("App");
+    },
     icon: <SunIcon />,
     keywords: ["theme", "light", "dark", "system", "preset", "colors", "transparency"],
-    description: () => "Choose light, dark or system mode and a color preset.",
+    description: () => t("Choose light, dark or system mode and a color preset."),
     needsWorkspace: false,
   },
   {
     id: "notifications",
-    title: "Notifications",
-    group: "App",
+    get title() {
+      return t("Notifications");
+    },
+    get group() {
+      return t("App");
+    },
     icon: <BellIcon />,
     keywords: ["alerts", "background", "completion", "failures", "approval", "macos"],
-    description: () => "Choose which background events alert you.",
+    description: () => t("Choose which background events alert you."),
     needsWorkspace: false,
   },
   {
     id: "shortcuts",
-    title: "Keyboard shortcuts",
-    group: "App",
+    get title() {
+      return t("Keyboard shortcuts");
+    },
+    get group() {
+      return t("App");
+    },
     icon: <KeyboardIcon />,
     keywords: ["keys", "hotkeys", "keybindings"],
-    description: () => "Shortcuts available across the app.",
+    description: () => t("Shortcuts available across the app."),
     needsWorkspace: false,
   },
   {
     id: "licenses",
-    title: "Open-source licenses",
-    group: "App",
+    get title() {
+      return t("Open-source licenses");
+    },
+    get group() {
+      return t("App");
+    },
     icon: <ExtensionIcon />,
     keywords: ["legal", "copyright", "MIT", "third-party", "notices", "open source"],
-    description: () => "License terms and copyright notices for the software behind pi-gui.",
+    description: () => t("License terms and copyright notices for the software behind pi-gui."),
     needsWorkspace: false,
   },
   {
     id: "providers",
-    title: "Providers",
-    group: "Agent",
+    get title() {
+      return t("Providers");
+    },
+    get group() {
+      return t("Agent");
+    },
     icon: <PlugIcon />,
     keywords: ["login", "logout", "oauth", "api key", "auth", "custom endpoint"],
-    description: (workspaceName) => `Connect providers and manage auth for ${workspaceName}.`,
+    description: (workspaceName) =>
+      t("Connect providers and manage auth for {{value0}}.", { value0: workspaceName }),
     needsWorkspace: true,
   },
   {
     id: "models",
-    title: "Models",
-    group: "Agent",
+    get title() {
+      return t("Models");
+    },
+    get group() {
+      return t("Agent");
+    },
     icon: <ModelIcon />,
     keywords: ["default model", "reasoning", "thinking", "enabled models"],
-    description: () => "Choose the default model and which models appear in pickers.",
+    description: () => t("Choose the default model and which models appear in pickers."),
     needsWorkspace: true,
   },
   {
     id: "mcp",
-    title: "MCP servers",
-    group: "Agent",
+    get title() {
+      return t("MCP servers");
+    },
+    get group() {
+      return t("Agent");
+    },
     icon: <ExtensionIcon />,
     keywords: ["mcp", "mcp.json", "model context protocol", "servers", "code mode", "codemode"],
-    description: () => "Add, remove and switch the MCP servers pi connects in each thread.",
+    description: () => t("Add, remove and switch the MCP servers pi connects in each thread."),
     needsWorkspace: true,
   },
 ] as const satisfies readonly SettingsSectionDefinition[];
@@ -107,8 +151,12 @@ export const SETTINGS_NAV_ITEMS = [
   ...SETTINGS_SECTIONS,
   {
     id: CUSTOMIZE_SECTION_ID,
-    title: "Skills and extensions",
-    group: "Customize",
+    get title() {
+      return t("Skills and extensions");
+    },
+    get group() {
+      return t("Customize");
+    },
     icon: <SkillIcon />,
     keywords: ["skills", "extensions", "plugins", "slash commands", "tools"],
   },

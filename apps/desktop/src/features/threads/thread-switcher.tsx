@@ -1,3 +1,5 @@
+import { t } from "../../../i18n";
+import { useLocale } from "../../ui/use-locale";
 import { useEffect, useRef } from "react";
 import type { ThreadSwitcherState } from "./hooks/use-thread-switcher";
 import { sessionThreadKey } from "./thread-groups";
@@ -8,6 +10,7 @@ interface ThreadSwitcherProps {
 }
 
 export function ThreadSwitcher({ state, onChoose }: ThreadSwitcherProps) {
+  useLocale();
   const listRef = useRef<HTMLUListElement | null>(null);
 
   useEffect(() => {
@@ -19,9 +22,9 @@ export function ThreadSwitcher({ state, onChoose }: ThreadSwitcherProps) {
   return (
     <div className="thread-switcher" data-testid="thread-switcher">
       <div className="thread-switcher__panel">
-        <div className="thread-switcher__title">Switch thread</div>
+        <div className="thread-switcher__title">{t("Switch thread")}</div>
         <ul
-          aria-label="Recent threads"
+          aria-label={t("Recent threads")}
           className="thread-switcher__list"
           ref={listRef}
           role="listbox"

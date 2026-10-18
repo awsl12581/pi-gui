@@ -1,3 +1,4 @@
+import { resolveAppLanguage } from "../contracts/language";
 import {
   app,
   BrowserWindow,
@@ -21,6 +22,7 @@ import type {
   ExtensionToolContext,
 } from "@earendil-works/pi-coding-agent";
 import { readFile, stat } from "node:fs/promises";
+import { i18n, setLanguage, t } from "../i18n";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { augmentPosixPath } from "../scripts/augment-path.cjs";
@@ -132,14 +134,17 @@ interface ScheduledTaskRuntimeToolTestInput {
 function createStoreBackedScheduledTaskRuntimeBridge(): ScheduledTaskRuntimeBridge {
   return {
     createScheduledTask: async (ctx, input) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.createScheduledTaskToolResult(sessionRefFromExtensionContext(ctx), input);
     },
     listScheduledTasks: async () => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.listScheduledTasksToolResult();
     },
     updateScheduledTask: async (_ctx, input) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.updateScheduledTaskToolResult(input);
     },
@@ -185,18 +190,22 @@ const NEW_WINDOW_MENU_ITEM_ID = "file.new-window";
 function createStoreBackedOrchestrationRuntimeBridge(): OrchestrationRuntimeBridge {
   return {
     createChildThread: async (ctx, input) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.createChildThreadToolResult(sessionRefFromExtensionContext(ctx), input);
     },
     listThreads: async (ctx) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.listThreadsToolResult(sessionRefFromExtensionContext(ctx));
     },
     readThread: async (ctx, threadId) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.readThreadToolResult(sessionRefFromExtensionContext(ctx), threadId);
     },
     sendMessageToThread: async (ctx, input) => {
+      setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
       await store.initialize();
       return store.sendMessageToThreadToolResult(sessionRefFromExtensionContext(ctx), input);
     },
@@ -350,12 +359,12 @@ function openMcpSignInUrl(url: string): void {
     console.error(
       `Refusing to open an MCP sign-in URL${parsed ? ` on ${parsed.origin}` : " that is not http or https"}`,
     );
-    showMcpSignInUrl(url, "pi-gui opens only https links, or http links on this computer.");
+    showMcpSignInUrl(url, t("pi-gui opens only https links, or http links on this computer."));
     return;
   }
   shell.openExternal(parsed.toString()).catch((error: unknown) => {
     console.error(`Failed to open an MCP sign-in URL on ${parsed.origin}`, error);
-    showMcpSignInUrl(parsed.toString(), "pi-gui could not open your browser.");
+    showMcpSignInUrl(parsed.toString(), t("pi-gui could not open your browser."));
   });
 }
 
@@ -365,9 +374,9 @@ function showMcpSignInUrl(url: string, reason: string): void {
   const options: MessageBoxOptions = {
     type: "warning",
     title: "pi-gui",
-    message: "Open this MCP sign-in link yourself",
+    message: t("Open this MCP sign-in link yourself"),
     detail: `${reason} Check the link before you open it:\n\n${url}`,
-    buttons: ["Copy link", "Close"],
+    buttons: [t("Copy link"), t("Close")],
     defaultId: 0,
     cancelId: 1,
   };
@@ -723,11 +732,11 @@ async function pickWorkspacePathViaDialog(
   const result = window
     ? await dialog.showOpenDialog(window, {
         properties: ["openDirectory"],
-        title: "Open workspace folder",
+        title: t("Open workspace folder"),
       })
     : await dialog.showOpenDialog({
         properties: ["openDirectory"],
-        title: "Open workspace folder",
+        title: t("Open workspace folder"),
       });
   if (result.canceled || result.filePaths.length === 0) {
     return undefined;
@@ -776,9 +785,9 @@ async function runManualUpdateCheck(): Promise<void> {
       const choice = await showDialog({
         type: "info",
         title: "pi-gui",
-        message: `Version ${result.latestVersion} is available.`,
-        detail: `You have ${result.currentVersion}.`,
-        buttons: ["Download", "Later"],
+        message: t("Version {{value0}} is available.", { value0: result.latestVersion }),
+        detail: t("You have {{value0}}.", { value0: result.currentVersion }),
+        buttons: [t("Download"), t("Later")],
         defaultId: 0,
         cancelId: 1,
       });
@@ -792,8 +801,8 @@ async function runManualUpdateCheck(): Promise<void> {
       await showDialog({
         type: "info",
         title: "pi-gui",
-        message: `You're up to date on version ${result.currentVersion}.`,
-        buttons: ["OK"],
+        message: t("You're up to date on version {{value0}}.", { value0: result.currentVersion }),
+        buttons: [t("OK")],
       });
       return;
     }
@@ -801,18 +810,18 @@ async function runManualUpdateCheck(): Promise<void> {
     await showDialog({
       type: "warning",
       title: "pi-gui",
-      message: "Could not check for updates right now.",
+      message: t("Could not check for updates right now."),
       detail: result.message,
-      buttons: ["OK"],
+      buttons: [t("OK")],
     });
   } catch (error) {
     console.error("pi-gui: manual update check failed:", error);
     await showDialog({
       type: "warning",
       title: "pi-gui",
-      message: "Could not check for updates right now.",
+      message: t("Could not check for updates right now."),
       detail: error instanceof Error ? error.message : String(error),
-      buttons: ["OK"],
+      buttons: [t("OK")],
     }).catch(() => undefined);
   }
 }
@@ -826,11 +835,11 @@ function installApplicationMenu(): void {
     {
       label: app.name,
       submenu: [
-        { role: "about" },
+        { role: "about", label: t("About pi-gui") },
         { type: "separator" },
         {
           id: CHECK_FOR_UPDATES_MENU_ITEM_ID,
-          label: "Check for Updates…",
+          label: t("Check for Updates…"),
           click: () => {
             void runManualUpdateCheck().catch((error: unknown) => {
               console.error("[main] runManualUpdateCheck failed", error);
@@ -838,20 +847,20 @@ function installApplicationMenu(): void {
           },
         },
         { type: "separator" },
-        { role: "services" },
+        { role: "services", label: t("Services") },
         { type: "separator" },
-        { role: "hide" },
-        { role: "hideOthers" },
-        { role: "unhide" },
+        { role: "hide", label: t("Hide pi-gui") },
+        { role: "hideOthers", label: t("Hide Others") },
+        { role: "unhide", label: t("Show All") },
         { type: "separator" },
-        { role: "quit" },
+        { role: "quit", label: t("Quit pi-gui") },
       ],
     },
     {
-      label: "File",
+      label: t("File"),
       submenu: [
         {
-          label: "New Thread",
+          label: t("New Thread"),
           accelerator: "CommandOrControl+N",
           click: () => {
             const window = BrowserWindow.getFocusedWindow() ?? mainWindow;
@@ -860,7 +869,7 @@ function installApplicationMenu(): void {
         },
         {
           id: NEW_WINDOW_MENU_ITEM_ID,
-          label: "New Window",
+          label: t("New Window"),
           accelerator: "CommandOrControl+Shift+N",
           click: () => {
             createAppWindow(windowOwner.foregroundView());
@@ -869,7 +878,7 @@ function installApplicationMenu(): void {
         { type: "separator" },
         {
           id: OPEN_FOLDER_MENU_ITEM_ID,
-          label: "Open Folder…",
+          label: t("Open Folder…"),
           accelerator: "Command+O",
           click: () => {
             void pickWorkspaceViaDialog(mainWindow).catch((error: unknown) => {
@@ -878,33 +887,52 @@ function installApplicationMenu(): void {
           },
         },
         { type: "separator" },
-        { role: "close" },
+        { role: "close", label: t("Close") },
       ],
     },
-    { role: "editMenu" },
     {
-      label: "View",
+      label: t("Edit"),
+      submenu: [
+        { role: "undo", label: t("Undo") },
+        { role: "redo", label: t("Redo") },
+        { role: "cut", label: t("Cut") },
+        { role: "copy", label: t("Copy") },
+        { role: "paste", label: t("Paste") },
+        { role: "delete", label: t("Delete") },
+        { role: "selectAll", label: t("Select All") },
+      ],
+    },
+    {
+      label: t("View"),
       submenu: [
         // Cmd+R toggles Review and Shift+Cmd+R renames the thread, so neither
         // reload has a shortcut.
         {
-          label: "Reload",
+          label: t("Reload"),
           click: () => BrowserWindow.getFocusedWindow()?.webContents.reload(),
         },
         {
-          label: "Force Reload",
+          label: t("Force Reload"),
           click: () => BrowserWindow.getFocusedWindow()?.webContents.reloadIgnoringCache(),
         },
-        { role: "toggleDevTools" },
+        { role: "toggleDevTools", label: t("Toggle Developer Tools") },
         { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
+        { role: "resetZoom", label: t("Actual Size") },
+        { role: "zoomIn", label: t("Zoom In") },
+        { role: "zoomOut", label: t("Zoom Out") },
         { type: "separator" },
-        { role: "togglefullscreen" },
+        { role: "togglefullscreen", label: t("Toggle Full Screen") },
       ],
     },
-    { role: "windowMenu" },
+    {
+      role: "windowMenu",
+      label: t("Window"),
+      submenu: [
+        { role: "minimize", label: t("Minimize") },
+        { role: "zoom", label: t("Zoom") },
+        { role: "front", label: t("Bring All to Front") },
+      ],
+    },
   ];
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
@@ -1023,7 +1051,7 @@ app
         },
         {
           name: "pi-gui-scheduled-tasks",
-          displayName: "Scheduled tasks",
+          displayName: t("Scheduled tasks"),
           description: "Lets pi create and update local pi-gui scheduled tasks",
           factory: createScheduledTaskRuntimeExtension(scheduledTaskRuntimeBridge, (ctx) => {
             try {
@@ -1037,6 +1065,7 @@ app
     };
     store = new DesktopAppStore({
       userDataDir: configuredUserDataDir,
+      systemLanguages: app.getPreferredSystemLanguages(),
       initialWorkspacePaths: resolveInitialWorkspacePaths(),
       getWindow: () => mainWindow,
       shouldKeepSessionDialogs: (sessionRef) =>
@@ -1052,12 +1081,18 @@ app
         notificationPermissionService?.trackWindow(window);
       },
     });
+    setLanguage(resolveAppLanguage("system", app.getPreferredSystemLanguages()));
     await store.initialize();
+    setLanguage(store.snapshot().language);
     themeManager.setMode(store.snapshot().themeMode);
     integratedTerminalShell = (await store.getState()).integratedTerminalShell;
     nativeTheme.on("updated", refreshWindowBackgrounds);
     let windowBackgroundPresetId = store.snapshot().themePresetId;
     stopPruningTerminals = store.subscribe((state) => {
+      if (i18n.language !== state.language) {
+        setLanguage(state.language);
+        installApplicationMenu();
+      }
       integratedTerminalShell = state.integratedTerminalShell;
       if (state.themePresetId !== windowBackgroundPresetId) {
         windowBackgroundPresetId = state.themePresetId;
@@ -1206,11 +1241,11 @@ app
           const result = parent
             ? await dialog.showOpenDialog(parent, {
                 properties: ["openFile", "multiSelections"],
-                title: "Attach files",
+                title: t("Attach files"),
               })
             : await dialog.showOpenDialog({
                 properties: ["openFile", "multiSelections"],
-                title: "Attach files",
+                title: t("Attach files"),
               });
           if (result.canceled || result.filePaths.length === 0) {
             return undefined;
@@ -1524,11 +1559,11 @@ async function promptForText(
     });
 
     if (result === null) {
-      throw new Error("Login cancelled.");
+      throw new Error(t("Login cancelled."));
     }
     const trimmedResult = result.trim();
     if (!allowEmpty && trimmedResult.length === 0) {
-      throw new Error("Login cancelled.");
+      throw new Error(t("Login cancelled."));
     }
     return trimmedResult;
   } finally {
@@ -1539,7 +1574,7 @@ async function promptForText(
 }
 
 function promptDataUrl(message: string, placeholder: string): string {
-  const html = `<!doctype html><html><head><meta charset="utf-8" />
+  const html = `<!doctype html><html lang="${i18n.language}"><head><meta charset="utf-8" />
 <style>
   :root { color-scheme: light dark; }
   * { box-sizing: border-box; }
@@ -1559,8 +1594,8 @@ function promptDataUrl(message: string, placeholder: string): string {
   <div class="msg">${escapeHtml(message)}</div>
   <input id="pi-prompt-input" type="text" placeholder="${escapeHtml(placeholder)}" autofocus />
   <div class="row">
-    <button id="pi-prompt-cancel" type="button">Cancel</button>
-    <button id="pi-prompt-ok" type="button">OK</button>
+    <button id="pi-prompt-cancel" type="button">${escapeHtml(t("Cancel"))}</button>
+    <button id="pi-prompt-ok" type="button">${escapeHtml(t("OK"))}</button>
   </div>
   <script>
     (function () {
@@ -1605,7 +1640,7 @@ async function probeCustomProviderModels(
 ): Promise<CustomProviderProbeResult> {
   const baseUrl = input.baseUrl?.trim();
   if (!baseUrl || !isValidHttpBaseUrl(baseUrl)) {
-    return { ok: false, error: "Base URL must start with http:// or https://" };
+    return { ok: false, error: t("Base URL must start with http:// or https://") };
   }
   const target = `${baseUrl.replace(/\/+$/, "")}/models`;
   const apiKey = input.apiKey?.trim();

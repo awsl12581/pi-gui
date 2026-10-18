@@ -1,3 +1,5 @@
+import { t, i18n } from "../../../../i18n";
+import { useLocale } from "../../../ui/use-locale";
 import {
   useCallback,
   useEffect,
@@ -49,6 +51,7 @@ interface UseNewThreadControllerParams {
 }
 
 export function useNewThreadController(params: UseNewThreadControllerParams) {
+  useLocale();
   const {
     api,
     snapshot,
@@ -96,11 +99,14 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     : undefined;
   const extensionFlags = useMemo(
     () => ({ ...workspaceFlagDefaults, ...extensionFlagEdits }),
-    [workspaceFlagDefaults, extensionFlagEdits],
+    [workspaceFlagDefaults, extensionFlagEdits, i18n.language],
   );
-  const setExtensionFlag = useCallback((name: string, value: boolean | string) => {
-    setExtensionFlagEdits((current) => ({ ...current, [name]: value }));
-  }, []);
+  const setExtensionFlag = useCallback(
+    (name: string, value: boolean | string) => {
+      setExtensionFlagEdits((current) => ({ ...current, [name]: value }));
+    },
+    [i18n.language],
+  );
   const modelOnboarding = deriveModelOnboardingState(runtime, {
     provider: resolvedProvider,
     modelId: resolvedModelId,
@@ -110,12 +116,15 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     window.requestAnimationFrame(() => {
       composerRef.current?.focus();
     });
-  }, []);
+  }, [i18n.language]);
 
-  const updatePrompt = useCallback((value: SetStateAction<string>) => {
-    setComposerError(undefined);
-    setPrompt(value);
-  }, []);
+  const updatePrompt = useCallback(
+    (value: SetStateAction<string>) => {
+      setComposerError(undefined);
+      setPrompt(value);
+    },
+    [i18n.language],
+  );
 
   const addAttachments = useCallback(
     (files: File[]) => {
@@ -138,24 +147,30 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
           setComposerError(error instanceof Error ? error.message : String(error));
         });
     },
-    [attachments],
+    [attachments, i18n.language],
   );
 
-  const removeAttachment = useCallback((attachmentId: string) => {
-    setAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
-  }, []);
+  const removeAttachment = useCallback(
+    (attachmentId: string) => {
+      setAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
+    },
+    [i18n.language],
+  );
 
-  const appendAttachment = useCallback((attachment: ComposerAttachment) => {
-    setAttachments((current) => {
-      const accepted = acceptComposerAttachments(current, [attachment]);
-      if (!accepted.ok) {
-        setComposerError(accepted.error.message);
-        return current;
-      }
-      setComposerError(undefined);
-      return [...current, ...accepted.attachments];
-    });
-  }, []);
+  const appendAttachment = useCallback(
+    (attachment: ComposerAttachment) => {
+      setAttachments((current) => {
+        const accepted = acceptComposerAttachments(current, [attachment]);
+        if (!accepted.ok) {
+          setComposerError(accepted.error.message);
+          return current;
+        }
+        setComposerError(undefined);
+        return [...current, ...accepted.attachments];
+      });
+    },
+    [i18n.language],
+  );
 
   // Each fresh New thread surface gets a generation, so a start still in flight from an
   // earlier surface neither blocks nor clears what the user types into this one.
@@ -183,7 +198,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       setExtensionFlagEdits({});
       setComposerError(undefined);
     },
-    [rootWorkspace?.id, rootWorkspaceOptions, snapshot, visibleWorkspaces],
+    [rootWorkspace?.id, rootWorkspaceOptions, snapshot, visibleWorkspaces, i18n.language],
   );
 
   const openSurface = useCallback(
@@ -201,19 +216,22 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
         );
       }
     },
-    [api, flushComposerDraft, resetSurface, setSnapshot],
+    [api, flushComposerDraft, resetSurface, setSnapshot, i18n.language],
   );
 
-  const selectWorkspace = useCallback((workspaceId: string) => {
-    setPendingWorkspaceId("");
-    setRootWorkspaceId(workspaceId);
-    setAttachments([]);
-    setProvider(undefined);
-    setModelId(undefined);
-    setThinkingLevel(undefined);
-    setExtensionFlagEdits({});
-    setComposerError(undefined);
-  }, []);
+  const selectWorkspace = useCallback(
+    (workspaceId: string) => {
+      setPendingWorkspaceId("");
+      setRootWorkspaceId(workspaceId);
+      setAttachments([]);
+      setProvider(undefined);
+      setModelId(undefined);
+      setThinkingLevel(undefined);
+      setExtensionFlagEdits({});
+      setComposerError(undefined);
+    },
+    [i18n.language],
+  );
 
   const slashMenu = useSlashMenu({
     composerDraft: prompt,
@@ -269,7 +287,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
         api.setExtensionEnabled(workspace.id, filePath, true),
       ).then(() => undefined);
     },
-    [api, setSnapshot, workspace],
+    [api, setSnapshot, workspace, i18n.language],
   );
 
   const mentionMenu = useMentionMenu({
@@ -301,7 +319,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       return;
     }
     if (treeCommand?.type === "tree") {
-      setComposerError("/tree is only available inside an existing session.");
+      setComposerError(t("/tree is only available inside an existing session."));
       return;
     }
     const input: StartThreadInput = {
@@ -348,6 +366,8 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
     resolvedThinkingLevel,
     rootWorkspaceId,
     setSnapshot,
+    ,
+    i18n.language,
   ]);
 
   const handleComposerPaste = useCallback(
@@ -359,7 +379,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       event.preventDefault();
       addAttachments(files);
     },
-    [addAttachments],
+    [addAttachments, i18n.language],
   );
 
   const handleComposerDrop = useCallback(
@@ -371,7 +391,7 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       }
       addAttachments(files);
     },
-    [addAttachments],
+    [addAttachments, i18n.language],
   );
 
   const handleComposerKeyDown = useCallback(
@@ -418,6 +438,8 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       prompt,
       slashMenu,
       startThread,
+      ,
+      i18n.language,
     ],
   );
 
@@ -531,6 +553,8 @@ export function useNewThreadController(params: UseNewThreadControllerParams) {
       startThread,
       openSurface,
       resetSurface,
+      ,
+      i18n.language,
     ],
   );
 }
