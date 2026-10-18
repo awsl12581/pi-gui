@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import type {
   RuntimeSettingsSnapshot,
   RuntimeSnapshot,
@@ -23,6 +23,12 @@ import { type SettingsSection, settingsSectionDefinition } from "./settings-sect
 import { SettingsShortcutsSection } from "./settings-shortcuts-section";
 
 export type { SettingsSection } from "./settings-sections";
+
+const SettingsLicensesSection = lazy(() =>
+  import("./settings-licenses-section").then((module) => ({
+    default: module.SettingsLicensesSection,
+  })),
+);
 
 interface SettingsViewProps {
   readonly workspace?: WorkspaceRecord;
@@ -137,6 +143,11 @@ export function SettingsView({
         {header}
 
         <div className="settings-grid">
+          {section === "licenses" ? (
+            <Suspense fallback={<p role="status">Loading licenses…</p>}>
+              <SettingsLicensesSection />
+            </Suspense>
+          ) : null}
           {section === "appearance" ? (
             <SettingsAppearanceSection
               themeMode={themeMode}

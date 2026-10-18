@@ -1966,6 +1966,60 @@
   gap: var(--space-8);
 }
 
+.licenses-search {
+  width: 100%;
+}
+
+.license-notice + .license-notice {
+  border-top: 1px solid var(--border-default);
+}
+
+.license-notice summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.license-notice summary::before {
+  content: "+";
+}
+
+.license-notice[open] summary::before {
+  content: "−";
+}
+
+.license-notice summary > :first-of-type {
+  flex: 1;
+}
+
+.license-notice__metadata {
+  color: var(--muted-soft);
+  font-size: 12px;
+}
+
+.license-notice__body {
+  padding: 0 16px 16px;
+  overflow-wrap: anywhere;
+}
+
+.license-notice__body pre {
+  white-space: pre-wrap;
+  font-size: 12px;
+  line-height: 1.6;
+  user-select: text;
+}
+
+.license-notice__chromium {
+  width: 100%;
+  height: 480px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-2xl);
+  background: white;
+}
+
 .settings-section {
   display: grid;
   gap: 10px;

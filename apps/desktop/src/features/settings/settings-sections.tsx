@@ -61,6 +61,15 @@ export const SETTINGS_SECTIONS = [
     needsWorkspace: false,
   },
   {
+    id: "licenses",
+    title: "Open-source licenses",
+    group: "App",
+    icon: <ExtensionIcon />,
+    keywords: ["legal", "copyright", "MIT", "third-party", "notices", "open source"],
+    description: () => "License terms and copyright notices for the software behind pi-gui.",
+    needsWorkspace: false,
+  },
+  {
     id: "providers",
     title: "Providers",
     group: "Agent",

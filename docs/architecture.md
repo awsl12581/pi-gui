@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-18 20:45 CST
-> 文档版本：v7
-> 修改说明：将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。
+> 最后修改时间：2026-10-18 21:08 CST
+> 文档版本：v8
+> 修改说明：记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -132,6 +132,32 @@ Desktop packaging and its test fixtures stay under `apps/desktop`; the marketing
 
 The root command `marketing:media` records the README and website media. Generated historical media and user artifacts must not be removed as dependency cleanup. Packaging dependencies also require packaged-runtime verification before removal because bundling and pnpm staging can need packages that have no direct source import.
 
+## Open-source notices
+
+Settings > Open-source licenses is a workspace-independent renderer page. The Vite
+build helper in `apps/desktop/scripts/license-notices.mjs` collects the installed dependency
+graph rooted at the repository and desktop manifests, including their development
+tools and installed optional/peer dependencies. It preserves distinct package versions,
+merges duplicate copies and supplies browser-safe build constants containing package license metadata plus original top-level
+LICENSE, COPYING, NOTICE and COPYRIGHT files in a lazy renderer chunk. Missing required
+dependencies stop collection; missing notice files are shown explicitly in the page.
+This inventory reflects the build host, including its installed platform-specific packages;
+it is not an inventory of independently installed Pi extensions or operating-system libraries.
+
+The project and workspace packages use the root MIT notice. Pi 1.2.0's npm packages
+omit the upstream license file, so `resources/licenses/sources.json` records a
+version-matched upstream copy. Updating a supplemented Pi package requires refreshing
+that copy and its source metadata. The Windows GitHub CLI notice is retained in
+`resources/gh/LICENSE`, sourced from [CLI v2.102.0](https://github.com/cli/cli/blob/v2.102.0/LICENSE);
+refresh it alongside the bundled binary and manifest. Other installed packages without
+notice files retain their declared license and author metadata without invented copyright text.
+
+Electron's installed Chromium third-party HTML notices load on demand into a sandboxed
+iframe with scripts disabled. All notices ship in renderer assets and work offline; no
+filesystem or network API is added to preload. Rebuild or restart development after changing
+dependencies to refresh the inventory. The page preserves notices for inspection; it does
+not replace the obligation to retain required notices in distributed source or other assets.
+
 ## Development dependency installation
 
 Development commands support Node 24–26 (`>=24.0.0 <27`); CI uses Node 24.
@@ -181,3 +207,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v5   | 2026-10-15 12:05 CST | 记录桌面扩展协议迁移到 Chord 1.2 及其当前连接边界。                      |
 | v6   | 2026-10-18 20:18 CST | 同步归档后的历史验证入口，区分当前实现与旧阶段证据。                     |
 | v7   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。 |
+| v8   | 2026-10-18 21:08 CST | 记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。             |

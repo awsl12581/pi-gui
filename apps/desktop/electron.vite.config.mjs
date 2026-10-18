@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "electron-vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { licenseNoticeDefines } from "./scripts/license-notices.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = __dirname;
@@ -38,6 +39,7 @@ export default defineConfig(({ command }) => {
       },
     },
     renderer: {
+      define: licenseNoticeDefines(projectRoot),
       root: projectRoot,
       base: "./",
       plugins: [react(), tsconfigPaths({ projects: [pathsProject] })],
