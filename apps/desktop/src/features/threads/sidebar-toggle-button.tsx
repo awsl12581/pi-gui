@@ -17,25 +17,27 @@ export function SidebarToggleButton({
 }: SidebarToggleButtonProps) {
   useLocale();
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label={t("Toggle sidebar")}
-          aria-pressed={!collapsed}
-          className="sidebar-toggle__button"
-          data-testid="sidebar-toggle"
-          type="button"
-          onClick={onToggle}
-        >
-          <SidebarToggleIcon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent className="sidebar-toggle__tooltip">
-        <span>{t("Toggle sidebar")}</span>
-        <kbd>{shortcutLabel}</kbd>
-      </TooltipContent>
-    </Tooltip>
+    <div className="sidebar-toggle">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={t("Toggle sidebar")}
+            aria-pressed={!collapsed}
+            className="sidebar-toggle__button"
+            data-testid="sidebar-toggle"
+            type="button"
+            onClick={onToggle}
+          >
+            <SidebarToggleIcon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent className="sidebar-toggle__tooltip">
+          <span>{t("Toggle sidebar")}</span>
+          <kbd>{shortcutLabel}</kbd>
+        </TooltipContent>
+      </Tooltip>
+    </div>
   );
 }
