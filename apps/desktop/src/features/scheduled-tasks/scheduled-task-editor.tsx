@@ -1,5 +1,13 @@
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { Textarea } from "../../components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -255,7 +263,7 @@ export function ScheduledTaskEditor({
         </label>
         <label className="scheduled-editor__field">
           <span>{t("Instructions")}</span>
-          <textarea
+          <Textarea
             data-testid="scheduled-task-instruction"
             value={instruction}
             onChange={(event) => setInstruction(event.target.value)}
@@ -266,20 +274,25 @@ export function ScheduledTaskEditor({
 
         <label className="scheduled-editor__field">
           <span>{t("Workspace")}</span>
-          <select
+          <Select
             data-testid="scheduled-task-workspace"
             value={workspaceId}
-            onChange={(event) => {
-              setWorkspaceId(event.target.value);
+            onValueChange={(value) => {
+              setWorkspaceId(value);
               setSessionId("");
             }}
           >
-            {workspaces.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.name}
-              </option>
-            ))}
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder={t("Select a workspace")} />
+            </SelectTrigger>
+            <SelectContent>
+              {workspaces.map((entry) => (
+                <SelectItem key={entry.id} value={entry.id}>
+                  {entry.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
 
         <fieldset className="scheduled-editor__field">
@@ -298,39 +311,48 @@ export function ScheduledTaskEditor({
             </label>
           </RadioGroup>
           {targetKind === "existing-thread" ? (
-            <select
+            <Select
               data-testid="scheduled-task-session"
               value={sessionId}
-              onChange={(event) => setSessionId(event.target.value)}
+              onValueChange={setSessionId}
             >
-              <option value="">{t("Select a thread")}</option>
-              {sessions.map((session) => (
-                <option key={session.id} value={session.id}>
-                  {session.title}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger>
+                <SelectValue placeholder={t("Select a thread")} />
+              </SelectTrigger>
+              <SelectContent>
+                {sessions.map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                    {session.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           ) : null}
         </fieldset>
 
         <label className="scheduled-editor__field">
           <span>{t("Frequency")}</span>
-          <select
+          <Select
             data-testid="scheduled-task-frequency"
             value={frequency}
-            onChange={(event) => setFrequency(event.target.value as FrequencyKind)}
+            onValueChange={(value) => setFrequency(value as FrequencyKind)}
           >
-            <option value="daily">{t("Daily")}</option>
-            <option value="weekly">{t("Weekly")}</option>
-            <option value="interval">{t("Interval")}</option>
-            <option value="once">{t("Once")}</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">{t("Daily")}</SelectItem>
+              <SelectItem value="weekly">{t("Weekly")}</SelectItem>
+              <SelectItem value="interval">{t("Interval")}</SelectItem>
+              <SelectItem value="once">{t("Once")}</SelectItem>
+            </SelectContent>
+          </Select>
         </label>
 
         {frequency === "once" ? (
           <label className="scheduled-editor__field">
             <span>{t("Run at")}</span>
-            <input
+            <Input
               data-testid="scheduled-task-once-at"
               type="datetime-local"
               value={onceAt}
@@ -341,7 +363,7 @@ export function ScheduledTaskEditor({
         {frequency === "daily" || frequency === "weekly" ? (
           <label className="scheduled-editor__field">
             <span>{t("Time")}</span>
-            <input
+            <Input
               data-testid="scheduled-task-time"
               type="time"
               value={clock}
@@ -357,7 +379,9 @@ export function ScheduledTaskEditor({
                 const day = index as Weekday;
                 const selected = days.includes(day);
                 return (
-                  <button
+                  <Button
+                    variant={selected ? "default" : "outline"}
+                    size="sm"
                     className={`scheduled-editor__day${selected ? " scheduled-editor__day--active" : ""}`}
                     key={name}
                     aria-label={t(name)}
@@ -372,7 +396,7 @@ export function ScheduledTaskEditor({
                     }
                   >
                     {t(name.slice(0, 3))}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -381,7 +405,7 @@ export function ScheduledTaskEditor({
         {frequency === "interval" ? (
           <label className="scheduled-editor__field">
             <span>{t("Every (minutes)")}</span>
-            <input
+            <Input
               data-testid="scheduled-task-interval"
               type="number"
               min={1}
