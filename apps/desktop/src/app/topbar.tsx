@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { t } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
 import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
@@ -75,24 +76,26 @@ export function Topbar({
       <div className="topbar__actions">
         {children}
         {!panelVisible ? (
-          <div className="shortcut-tooltip-wrap topbar__tooltip-wrap">
-            <Button
-              type="button"
-              aria-label={t("Toggle side panel")}
-              aria-pressed={panelVisible}
-              aria-controls="task-workbench"
-              data-testid="toggle-side-panel"
-              className={`icon-button topbar__icon${panelVisible ? " icon-button--active" : ""}`}
-              disabled={!panelAvailable}
-              onClick={onTogglePanel}
-            >
-              <SidePanelIcon />
-            </Button>
-            <span className="shortcut-tooltip topbar__tooltip" role="tooltip">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                aria-label={t("Toggle side panel")}
+                aria-pressed={panelVisible}
+                aria-controls="task-workbench"
+                data-testid="toggle-side-panel"
+                className={`icon-button topbar__icon${panelVisible ? " icon-button--active" : ""}`}
+                disabled={!panelAvailable}
+                onClick={onTogglePanel}
+              >
+                <SidePanelIcon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent className="topbar__tooltip">
               <span>{panelVisible ? t("Hide side panel") : t("Show side panel")}</span>
               <kbd>{getSidePanelToggleShortcutLabel(api.platform)}</kbd>
-            </span>
-          </div>
+            </TooltipContent>
+          </Tooltip>
         ) : null}
       </div>
     </header>

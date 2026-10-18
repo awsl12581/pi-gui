@@ -1,7 +1,9 @@
 import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import {
   buildModelOptions,
@@ -44,7 +46,6 @@ export function ModelSelector({
   useLocale();
   const [open, setOpen] = useState<OpenDropdown>("none");
   const [modelFilter, setModelFilter] = useState("");
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   const modelOptions = useMemo(() => buildModelOptions(runtime), [runtime, i18n.language]);
   const filteredModels = useMemo(() => {
@@ -74,140 +75,123 @@ export function ModelSelector({
   const noMatchingModels =
     hasAvailableModelOptions && modelFilter.trim().length > 0 && groupedModels.length === 0;
 
-  useEffect(() => {
-    if (open === "none") {
-      setModelFilter("");
-      return undefined;
-    }
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setOpen("none");
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen("none");
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [open]);
-
   if (!shouldRenderModelControl && !thinkingLevel) {
     return null;
   }
 
   return (
-    <span className="model-selector" ref={containerRef}>
+    <span className="model-selector">
       {shouldRenderModelControl ? (
-        <span className="model-selector__anchor">
-          <button
-            className="model-selector__badge"
-            type="button"
-            disabled={disabled}
-            onClick={() => setOpen(open === "model" ? "none" : "model")}
-          >
-            {modelBadgeLabel}
-          </button>
-          {open === "model" ? (
-            <div
-              className={`model-selector__dropdown ${dropdownPlacement === "below" ? "model-selector__dropdown--below" : ""}`}
-              onWheel={(event) => event.stopPropagation()}
+        <Popover open={open === "model"} onOpenChange={(next) => setOpen(next ? "model" : "none")}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="model-selector__badge"
+              type="button"
+              disabled={disabled}
             >
-              <div className="model-selector__filter">
-                <Input
-                  className="model-selector__filter-input"
-                  placeholder={t("Filter models...")}
-                  value={modelFilter}
-                  onChange={(e) => setModelFilter(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              {groupedModels.map((group) => (
-                <div key={group.provider}>
-                  <div className="model-selector__group-title">{group.provider}</div>
-                  {group.items.map((option) => {
-                    const isActive = option.providerId === provider && option.modelId === modelId;
-                    return (
-                      <button
-                        className={`model-selector__item${isActive ? " model-selector__item--active" : ""}`}
-                        key={`${option.providerId}:${option.modelId}`}
-                        type="button"
-                        onClick={() => {
-                          if (!isActive) {
-                            onSetModel(option.providerId, option.modelId);
-                          }
-                          setOpen("none");
-                        }}
-                      >
-                        <span className="model-selector__item-label">{option.label}</span>
-                        {isActive ? (
-                          <span className="model-selector__item-meta">{t("active")}</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </div>
-              ))}
-              {groupedModels.length === 0 ? (
-                <>
-                  <div className="model-selector__group-title">
-                    {noMatchingModels ? t("No matching models") : t(emptyModelTitle)}
-                  </div>
-                  {noMatchingModels ? (
-                    <div className="model-selector__empty">{t("Try a different filter.")}</div>
-                  ) : null}
-                </>
-              ) : null}
+              {modelBadgeLabel}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side={dropdownPlacement === "below" ? "bottom" : "top"}
+            className={`model-selector__dropdown ${dropdownPlacement === "below" ? "model-selector__dropdown--below" : ""}`}
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <div className="model-selector__filter">
+              <Input
+                className="model-selector__filter-input"
+                placeholder={t("Filter models...")}
+                value={modelFilter}
+                onChange={(e) => setModelFilter(e.target.value)}
+                autoFocus
+              />
             </div>
-          ) : null}
-        </span>
+            {groupedModels.map((group) => (
+              <div key={group.provider}>
+                <div className="model-selector__group-title">{group.provider}</div>
+                {group.items.map((option) => {
+                  const isActive = option.providerId === provider && option.modelId === modelId;
+                  return (
+                    <Button
+                      variant="ghost"
+                      className={`model-selector__item${isActive ? " model-selector__item--active" : ""}`}
+                      key={`${option.providerId}:${option.modelId}`}
+                      type="button"
+                      onClick={() => {
+                        if (!isActive) {
+                          onSetModel(option.providerId, option.modelId);
+                        }
+                        setOpen("none");
+                      }}
+                    >
+                      <span className="model-selector__item-label">{option.label}</span>
+                      {isActive ? (
+                        <span className="model-selector__item-meta">{t("active")}</span>
+                      ) : null}
+                    </Button>
+                  );
+                })}
+              </div>
+            ))}
+            {groupedModels.length === 0 ? (
+              <>
+                <div className="model-selector__group-title">
+                  {noMatchingModels ? t("No matching models") : t(emptyModelTitle)}
+                </div>
+                {noMatchingModels ? (
+                  <div className="model-selector__empty">{t("Try a different filter.")}</div>
+                ) : null}
+              </>
+            ) : null}
+          </PopoverContent>
+        </Popover>
       ) : null}
       {thinkingLevel ? (
-        <span className="model-selector__anchor">
-          <button
-            className="model-selector__badge"
-            type="button"
-            disabled={disabled}
-            onClick={() => setOpen(open === "thinking" ? "none" : "thinking")}
-          >
-            {t(thinkingLevel)}
-          </button>
-          {open === "thinking" ? (
-            <div
-              className={`model-selector__dropdown ${dropdownPlacement === "below" ? "model-selector__dropdown--below" : ""}`}
-              onWheel={(event) => event.stopPropagation()}
+        <Popover
+          open={open === "thinking"}
+          onOpenChange={(next) => setOpen(next ? "thinking" : "none")}
+        >
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              className="model-selector__badge"
+              type="button"
+              disabled={disabled}
             >
-              <div className="model-selector__group-title">{t("Thinking Level")}</div>
-              {THINKING_OPTIONS.map((option) => {
-                const isActive = option.value === thinkingLevel;
-                return (
-                  <button
-                    className={`model-selector__item${isActive ? " model-selector__item--active" : ""}`}
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      if (!isActive) {
-                        onSetThinking(option.value);
-                      }
-                      setOpen("none");
-                    }}
-                  >
-                    <span className="model-selector__item-label">{option.label}</span>
-                    <span className="model-selector__item-meta">{option.description}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </span>
+              {t(thinkingLevel)}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            side={dropdownPlacement === "below" ? "bottom" : "top"}
+            className={`model-selector__dropdown ${dropdownPlacement === "below" ? "model-selector__dropdown--below" : ""}`}
+            onWheel={(event) => event.stopPropagation()}
+          >
+            <div className="model-selector__group-title">{t("Thinking Level")}</div>
+            {THINKING_OPTIONS.map((option) => {
+              const isActive = option.value === thinkingLevel;
+              return (
+                <Button
+                  variant="ghost"
+                  className={`model-selector__item${isActive ? " model-selector__item--active" : ""}`}
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    if (!isActive) {
+                      onSetThinking(option.value);
+                    }
+                    setOpen("none");
+                  }}
+                >
+                  <span className="model-selector__item-label">{option.label}</span>
+                  <span className="model-selector__item-meta">{option.description}</span>
+                </Button>
+              );
+            })}
+          </PopoverContent>
+        </Popover>
       ) : null}
     </span>
   );

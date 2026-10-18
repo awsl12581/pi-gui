@@ -1,9 +1,8 @@
 import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent } from "../../components/ui/dialog";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { createPortal } from "react-dom";
-import { trapDialogFocus } from "../../ui/dialog-focus";
+import { useRef, useState } from "react";
 
 interface ImageAttachmentThumbProps {
   readonly src: string;
@@ -53,50 +52,24 @@ function ImageViewer({
   readonly onClose: () => void;
 }) {
   useLocale();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    dialogRef.current?.querySelector<HTMLButtonElement>(".image-viewer__close")?.focus();
-  }, []);
-
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Tab") {
-      trapDialogFocus(event, dialogRef.current);
-      return;
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      onClose();
-    }
-  };
-
-  return createPortal(
-    <div
-      aria-label={name}
-      aria-modal="true"
-      className="image-viewer"
-      data-testid="image-viewer"
-      ref={dialogRef}
-      role="dialog"
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <img alt={name} className="image-viewer__image" src={src} />
-      <Button
-        aria-label={t("Close image")}
-        className="image-viewer__close"
-        type="button"
-        onClick={onClose}
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        aria-label={name}
+        className="image-viewer"
+        data-testid="image-viewer"
+        showCloseButton={false}
       >
-        ×
-      </Button>
-    </div>,
-    document.body,
+        <img alt={name} className="image-viewer__image" src={src} />
+        <Button
+          aria-label={t("Close image")}
+          className="image-viewer__close"
+          type="button"
+          onClick={onClose}
+        >
+          ×
+        </Button>
+      </DialogContent>
+    </Dialog>
   );
 }

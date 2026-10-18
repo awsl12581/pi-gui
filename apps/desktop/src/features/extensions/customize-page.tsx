@@ -1,5 +1,6 @@
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
@@ -94,14 +95,6 @@ export function CustomizePage({
     [extensions, normalizedQuery, i18n.language],
   );
 
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-    event.preventDefault();
-    const next: CustomizeTab = tab === "skills" ? "extensions" : "skills";
-    onSelectTab(next);
-    document.getElementById(tabId(next))?.focus();
-  };
-
   return (
     <section className="canvas">
       <div className="conversation settings-view">
@@ -140,27 +133,17 @@ export function CustomizePage({
         </header>
 
         <div className="resource-toolbar">
-          <div
+          <Tabs
             aria-label={t("Skills and extensions")}
             className="resource-tabs"
-            role="tablist"
-            onKeyDown={handleTabKeyDown}
+            value={tab}
+            onValueChange={(value) => onSelectTab(value as CustomizeTab)}
           >
-            <ResourceTab
-              count={skills.length}
-              label={t("Skills")}
-              selected={tab === "skills"}
-              tab="skills"
-              onSelect={() => onSelectTab("skills")}
-            />
-            <ResourceTab
-              count={extensions.length}
-              label={t("Extensions")}
-              selected={tab === "extensions"}
-              tab="extensions"
-              onSelect={() => onSelectTab("extensions")}
-            />
-          </div>
+            <TabsList variant="line">
+              <ResourceTab count={skills.length} label={t("Skills")} tab="skills" />
+              <ResourceTab count={extensions.length} label={t("Extensions")} tab="extensions" />
+            </TabsList>
+          </Tabs>
           <label className="resource-search">
             <SearchIcon />
             <Input
@@ -230,30 +213,22 @@ function ResourceTab({
   tab,
   label,
   count,
-  selected,
-  onSelect,
 }: {
   readonly tab: CustomizeTab;
   readonly label: string;
   readonly count: number;
-  readonly selected: boolean;
-  readonly onSelect: () => void;
 }) {
   useLocale();
   return (
-    <button
+    <TabsTrigger
       aria-controls={TAB_PANEL_ID}
-      aria-selected={selected}
       className="resource-tabs__tab"
       id={tabId(tab)}
-      role="tab"
-      tabIndex={selected ? 0 : -1}
-      type="button"
-      onClick={onSelect}
+      value={tab}
     >
       {label}
       <span className="resource-tabs__count">{count}</span>
-    </button>
+    </TabsTrigger>
   );
 }
 

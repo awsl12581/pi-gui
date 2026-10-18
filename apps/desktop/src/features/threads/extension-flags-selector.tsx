@@ -1,7 +1,9 @@
 import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { ExtensionFlagValues } from "@pi-gui/session-driver";
 import type { RuntimeExtensionFlag, RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import { SettingsSwitch } from "../settings/settings-controls";
@@ -43,87 +45,70 @@ export function ExtensionFlagsSelector({
 }) {
   useLocale();
   const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLSpanElement | null>(null);
   const groups = flagGroups(runtime);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
 
   if (groups.length === 0) return null;
   const registered = new Set(groups.flatMap((group) => group.flags.map((flag) => flag.name)));
   const setCount = setFlagEntries(values).filter(([name]) => registered.has(name)).length;
 
   return (
-    <span className="model-selector" ref={containerRef}>
-      <span className="model-selector__anchor">
-        <button
-          aria-expanded={open}
-          className="model-selector__badge"
-          type="button"
-          data-testid="extension-flags-badge"
-          onClick={() => setOpen(!open)}
-        >
-          {flagsBadgeLabel(setCount)}
-        </button>
-        {open ? (
-          <div
-            className="model-selector__dropdown model-selector__dropdown--below extension-flags__dropdown"
-            data-testid="extension-flags-dropdown"
-            onWheel={(event) => event.stopPropagation()}
+    <span className="model-selector">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            aria-expanded={open}
+            className="model-selector__badge"
+            type="button"
+            data-testid="extension-flags-badge"
           >
-            {groups.map((group) => (
-              <div key={group.title}>
-                <div className="model-selector__group-title">{group.title}</div>
-                {group.flags.map((flag) => {
-                  const value = values[flag.name];
-                  return (
-                    <div className="extension-flags__item" key={flag.name}>
-                      <span className="extension-flags__name">
-                        <span className="extension-flags__flag">--{flag.name}</span>
-                        {flag.description ? (
-                          <span className="model-selector__item-meta">{flag.description}</span>
-                        ) : null}
-                      </span>
-                      {flag.type === "boolean" ? (
-                        // pi can only switch a boolean flag on, so one that defaults to on stays on.
-                        <SettingsSwitch
-                          label={`--${flag.name}`}
-                          checked={value === true || flag.default === true}
-                          disabled={flag.default === true}
-                          onChange={(checked) => onSetFlag(flag.name, checked)}
-                        />
-                      ) : (
-                        <Input
-                          type="text"
-                          className="extension-flags__input"
-                          aria-label={`--${flag.name}`}
-                          placeholder={typeof flag.default === "string" ? flag.default : "value"}
-                          spellCheck={false}
-                          value={typeof value === "string" ? value : ""}
-                          onChange={(event) => onSetFlag(flag.name, event.target.value)}
-                        />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </span>
+            {flagsBadgeLabel(setCount)}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          className="model-selector__dropdown model-selector__dropdown--below extension-flags__dropdown"
+          data-testid="extension-flags-dropdown"
+          onWheel={(event) => event.stopPropagation()}
+        >
+          {groups.map((group) => (
+            <div key={group.title}>
+              <div className="model-selector__group-title">{group.title}</div>
+              {group.flags.map((flag) => {
+                const value = values[flag.name];
+                return (
+                  <div className="extension-flags__item" key={flag.name}>
+                    <span className="extension-flags__name">
+                      <span className="extension-flags__flag">--{flag.name}</span>
+                      {flag.description ? (
+                        <span className="model-selector__item-meta">{flag.description}</span>
+                      ) : null}
+                    </span>
+                    {flag.type === "boolean" ? (
+                      // pi can only switch a boolean flag on, so one that defaults to on stays on.
+                      <SettingsSwitch
+                        label={`--${flag.name}`}
+                        checked={value === true || flag.default === true}
+                        disabled={flag.default === true}
+                        onChange={(checked) => onSetFlag(flag.name, checked)}
+                      />
+                    ) : (
+                      <Input
+                        type="text"
+                        className="extension-flags__input"
+                        aria-label={`--${flag.name}`}
+                        placeholder={typeof flag.default === "string" ? flag.default : "value"}
+                        spellCheck={false}
+                        value={typeof value === "string" ? value : ""}
+                        onChange={(event) => onSetFlag(flag.name, event.target.value)}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </PopoverContent>
+      </Popover>
     </span>
   );
 }

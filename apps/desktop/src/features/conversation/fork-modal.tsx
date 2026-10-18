@@ -1,9 +1,9 @@
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useState } from "react";
 import type { NewThreadEnvironment } from "../../../contracts/desktop-state";
-import { trapDialogFocus } from "../../ui/dialog-focus";
 import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 
 interface ForkModalProps {
   readonly submitting: boolean;
@@ -26,47 +26,19 @@ export function ForkModal({
 }: ForkModalProps) {
   useLocale();
   const [environment, setEnvironment] = useState<NewThreadEnvironment>("local");
-  const dialogRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    dialogRef.current?.querySelector<HTMLButtonElement>("[data-fork-confirm='true']")?.focus();
-  }, []);
-
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Tab") {
-      trapDialogFocus(event, dialogRef.current);
-      return;
-    }
-
-    if (event.key === "Escape" && !submitting) {
-      event.preventDefault();
-      onClose();
-    }
-  };
-
   return (
-    <div
-      className="tree-modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target !== event.currentTarget || submitting) {
-          return;
-        }
-        onClose();
-      }}
-    >
-      <div
-        aria-modal="true"
+    <Dialog open onOpenChange={(open) => !open && !submitting && onClose()}>
+      <DialogContent
         className="tree-modal tree-modal--compact"
         data-testid="fork-modal"
-        ref={dialogRef}
-        role="dialog"
-        tabIndex={-1}
-        onKeyDown={handleKeyDown}
+        onInteractOutside={(event) => {
+          if (submitting) event.preventDefault();
+        }}
       >
-        <div className="tree-modal__header">
+        <DialogHeader className="tree-modal__header">
           <div>
             <div className="tree-modal__eyebrow">{t("Fork conversation")}</div>
-            <h2 className="tree-modal__title">{t("Start a new thread")}</h2>
+            <DialogTitle className="tree-modal__title">{t("Start a new thread")}</DialogTitle>
           </div>
           <Button
             variant="ghost"
@@ -79,7 +51,7 @@ export function ForkModal({
           >
             ×
           </Button>
-        </div>
+        </DialogHeader>
 
         {error ? (
           <div className="tree-modal__error error-banner" data-testid="fork-modal-error">
@@ -154,7 +126,7 @@ export function ForkModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

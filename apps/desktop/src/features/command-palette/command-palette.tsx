@@ -1,4 +1,7 @@
 import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent } from "../../components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -169,21 +172,13 @@ export function CommandPalette<F extends string>({
 
   let itemIndex = -1;
   return (
-    <div
-      className="command-palette-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-    >
-      <div
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
         aria-label={label}
-        aria-modal="true"
         className="command-palette"
         data-testid="command-palette"
-        role="dialog"
         onKeyDown={handleKeyDown}
+        showCloseButton={false}
       >
         <div className="command-palette__search">
           <span className="command-palette__search-icon">
@@ -205,33 +200,39 @@ export function CommandPalette<F extends string>({
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
           />
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             aria-label={t("Close")}
             className="command-palette__close"
             type="button"
             onClick={onClose}
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {filters && filters.length > 0 ? (
-          <div aria-label={t("Filters")} className="command-palette__filters" role="tablist">
-            {filters.map((filter) => (
-              <button
-                key={filter.id}
-                aria-selected={filter.id === activeFilter}
-                className={`command-palette__filter${filter.id === activeFilter ? " command-palette__filter--active" : ""}`}
-                role="tab"
-                tabIndex={-1}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => onFilterChange?.(filter.id)}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+          <Tabs
+            aria-label={t("Filters")}
+            className="command-palette__filters"
+            value={activeFilter}
+            onValueChange={(value) => onFilterChange?.(value as F)}
+          >
+            <TabsList variant="line">
+              {filters.map((filter) => (
+                <TabsTrigger
+                  key={filter.id}
+                  className={`command-palette__filter${filter.id === activeFilter ? " command-palette__filter--active" : ""}`}
+                  value={filter.id}
+                  type="button"
+                  onMouseDown={(event) => event.preventDefault()}
+                >
+                  {filter.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         ) : null}
 
         <div className="command-palette__results" id={listId} role="listbox">
@@ -318,8 +319,8 @@ export function CommandPalette<F extends string>({
             <kbd>Esc</kbd> {t("Close")}
           </span>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
