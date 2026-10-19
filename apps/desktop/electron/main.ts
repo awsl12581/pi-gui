@@ -1265,7 +1265,12 @@ app
       },
     });
 
-    createAppWindow();
+    const firstWindow = createAppWindow();
+    firstWindow.once("ready-to-show", () => {
+      void store.refreshStartupWorkspaces().catch((error: unknown) => {
+        console.error("[main] background startup refresh failed", error);
+      });
+    });
     void notificationPermissionService.getCurrentStatus().catch((error: unknown) => {
       console.error("[main] getCurrentStatus failed", error);
     });

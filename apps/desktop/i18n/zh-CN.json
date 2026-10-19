@@ -1,4 +1,6 @@
 {
+  "Default workspace": "默认工作区",
+  "The default workspace cannot be renamed or removed.": "默认工作区不能重命名或移除。",
   "Thread actions": "会话操作",
   "Some saved workspaces could not be refreshed.": "部分已保存的工作区无法刷新。",
   "Workspace": "工作区",

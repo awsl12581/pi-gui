@@ -1,10 +1,4 @@
 import { LRUCache } from "lru-cache";
-import bash from "@shikijs/langs/bash";
-import javascript from "@shikijs/langs/javascript";
-import json from "@shikijs/langs/json";
-import python from "@shikijs/langs/python";
-import tsx from "@shikijs/langs/tsx";
-import typescript from "@shikijs/langs/typescript";
 import catppuccinLatte from "@shikijs/themes/catppuccin-latte";
 import catppuccinMocha from "@shikijs/themes/catppuccin-mocha";
 import darkPlus from "@shikijs/themes/dark-plus";
@@ -17,8 +11,7 @@ import lightPlus from "@shikijs/themes/light-plus";
 import nord from "@shikijs/themes/nord";
 import tokyoNight from "@shikijs/themes/tokyo-night";
 import { useSyncExternalStore } from "react";
-import { createHighlighterCore, type HighlighterCore, type ThemeRegistration } from "shiki/core";
-import { createOnigurumaEngine } from "shiki/engine/oniguruma";
+import type { HighlighterCore, ThemeRegistration } from "shiki/core";
 import type { SyntaxThemeId } from "../../contracts/theme";
 import draculaLight from "./syntax-themes/dracula-light.json";
 import nordLight from "./syntax-themes/nord-light.json";
@@ -47,35 +40,38 @@ export const syntaxThemes: Readonly<Record<SyntaxThemeId, ThemeRegistration>> = 
   "dark-plus": darkPlus,
 };
 
-const languages = [typescript, tsx, javascript, json, python, bash];
-
 // Oniguruma (VS Code's regex engine, as wasm) tokenises several times faster
-// than shiki's JavaScript engine. It loads asynchronously at startup; code
+// than shiki's JavaScript engine. It loads when code is first displayed; code
 // renders plain until it is ready, then each grammar is compiled while idle so
 // the first diff does not pay for it.
 let highlighter: HighlighterCore | null = null;
 const readyListeners = new Set<() => void>();
 
-export const highlighterReady: Promise<void> = createHighlighterCore({
-  themes: Object.values(syntaxThemes),
-  langs: languages,
-  engine: createOnigurumaEngine(import("shiki/wasm")),
-}).then(
-  (created) => {
-    highlighter = created;
-    for (const listener of readyListeners) listener();
-    warmGrammars(created);
-  },
-  (error: unknown) => {
-    console.error("[renderer] syntax highlighter failed to load", error);
-  },
-);
+let highlighterReady: Promise<void> | undefined;
+
+export function ensureHighlighter(): Promise<void> {
+  return (highlighterReady ??= import("./syntax-highlighter.mjs")
+    .then(({ createSyntaxHighlighter }) => createSyntaxHighlighter(Object.values(syntaxThemes)))
+    .then(
+      (created) => {
+        highlighter = created;
+        for (const listener of readyListeners) listener();
+        warmGrammars(created);
+      },
+      (error: unknown) => {
+        console.error("[renderer] syntax highlighter failed to load", error);
+      },
+    ));
+}
 
 /** Re-renders the caller once the highlighter has loaded. */
 export function useHighlighterReady(): boolean {
   return useSyncExternalStore(
     (listener) => {
       readyListeners.add(listener);
+      ensureHighlighter().catch((error: unknown) => {
+        console.error("[renderer] syntax highlighter listener failed", error);
+      });
       return () => {
         readyListeners.delete(listener);
       };

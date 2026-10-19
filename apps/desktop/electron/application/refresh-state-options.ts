@@ -11,6 +11,7 @@ export interface RefreshStateOptions {
   readonly activeView?: AppView;
   readonly markSelectedSessionViewed?: boolean;
   readonly hydrateSelectedSession?: boolean;
+  readonly preloadSecondaryRuntimes?: boolean;
   readonly emitState?: boolean;
   readonly persistState?: boolean;
   readonly publishSelectedTranscript?: boolean;

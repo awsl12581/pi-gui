@@ -1,7 +1,8 @@
 import { Button } from "../components/ui/button";
 import { t, i18n } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SecondarySurfaces, DiffPanel, FileWorkbench, TerminalPanel } from "./lazy-surfaces";
 import type { RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
 import {
   getSelectedSession,
@@ -29,9 +30,7 @@ import { useTurnChanges } from "../features/conversation/hooks/use-turn-changes"
 import { formatRelativeTime } from "../lib/string-utils";
 import { restoreTopmostDialogFocus } from "../ui/dialog-focus";
 import { ComposerPanel } from "../features/conversation/composer-panel";
-import { DiffPanel } from "../features/workbench/diff-panel";
 import type { DiffPanelFileRequest } from "../features/workbench/diff-panel-types";
-import { FileWorkbench } from "../features/workbench/file-workbench";
 import { useWorkbench } from "../features/workbench/use-workbench";
 import {
   ExtensionViewPanel,
@@ -51,7 +50,6 @@ import { getDesktopShortcutLabel } from "../../contracts/ipc";
 import { CommandPaletteSurface } from "../features/command-palette/command-palette-surface";
 import { deriveModelOnboardingState } from "../features/settings/model-onboarding";
 import type { SettingsSection } from "../features/settings/settings-view";
-import { SecondarySurfaces } from "./secondary-surfaces";
 import { NewThreadView } from "../features/threads/new-thread-view";
 import {
   buildThreadSidebarModel,
@@ -69,7 +67,6 @@ import {
 import { useThreadSwitcher } from "../features/threads/hooks/use-thread-switcher";
 import { SidebarToggleButton } from "../features/threads/sidebar-toggle-button";
 import { Topbar } from "./topbar";
-import { TerminalPanel } from "../features/workbench/terminal-panel";
 import { ConversationTimeline } from "../features/conversation/conversation-timeline";
 import { ScheduledTasksView } from "../features/scheduled-tasks/scheduled-tasks-view";
 import {
@@ -941,28 +938,31 @@ export default function App() {
         onSelectModel={handleSetSessionModel}
       />
     ) : null;
-
   if (secondarySurfaceView) {
     return (
       <>
-        <SecondarySurfaces
-          api={api}
-          snapshot={snapshot}
-          setSnapshot={setSnapshot}
-          activeView={secondarySurfaceView}
-          rootWorkspaceOptions={rootWorkspaceOptions}
-          settingsSection={settingsSection}
-          onSelectSettingsSection={setSettingsSection}
-          settingsWorkspaceId={settingsWorkspaceId}
-          onSelectSettingsWorkspace={setSettingsWorkspaceId}
-          skillsWorkspaceId={skillsWorkspaceId}
-          onSelectSkillsWorkspace={setSkillsWorkspaceId}
-          extensionsWorkspaceId={extensionsWorkspaceId}
-          onSelectExtensionsWorkspace={setExtensionsWorkspaceId}
-          onBack={() => setActiveView("threads")}
-          onSelectView={setActiveView}
-          onTrySkill={handleTrySkill}
-        />
+        <Suspense
+          fallback={<DesktopStartupSurface state={{ kind: "loading" }} onRetry={desktop.retry} />}
+        >
+          <SecondarySurfaces
+            api={api}
+            snapshot={snapshot}
+            setSnapshot={setSnapshot}
+            activeView={secondarySurfaceView}
+            rootWorkspaceOptions={rootWorkspaceOptions}
+            settingsSection={settingsSection}
+            onSelectSettingsSection={setSettingsSection}
+            settingsWorkspaceId={settingsWorkspaceId}
+            onSelectSettingsWorkspace={setSettingsWorkspaceId}
+            skillsWorkspaceId={skillsWorkspaceId}
+            onSelectSkillsWorkspace={setSkillsWorkspaceId}
+            extensionsWorkspaceId={extensionsWorkspaceId}
+            onSelectExtensionsWorkspace={setExtensionsWorkspaceId}
+            onBack={() => setActiveView("threads")}
+            onSelectView={setActiveView}
+            onTrySkill={handleTrySkill}
+          />
+        </Suspense>
         {wsMenu.confirmationDialog}
         {commandPalette}
       </>
@@ -970,7 +970,6 @@ export default function App() {
   }
 
   const shellClassName = `shell${snapshot.sidebarCollapsed ? " shell--sidebar-collapsed" : ""}`;
-
   return (
     <div className={shellClassName}>
       {primarySidebarToggleVisible ? (
@@ -1360,63 +1359,65 @@ export default function App() {
             loading={!workbench.ready}
             onRetryRestore={workbench.retryRestore}
           >
-            {activeExtensionView?.state === "ready" && workbenchTarget && api ? (
-              <ExtensionViewPanel
-                api={api}
-                target={workbenchTarget}
-                view={activeExtensionView}
-                theme={extensionViewTheme}
-                onBeforePrepareTaskDraft={extensionHostActions.beforePrepareTaskDraft}
-                onPrepareTaskDraftPendingChange={
-                  extensionHostActions.handlePrepareTaskDraftPendingChange
-                }
-              />
-            ) : activeTool && activeTool.kind !== "extension" ? (
-              renderBuiltinToolPanel(activeTool.kind, {
-                changes: () => (
-                  <DiffPanel
-                    key={selectedSessionKey}
-                    workspaceId={selectedWorkspace.id}
-                    sessionId={selectedSession.id}
-                    api={api}
-                    sessionStatus={selectedSession.status}
-                    selection={workbench.view.changes}
-                    onSelectionChange={workbench.setChanges}
-                    onOpenFile={workbench.openFile}
-                    fileRequest={
-                      diffFileRequest?.sessionKey === selectedSessionKey
-                        ? diffFileRequest.request
-                        : null
-                    }
-                    contexts={fileWorkbenchContexts}
-                  />
-                ),
-                files: () =>
-                  filesWorkspace ? (
-                    <FileWorkbench
+            <Suspense fallback={null}>
+              {activeExtensionView?.state === "ready" && workbenchTarget && api ? (
+                <ExtensionViewPanel
+                  api={api}
+                  target={workbenchTarget}
+                  view={activeExtensionView}
+                  theme={extensionViewTheme}
+                  onBeforePrepareTaskDraft={extensionHostActions.beforePrepareTaskDraft}
+                  onPrepareTaskDraftPendingChange={
+                    extensionHostActions.handlePrepareTaskDraftPendingChange
+                  }
+                />
+              ) : activeTool && activeTool.kind !== "extension" ? (
+                renderBuiltinToolPanel(activeTool.kind, {
+                  changes: () => (
+                    <DiffPanel
                       key={selectedSessionKey}
+                      workspaceId={selectedWorkspace.id}
+                      sessionId={selectedSession.id}
                       api={api}
-                      onTabsChange={workbench.setFiles}
                       sessionStatus={selectedSession.status}
-                      tabs={workbench.view.files.tabs}
-                      worktree={filesWorktree}
-                      workspace={filesWorkspace}
+                      selection={workbench.view.changes}
+                      onSelectionChange={workbench.setChanges}
+                      onOpenFile={workbench.openFile}
+                      fileRequest={
+                        diffFileRequest?.sessionKey === selectedSessionKey
+                          ? diffFileRequest.request
+                          : null
+                      }
+                      contexts={fileWorkbenchContexts}
                     />
-                  ) : (
-                    <p className="workbench__unavailable" role="status">
-                      {t("This file checkout is unavailable.")}
-                    </p>
                   ),
-                terminal: () => (
-                  <TerminalPanel
-                    key={selectedSessionKey}
-                    workspace={selectedWorkspace}
-                    sessionId={selectedSession.id}
-                    onHide={() => workbench.closeTool("terminal")}
-                  />
-                ),
-              })
-            ) : null}
+                  files: () =>
+                    filesWorkspace ? (
+                      <FileWorkbench
+                        key={selectedSessionKey}
+                        api={api}
+                        onTabsChange={workbench.setFiles}
+                        sessionStatus={selectedSession.status}
+                        tabs={workbench.view.files.tabs}
+                        worktree={filesWorktree}
+                        workspace={filesWorkspace}
+                      />
+                    ) : (
+                      <p className="workbench__unavailable" role="status">
+                        {t("This file checkout is unavailable.")}
+                      </p>
+                    ),
+                  terminal: () => (
+                    <TerminalPanel
+                      key={selectedSessionKey}
+                      workspace={selectedWorkspace}
+                      sessionId={selectedSession.id}
+                      onHide={() => workbench.closeTool("terminal")}
+                    />
+                  ),
+                })
+              ) : null}
+            </Suspense>
           </Workbench>
         ) : null}
       </main>

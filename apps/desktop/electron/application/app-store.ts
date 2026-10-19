@@ -4,7 +4,7 @@ import { sessionKey } from "@pi-gui/session-driver";
 import type { ExtensionFlagValues, SessionSchemaInfo } from "@pi-gui/session-driver";
 import type { BrowserWindow } from "electron";
 import { randomUUID } from "node:crypto";
-import { readFile, stat } from "node:fs/promises";
+import { mkdir, readFile, stat } from "node:fs/promises";
 import { homedir, hostname } from "node:os";
 import { join, resolve, sep } from "node:path";
 import {
@@ -253,6 +253,8 @@ export class DesktopAppStore {
   private readonly worktreeRoot: string;
   private readonly isAppWorktreePath: (path: string) => Promise<boolean>;
   private readonly uiStateFilePath: string;
+  private readonly defaultWorkspacePath: string;
+  private defaultWorkspaceId = "";
   private readonly scheduledTasksFilePath: string;
   private scheduledTasksWritable = false;
   private readonly attachmentStore: AttachmentStore;
@@ -282,6 +284,7 @@ export class DesktopAppStore {
   private readonly extensionDialogTimeoutTimers = new Map<string, NodeJS.Timeout>();
   private readonly restoredSelectedSessionKeysAwaitingSelection = new Set<string>();
   private initPromise: Promise<void> | undefined;
+  private startupRefreshPending = false;
   private selectionEpoch = 0;
   private refreshStateDepth = 0;
   private readonly conversationOwner: ConversationOwner;
@@ -317,6 +320,7 @@ export class DesktopAppStore {
       isAppWorktreePath: this.isAppWorktreePath,
     });
     this.uiStateFilePath = join(options.userDataDir, "ui-state.json");
+    this.defaultWorkspacePath = resolve(options.userDataDir, "default-workspace");
     this.scheduledTasksFilePath = join(options.userDataDir, "scheduled-tasks.json");
     this.attachmentStore = new AttachmentStore(options.userDataDir);
     this.initialWorkspacePaths = options.initialWorkspacePaths;
@@ -899,10 +903,18 @@ export class DesktopAppStore {
   }
 
   async renameWorkspace(workspaceId: string, displayName: string): Promise<DesktopAppState> {
+    await this.initialize();
+    if (workspaceId === this.defaultWorkspaceId) {
+      return this.withError(t("The default workspace cannot be renamed or removed."));
+    }
     return this.workspaceOwner.renameWorkspace(workspaceId, displayName);
   }
 
   async removeWorkspace(workspaceId: string): Promise<DesktopAppState> {
+    await this.initialize();
+    if (workspaceId === this.defaultWorkspaceId) {
+      return this.withError(t("The default workspace cannot be renamed or removed."));
+    }
     return this.workspaceOwner.removeWorkspace(workspaceId);
   }
 
@@ -1451,6 +1463,16 @@ export class DesktopAppStore {
       ...this.state,
       languagePreference,
       language: resolveAppLanguage(languagePreference, this.systemLanguages),
+      workspaces: this.state.workspaces.map((workspace) =>
+        workspace.id === this.defaultWorkspaceId
+          ? {
+              ...workspace,
+              name: t("Default workspace", {
+                lng: resolveAppLanguage(languagePreference, this.systemLanguages),
+              }),
+            }
+          : workspace,
+      ),
       lastError: undefined,
       revision: this.state.revision + 1,
     };
@@ -2160,19 +2182,22 @@ export class DesktopAppStore {
         .map((path) => path.trim())
         .filter(Boolean);
       const knownWorkspaces = await this.driver.listWorkspaces();
-      const workspacesToSync = new Map<string, string | undefined>();
-
-      for (const workspacePath of initialWorkspacePaths) {
-        workspacesToSync.set(workspacePath, undefined);
-      }
-
-      for (const ws of knownWorkspaces.workspaces) {
-        workspacesToSync.set(ws.path, ws.displayName);
-      }
+      await mkdir(this.defaultWorkspacePath, { recursive: true });
+      const knownDefaultWorkspace = knownWorkspaces.workspaces.find(
+        (workspace) => workspace.path === this.defaultWorkspacePath,
+      );
+      this.defaultWorkspaceId = knownDefaultWorkspace
+        ? knownDefaultWorkspace.workspaceId
+        : (await this.driver.syncWorkspace(this.defaultWorkspacePath)).workspace.workspaceId;
+      const newWorkspacePaths = initialWorkspacePaths.filter(
+        (workspacePath) =>
+          workspacePath !== this.defaultWorkspacePath &&
+          !knownWorkspaces.workspaces.some((workspace) => workspace.path === workspacePath),
+      );
 
       const syncDiagnostics = await Promise.all(
-        [...workspacesToSync.entries()].map(([workspacePath, displayName]) =>
-          this.syncStartupWorkspace(workspacePath, displayName),
+        newWorkspacePaths.map((workspacePath) =>
+          this.syncStartupWorkspace(workspacePath, undefined),
         ),
       );
       startupDiagnostics.push(
@@ -2182,18 +2207,18 @@ export class DesktopAppStore {
       );
 
       await this.refreshState({
-        selectedWorkspaceId: persisted.selectedWorkspaceId,
+        selectedWorkspaceId:
+          persisted.selectedWorkspaceId ??
+          (await this.driver.listWorkspaces()).workspaces.find(
+            (workspace) => workspace.path === initialWorkspacePaths[0],
+          )?.workspaceId ??
+          this.defaultWorkspaceId,
         selectedSessionId: persisted.selectedSessionId,
         composerDraft: persisted.composerDraft,
         clearLastError: true,
-        refreshWorktrees: true,
+        preloadSecondaryRuntimes: false,
         hydrateSelectedSession: false,
         markSelectedSessionViewed: false,
-      });
-      // Startup GC of leaked pi/* worktrees and branches; self-contained and
-      // error-swallowing, so fire-and-forget without blocking initialization.
-      void this.workspaceOwner.reconcileWorktrees().catch((error: unknown) => {
-        console.error("[app-store] reconcileWorktrees failed", error);
       });
       const restoredSessionRef = this.selectedSessionRef();
       if (restoredSessionRef && persisted.selectedWorkspaceId && persisted.selectedSessionId) {
@@ -2203,6 +2228,7 @@ export class DesktopAppStore {
       this.scheduleOrchestrationSupervision();
       this.scheduleScheduledTasks();
       this.publishStartupDiagnostics(startupDiagnostics);
+      this.startupRefreshPending = true;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       console.error("[app-store] startup recovery failed", error);
@@ -2217,6 +2243,36 @@ export class DesktopAppStore {
         revision: this.state.revision + 1,
       };
       this.emit();
+    }
+  }
+
+  /** Reconcile disk state after the first window has painted its catalog snapshot. */
+  async refreshStartupWorkspaces(): Promise<void> {
+    await this.initialize();
+    if (!this.startupRefreshPending) return;
+    this.startupRefreshPending = false;
+    const diagnostics: StartupDiagnostic[] = [];
+    try {
+      const { workspaces } = await this.driver.listWorkspaces();
+      const results = await Promise.all(
+        workspaces.map((workspace) =>
+          this.syncStartupWorkspace(workspace.path, workspace.displayName, workspace.workspaceId),
+        ),
+      );
+      diagnostics.push(...results.filter((result): result is StartupDiagnostic => Boolean(result)));
+      await this.refreshState({
+        refreshWorktrees: true,
+        hydrateSelectedSession: false,
+        markSelectedSessionViewed: false,
+      });
+      await this.workspaceOwner.reconcileWorktrees();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("[app-store] background startup refresh failed", error);
+      diagnostics.push({ scope: "application", message });
+    }
+    if (diagnostics.length > 0) {
+      this.publishStartupDiagnostics([...this.state.startupDiagnostics, ...diagnostics]);
     }
   }
 
@@ -2306,13 +2362,19 @@ export class DesktopAppStore {
   private async syncStartupWorkspace(
     workspacePath: string,
     displayName: string | undefined,
+    workspaceId?: string,
   ): Promise<StartupDiagnostic | undefined> {
     try {
       const workspaceStat = await stat(workspacePath);
       if (!workspaceStat.isDirectory()) {
         throw new Error(t("Path is not a directory."));
       }
-      await this.driver.syncWorkspace(workspacePath, displayName);
+      if (workspaceId) {
+        // Reconcile cannot re-register a workspace removed while startup waited.
+        await this.driver.reconcileWorkspace(workspaceId);
+      } else {
+        await this.driver.syncWorkspace(workspacePath, displayName);
+      }
       return undefined;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -2387,6 +2449,7 @@ export class DesktopAppStore {
       const selectedWorkspaceId = resolveSelectedWorkspaceIdFromCatalog(
         options.selectedWorkspaceId ?? this.state.selectedWorkspaceId,
         workspacesSnapshot.workspaces,
+        this.defaultWorkspaceId,
       );
       const selectedSessionId = resolveSelectedSessionIdFromCatalog(
         selectedWorkspaceId,
@@ -2413,6 +2476,10 @@ export class DesktopAppStore {
         this.sessionState.lastViewedAtBySession,
         this.sessionState.lastInteractedAtBySession,
         this.sessionState.pinnedAtBySession,
+      ).map((workspace) =>
+        workspace.id === this.defaultWorkspaceId
+          ? { ...workspace, name: t("Default workspace", { lng: this.state.language }) }
+          : workspace,
       );
       const worktreesByWorkspace = buildWorktreeRecords(
         workspacesSnapshot.workspaces,
@@ -2437,6 +2504,7 @@ export class DesktopAppStore {
         await this.ensureRuntimeLoaded(selectedWorkspaceId, workspacesSnapshot.workspaces);
       }
       const secondaryWorkspacesToLoad = workspacesSnapshot.workspaces
+        .filter(() => options.preloadSecondaryRuntimes !== false)
         .filter((workspace) => workspace.workspaceId !== selectedWorkspaceId)
         .filter((workspace) => !this.runtimeByWorkspace.has(workspace.workspaceId));
       const secondaryRuntimeLoads = await Promise.allSettled(
@@ -3855,7 +3923,11 @@ export class DesktopAppStore {
     ) {
       return state.selectedWorkspaceId;
     }
-    return state.workspaces[0]?.id ?? "";
+    return (
+      state.workspaces.find((workspace) => workspace.id === this.defaultWorkspaceId)?.id ??
+      state.workspaces[0]?.id ??
+      ""
+    );
   }
 
   private resolveViewSessionId(
@@ -4956,11 +5028,16 @@ function formatCapabilityLabel(capability: string): string {
 function resolveSelectedWorkspaceIdFromCatalog(
   preferredWorkspaceId: string,
   workspaces: readonly { workspaceId: string }[],
+  defaultWorkspaceId: string,
 ): string {
   if (preferredWorkspaceId && workspaces.some((w) => w.workspaceId === preferredWorkspaceId)) {
     return preferredWorkspaceId;
   }
-  return workspaces[0]?.workspaceId ?? "";
+  return (
+    workspaces.find((workspace) => workspace.workspaceId === defaultWorkspaceId)?.workspaceId ??
+    workspaces[0]?.workspaceId ??
+    ""
+  );
 }
 
 function resolveSelectedSessionIdFromCatalog(
