@@ -1582,11 +1582,13 @@
 .slash-menu__item {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
+  height: auto;
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
   border-radius: var(--radius-lg);
   text-align: left;
+  white-space: normal;
 }
 
 .slash-menu__item--skill {
@@ -1686,11 +1688,13 @@
 .slash-menu__option {
   display: grid;
   grid-template-columns: auto 1fr auto;
+  height: auto;
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
   border-radius: var(--radius-lg);
   text-align: left;
+  white-space: normal;
 }
 
 .slash-menu__option::after {
