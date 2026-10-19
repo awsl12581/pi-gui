@@ -1,9 +1,9 @@
-import { Input } from "../../components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../components/ui/input-group";
 import { Button } from "../../components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsCount } from "../../components/ui/tabs";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type {
   RuntimeExtensionRecord,
   RuntimeSkillRecord,
@@ -135,7 +135,6 @@ export function CustomizePage({
         <div className="resource-toolbar">
           <Tabs
             aria-label={t("Skills and extensions")}
-            className="resource-tabs"
             value={tab}
             onValueChange={(value) => onSelectTab(value as CustomizeTab)}
           >
@@ -144,20 +143,26 @@ export function CustomizePage({
               <ResourceTab count={extensions.length} label={t("Extensions")} tab="extensions" />
             </TabsList>
           </Tabs>
-          <label className="resource-search">
-            <SearchIcon />
-            <Input
-              aria-label={t("Search {{value0}}", { value0: tab })}
-              placeholder={t("Search {{value0}}", { value0: tab })}
-              spellCheck={false}
+          <InputGroup variant="search">
+            <InputGroupInput
               type="search"
+              spellCheck={false}
+              aria-label={t("Search {{value0}}", {
+                value0: tab === "skills" ? t("Skills") : t("Extensions"),
+              })}
+              placeholder={t("Search {{value0}}", {
+                value0: tab === "skills" ? t("Skills") : t("Extensions"),
+              })}
               value={query}
               onChange={(event) => {
                 setQuery(event.currentTarget.value);
                 setSelectedId(undefined);
               }}
             />
-          </label>
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+          </InputGroup>
         </div>
 
         <div
@@ -220,14 +225,9 @@ function ResourceTab({
 }) {
   useLocale();
   return (
-    <TabsTrigger
-      aria-controls={TAB_PANEL_ID}
-      className="resource-tabs__tab"
-      id={tabId(tab)}
-      value={tab}
-    >
+    <TabsTrigger aria-controls={TAB_PANEL_ID} id={tabId(tab)} value={tab}>
       {label}
-      <span className="resource-tabs__count">{count}</span>
+      <TabsCount>{count}</TabsCount>
     </TabsTrigger>
   );
 }

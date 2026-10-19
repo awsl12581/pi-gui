@@ -1,10 +1,11 @@
+import { SearchIcon } from "../../ui/icons";
 import { Input } from "../../components/ui/input";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../components/ui/input-group";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useState } from "react";
 import type { RuntimeProviderRecord, RuntimeSnapshot } from "@pi-gui/session-driver/runtime-types";
-import { SearchIcon } from "../../ui/icons";
 import type { CustomProviderConfig } from "../../../contracts/ipc";
 import { SettingsCustomEndpointsSection } from "./settings-custom-endpoints-section";
 import { filterProviders, ProviderRow, SettingsGroup } from "./settings-utils";
@@ -164,17 +165,19 @@ export function SettingsProvidersSection({
             {t("Available")}
             <span className="resource-list__count">{availableProviders.length}</span>
           </h3>
-          <label className="resource-search">
-            <SearchIcon />
-            <Input
+          <InputGroup variant="search">
+            <InputGroupInput
+              type="search"
+              spellCheck={false}
               aria-label={t("Search providers")}
               placeholder={t("Search providers")}
-              spellCheck={false}
-              type="search"
               value={providerQuery}
               onChange={(event) => setProviderQuery(event.currentTarget.value)}
             />
-          </label>
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+          </InputGroup>
         </div>
         <p className="settings-section__description">
           {t("Sign in with OAuth or save an API key to connect a provider.")}

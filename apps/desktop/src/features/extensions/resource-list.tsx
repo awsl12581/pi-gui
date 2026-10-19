@@ -1,3 +1,12 @@
+import {
+  Item,
+  ItemGroup,
+  ItemMedia,
+  ItemContent,
+  ItemTitle,
+  ItemDescription,
+  ItemActions,
+} from "../../components/ui/item";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -72,34 +81,33 @@ function ResourceGroup({
       <h3 className="settings-section__title">
         {group.label} <span className="resource-list__count">{group.items.length}</span>
       </h3>
-      <div className="settings-group">
+      <ItemGroup variant="outline">
         {visible.map((item) => (
-          <div className="resource-row" key={item.id}>
-            <Button
-              className="resource-row__main"
-              data-resource-id={item.id}
-              type="button"
-              onClick={() => onOpen(item.id)}
-            >
-              <span className="resource-row__icon" aria-hidden="true">
-                {icon}
-              </span>
-              <span className="resource-row__text">
-                <span className="resource-row__title">{item.title}</span>
-                <span className="resource-row__description">{item.description}</span>
-              </span>
-            </Button>
-            <SettingsSwitch
-              checked={item.enabled}
-              disabled={!item.onToggle}
-              label={t("Enable {{value0}}", { value0: item.title })}
-              onChange={(enabled) => item.onToggle?.(enabled)}
-            />
-          </div>
+          <Item key={item.id} size="sm" role="listitem">
+            <Item asChild size="content" variant="interactive">
+              <button type="button" data-resource-id={item.id} onClick={() => onOpen(item.id)}>
+                <ItemMedia variant="icon" aria-hidden="true">
+                  {icon}
+                </ItemMedia>
+                <ItemContent>
+                  <ItemTitle>{item.title}</ItemTitle>
+                  <ItemDescription truncate>{item.description}</ItemDescription>
+                </ItemContent>
+              </button>
+            </Item>
+            <ItemActions>
+              <SettingsSwitch
+                checked={item.enabled}
+                disabled={!item.onToggle}
+                label={t("Enable {{value0}}", { value0: item.title })}
+                onChange={(enabled) => item.onToggle?.(enabled)}
+              />
+            </ItemActions>
+          </Item>
         ))}
-      </div>
+      </ItemGroup>
       {hiddenCount > 0 ? (
-        <Button className="resource-list__more" type="button" onClick={() => setShowAll(true)}>
+        <Button variant="link" size="xs" type="button" onClick={() => setShowAll(true)}>
           {t("Show {{value0}} more", { value0: hiddenCount })}
         </Button>
       ) : null}

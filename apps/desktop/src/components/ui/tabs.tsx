@@ -75,4 +75,8 @@ function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPr
   );
 }
 
-export { Tabs, TabsList, TabsTrigger, TabsContent, tabsListVariants };
+function TabsCount({ children }: { children: React.ReactNode }) {
+  return <span className="text-muted-foreground font-normal">{children}</span>;
+}
+
+export { Tabs, TabsList, TabsTrigger, TabsContent, TabsCount, tabsListVariants };

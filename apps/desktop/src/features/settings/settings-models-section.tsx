@@ -1,4 +1,5 @@
-import { Input } from "../../components/ui/input";
+import { SearchIcon } from "../../ui/icons";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../../components/ui/input-group";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -8,7 +9,6 @@ import type {
   RuntimeSettingsSnapshot,
   RuntimeSnapshot,
 } from "@pi-gui/session-driver/runtime-types";
-import { SearchIcon } from "../../ui/icons";
 import { SettingsSelect, SettingsSwitch } from "./settings-controls";
 import {
   filterModels,
@@ -130,17 +130,19 @@ export function SettingsModelsSection({
               })}
             </span>
           </h3>
-          <label className="resource-search">
-            <SearchIcon />
-            <Input
+          <InputGroup variant="search">
+            <InputGroupInput
+              type="search"
+              spellCheck={false}
               aria-label={t("Search models")}
               placeholder={t("Search models")}
-              spellCheck={false}
-              type="search"
               value={query}
               onChange={(event) => setQuery(event.currentTarget.value)}
             />
-          </label>
+            <InputGroupAddon>
+              <SearchIcon />
+            </InputGroupAddon>
+          </InputGroup>
         </div>
         <p className="settings-section__description">
           {t("Only enabled models appear in model pickers.")}

@@ -1,3 +1,4 @@
+import { ItemMedia } from "../../components/ui/item";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -54,9 +55,9 @@ export function ResourceDetail({
         <span>{backLabel}</span>
       </Button>
       <div className="resource-detail__header">
-        <span className="resource-row__icon resource-row__icon--large" aria-hidden="true">
+        <ItemMedia variant="icon" size="lg" aria-hidden="true">
           {icon}
-        </span>
+        </ItemMedia>
         <div className="resource-detail__heading">
           <h2>{title}</h2>
           <div className="resource-detail__subtitle">{subtitle}</div>
