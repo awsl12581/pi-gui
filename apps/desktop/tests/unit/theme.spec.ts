@@ -9,7 +9,7 @@ import {
   themeTokensFor,
   type ResolvedTheme,
 } from "../../contracts/theme";
-import { highlighterReady, highlightLine, syntaxThemes } from "../../src/ui/syntax-highlight";
+import { ensureHighlighter, highlightLine, syntaxThemes } from "../../src/ui/syntax-highlight";
 
 const variants: readonly ResolvedTheme[] = ["light", "dark"];
 const stylesDir = join(__dirname, "../../src/styles");
@@ -90,7 +90,7 @@ test("each preset's surface is its syntax theme's editor background", () => {
 });
 
 test("highlights code with the active preset's syntax theme", async () => {
-  await highlighterReady;
+  await ensureHighlighter();
   const line = 'const preset = "gruvbox"; // seed';
   const colours = new Set<string>();
   for (const preset of themePresets) {
