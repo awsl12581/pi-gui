@@ -32,11 +32,11 @@ test("supports workspace rename and remove from the sidebar menu", async () => {
       .getByRole("button", { name: `Workspace actions for ${basename(workspaceA)}` })
       .click();
     const workspaceMenu = window.locator(".workspace-menu").last();
-    await expect(workspaceMenu.getByRole("button", { name: "Open folder" })).toBeVisible();
-    await expect(workspaceMenu.getByRole("button", { name: "Edit name" })).toBeVisible();
-    await expect(workspaceMenu.getByRole("button", { name: "Remove" })).toBeVisible();
+    await expect(workspaceMenu.getByRole("menuitem", { name: "Open folder" })).toBeVisible();
+    await expect(workspaceMenu.getByRole("menuitem", { name: "Edit name" })).toBeVisible();
+    await expect(workspaceMenu.getByRole("menuitem", { name: "Remove" })).toBeVisible();
 
-    await workspaceMenu.getByRole("button", { name: "Edit name" }).click();
+    await workspaceMenu.getByRole("menuitem", { name: "Edit name" }).click();
     const renameInput = window.getByLabel(`Rename ${basename(workspaceA)}`);
     await renameInput.fill("Renamed workspace");
     await window.getByRole("button", { name: "Save" }).click();
@@ -48,9 +48,11 @@ test("supports workspace rename and remove from the sidebar menu", async () => {
       })
       .toBe("Renamed workspace");
 
-    const acceptRemoval = window.waitForEvent("dialog").then((dialog) => dialog.accept());
     await window.getByRole("button", { name: "Workspace actions for Renamed workspace" }).click();
-    await Promise.all([window.getByRole("button", { name: "Remove" }).click(), acceptRemoval]);
+    await window.getByRole("menuitem", { name: "Remove" }).click();
+    const removal = window.getByRole("alertdialog");
+    await expect(removal).toContainText("Remove Renamed workspace");
+    await removal.getByRole("button", { name: "Confirm" }).click();
 
     await expect
       .poll(async () => {

@@ -1875,7 +1875,7 @@ export async function openNewThread(window: Page): Promise<void> {
 export async function expectNewThreadWorkspace(window: Page, workspacePath: string): Promise<void> {
   const workspace = await waitForWorkspaceByPath(window, workspacePath);
   await expect(window.getByTestId("new-thread-composer")).toBeVisible({ timeout: 15_000 });
-  await expect(window.locator(".new-thread__workspace")).toHaveValue(workspace.id);
+  await expect(window.getByRole("combobox", { name: "Workspace" })).toContainText(workspace.name);
 }
 
 export async function startThreadFromSurface(
@@ -1890,7 +1890,8 @@ export async function startThreadFromSurface(
 
   await openNewThread(window);
   if (workspaceName) {
-    await window.locator(".new-thread__workspace").selectOption({ label: workspaceName });
+    await window.getByRole("combobox", { name: "Workspace" }).click();
+    await window.getByRole("option", { name: workspaceName, exact: true }).click();
   }
   if (environment === "worktree") {
     await window.getByRole("button", { name: "Worktree", exact: true }).click();

@@ -143,15 +143,12 @@ test("adds, switches and removes an MCP server from Settings, editing mcp.json i
     });
 
     // Remove asks first, and says when the entry holds settings the list never shows.
-    const declined = window.waitForEvent("dialog").then(async (dialog) => {
-      const message = dialog.message();
-      await dialog.dismiss();
-      return message;
-    });
     await row("existing").getByRole("button", { name: "Remove" }).click();
-    expect(await declined).toContain(
+    const declined = window.getByRole("alertdialog");
+    await expect(declined).toContainText(
       "hidden settings (environment variables, headers, sign-in config) are deleted too",
     );
+    await declined.getByRole("button", { name: "Cancel" }).click();
     await expect(row("existing")).toBeVisible();
     expect((await readJson(mcpPath)).mcpServers).toEqual({
       existing,
@@ -162,15 +159,12 @@ test("adds, switches and removes an MCP server from Settings, editing mcp.json i
       },
     });
 
-    const accepted = window.waitForEvent("dialog").then(async (dialog) => {
-      const message = dialog.message();
-      await dialog.accept();
-      return message;
-    });
     await row("fixture").getByRole("button", { name: "Remove" }).click();
-    expect(await accepted).toBe(
+    const accepted = window.getByRole("alertdialog");
+    await expect(accepted).toHaveText(
       'Remove MCP server "fixture"? pi in the terminal stops using it too.',
     );
+    await accepted.getByRole("button", { name: "Confirm" }).click();
     await expect(row("fixture")).toHaveCount(0);
     expect(await readJson(mcpPath)).toEqual({
       autoEnableCodemode: true,

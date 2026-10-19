@@ -105,7 +105,9 @@ test("switches between app-global and per-repo model scope while worktrees inher
     });
 
     await openNewThread(window);
-    await expect(window.locator(".new-thread__workspace")).toHaveValue(rootWorkspaceA.id);
+    await expect(window.getByRole("combobox", { name: "Workspace" })).toContainText(
+      rootWorkspaceA.name,
+    );
     await expectNewThreadModelState(window, {
       activeModel: "openai:gpt-4o",
       visibleModelLabels: ["GPT-4o", "GPT-4 Turbo"],
