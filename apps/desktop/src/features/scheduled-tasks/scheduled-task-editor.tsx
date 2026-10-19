@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Textarea } from "../../components/ui/textarea";
@@ -11,13 +12,7 @@ import {
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-} from "react";
+import { useMemo, useState } from "react";
 import type {
   CreateScheduledTaskInput,
   ScheduledTaskRecord,
@@ -32,7 +27,6 @@ import {
   WEEKDAY_NAMES,
   type Weekday,
 } from "../../../contracts/scheduled-tasks";
-import { trapDialogFocus } from "../../ui/dialog-focus";
 
 export type ScheduledEditorState =
   | { readonly mode: "create"; readonly prefill?: Partial<CreateScheduledTaskInput> }
@@ -98,7 +92,6 @@ export function ScheduledTaskEditor({
   onOpenChat,
 }: ScheduledTaskEditorProps) {
   useLocale();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
   const source = editor.mode === "edit" ? task : undefined;
   const prefill = editor.mode === "create" ? editor.prefill : undefined;
   const [title, setTitle] = useState(source?.title ?? prefill?.title ?? "");
@@ -164,21 +157,6 @@ export function ScheduledTaskEditor({
         ? { workspaceId: source.runs.at(-1)!.workspaceId, sessionId: source.runs.at(-1)!.sessionId }
         : undefined;
 
-  useEffect(() => {
-    dialogRef.current?.querySelector<HTMLInputElement>("input")?.focus();
-  }, []);
-
-  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Tab") {
-      trapDialogFocus(event, dialogRef.current);
-      return;
-    }
-    if (event.key === "Escape" && !busy) {
-      event.preventDefault();
-      onClose();
-    }
-  };
-
   const buildSchedule = (): ScheduledTaskSchedule | undefined => {
     if (frequency === "once") {
       if (!onceAt) {
@@ -225,26 +203,33 @@ export function ScheduledTaskEditor({
   };
 
   return (
-    <div className="scheduled-editor-backdrop" onClick={onClose}>
-      <div
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !busy) onClose();
+      }}
+    >
+      <DialogContent
         className="scheduled-editor"
         data-testid="scheduled-task-editor"
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="scheduled-editor-title"
-        tabIndex={-1}
-        onClick={(event) => event.stopPropagation()}
-        onKeyDown={handleKeyDown}
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onInteractOutside={(event) => {
+          if (busy) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (busy) event.preventDefault();
+        }}
       >
         <header className="scheduled-editor__header">
-          <h2 id="scheduled-editor-title">
+          <DialogTitle id="scheduled-editor-title">
             {editor.mode === "edit" ? t("Edit scheduled task") : t("Set up scheduled task")}
-          </h2>
+          </DialogTitle>
           <Button
             variant="ghost"
             size="icon"
             type="button"
+            disabled={busy}
             aria-label={t("Close")}
             onClick={onClose}
           >
@@ -429,7 +414,7 @@ export function ScheduledTaskEditor({
               {t("Open chat")}
             </Button>
           ) : null}
-          <Button variant="outline" type="button" onClick={onClose}>
+          <Button variant="outline" type="button" disabled={busy} onClick={onClose}>
             {t("Cancel")}
           </Button>
           <Button
@@ -455,7 +440,7 @@ export function ScheduledTaskEditor({
             {editor.mode === "edit" ? t("Save") : t("Create")}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

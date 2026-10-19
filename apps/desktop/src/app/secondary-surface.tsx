@@ -1,3 +1,4 @@
+import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { t } from "../../i18n";
 import { useLocale } from "../ui/use-locale";
@@ -40,7 +41,7 @@ export function SecondarySurface({
       if (event.key !== "Escape" || event.defaultPrevented || event.isComposing || event.repeat)
         return;
       // Nested dialogs own Escape, including while a pending operation disables dismissal.
-      if (document.querySelector("[aria-modal='true'], .extension-dialog-backdrop")) return;
+      if (document.querySelector("[aria-modal='true']")) return;
       event.preventDefault();
       backRef.current();
     };
@@ -57,10 +58,10 @@ export function SecondarySurface({
   return (
     <div className="secondary-surface" data-testid={testId}>
       <aside className="secondary-surface__sidebar">
-        <button className="secondary-surface__back" type="button" onClick={onBack}>
+        <Button variant="ghost" className="secondary-surface__back" type="button" onClick={onBack}>
           <span aria-hidden="true">←</span>
           <span>{t("Back to app")}</span>
-        </button>
+        </Button>
         {navItems.length > 0 ? (
           <SecondarySurfaceNav
             activeNavId={activeNavId}
@@ -128,7 +129,8 @@ function SecondarySurfaceNav({
             {matches
               .filter((item) => item.group === group)
               .map((item) => (
-                <button
+                <Button
+                  variant="ghost"
                   key={item.id}
                   aria-current={activeNavId === item.id ? "page" : undefined}
                   className={`secondary-surface__nav-item ${activeNavId === item.id ? "secondary-surface__nav-item--active" : ""}`}
@@ -137,7 +139,7 @@ function SecondarySurfaceNav({
                 >
                   <span className="secondary-surface__nav-icon">{item.icon}</span>
                   <span>{item.title}</span>
-                </button>
+                </Button>
               ))}
           </div>
         ))}

@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from "../../components/ui/confirmation-dialog";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
@@ -37,11 +38,19 @@ export function SettingsMcpSection({ workspaceId, actions }: SettingsMcpSectionP
     { readonly workspaceId: string; readonly snapshot: McpServersSnapshot } | undefined
   >();
   const snapshot = loaded?.workspaceId === workspaceId ? loaded.snapshot : undefined;
+  const [removal, setRemoval] = useState<{
+    server: McpServerRecord;
+    workspaceId: string;
+    run: () => Promise<string | undefined>;
+  } | null>(null);
   const [error, setError] = useState<string | undefined>();
   const [pending, setPending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
-  useEffect(() => setError(undefined), [workspaceId]);
+  useEffect(() => {
+    setError(undefined);
+    setRemoval(null);
+  }, [workspaceId]);
 
   // pi in the terminal may have edited mcp.json while the app was in the background.
   useEffect(() => window.piApp?.onWindowFocused(() => setReloadKey((key) => key + 1)), []);
@@ -96,6 +105,13 @@ export function SettingsMcpSection({ workspaceId, actions }: SettingsMcpSectionP
 
   return (
     <>
+      {removal && removal.workspaceId === workspaceId ? (
+        <ConfirmationDialog
+          description={removeServerQuestion(removal.server)}
+          onConfirm={removal.run}
+          onClose={() => setRemoval(null)}
+        />
+      ) : null}
       <SettingsGroup
         title={t("Servers")}
         description={t(
@@ -125,9 +141,11 @@ export function SettingsMcpSection({ workspaceId, actions }: SettingsMcpSectionP
             key={`${server.scope}:${server.name}`}
             server={server}
             onRemove={() => {
-              if (window.confirm(removeServerQuestion(server))) {
-                run(() => actions.onRemoveServer(server.name));
-              }
+              setRemoval({
+                server,
+                workspaceId,
+                run: () => apply(() => actions.onRemoveServer(server.name)),
+              });
             }}
             onToggle={(enabled) =>
               run(() => actions.onSetServerEnabled(server.scope, server.name, enabled))

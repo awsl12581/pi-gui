@@ -85,7 +85,12 @@ function ResourceGroup({
         {visible.map((item) => (
           <Item key={item.id} size="sm" role="listitem">
             <Item asChild size="content" variant="interactive">
-              <button type="button" data-resource-id={item.id} onClick={() => onOpen(item.id)}>
+              <Button
+                variant="ghost"
+                type="button"
+                data-resource-id={item.id}
+                onClick={() => onOpen(item.id)}
+              >
                 <ItemMedia variant="icon" aria-hidden="true">
                   {icon}
                 </ItemMedia>
@@ -93,7 +98,7 @@ function ResourceGroup({
                   <ItemTitle>{item.title}</ItemTitle>
                   <ItemDescription truncate>{item.description}</ItemDescription>
                 </ItemContent>
-              </button>
+              </Button>
             </Item>
             <ItemActions>
               <SettingsSwitch

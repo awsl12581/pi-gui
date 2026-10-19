@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/button";
 import type { ModelOnboardingNotice } from "./model-onboarding";
 
 interface ModelOnboardingNoticeBannerProps {
@@ -19,13 +20,14 @@ export function ModelOnboardingNoticeBanner({
         <span className="model-onboarding-notice__title">{notice.title}</span>
         <span className="model-onboarding-notice__description">{notice.description}</span>
       </div>
-      <button
+      <Button
+        variant="ghost"
         className="model-onboarding-notice__action"
         type="button"
         onClick={() => onOpenSettings(notice.actionSection)}
       >
         {notice.actionLabel}
-      </button>
+      </Button>
     </div>
   );
 }

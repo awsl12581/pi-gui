@@ -142,7 +142,8 @@ function FileTreeRow({
     const isExpanded = expandAll || expanded.has(node.path);
     return (
       <div>
-        <button
+        <Button
+          variant="ghost"
           aria-expanded={isExpanded}
           className="file-workbench__tree-row file-workbench__tree-row--dir"
           style={{ "--depth": depthFromPath(node.path) } as CSSProperties}
@@ -156,7 +157,7 @@ function FileTreeRow({
             <FolderIcon />
           </span>
           <span>{node.name}</span>
-        </button>
+        </Button>
         {isExpanded
           ? node.children.map((child) => (
               <FileTreeRow
@@ -203,7 +204,8 @@ function FileTreeFileRow({
     }
   }, [selected]);
   return (
-    <button
+    <Button
+      variant="ghost"
       className={`file-workbench__tree-row file-workbench__tree-row--file ${selected ? "file-workbench__tree-row--selected" : ""}`}
       data-file-path={path}
       ref={rowRef}
@@ -215,7 +217,7 @@ function FileTreeFileRow({
         <FileIcon />
       </span>
       <span>{name}</span>
-    </button>
+    </Button>
   );
 }
 

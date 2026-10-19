@@ -1,3 +1,15 @@
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from "../../components/ui/dropdown-menu";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
@@ -13,7 +25,6 @@ import {
   type CSSProperties,
   type MutableRefObject,
 } from "react";
-import { createPortal } from "react-dom";
 import {
   DndContext,
   DragOverlay,
@@ -409,7 +420,8 @@ export function Sidebar(props: SidebarProps) {
         onReset={() => setSidebarWidth(undefined)}
       />
       <div className="sidebar__top">
-        <button
+        <Button
+          variant="ghost"
           className="sidebar__new"
           type="button"
           disabled={!selectedWorkspace}
@@ -417,18 +429,20 @@ export function Sidebar(props: SidebarProps) {
         >
           <PlusIcon />
           <span>{t("New thread")}</span>
-        </button>
+        </Button>
 
         <div className="sidebar__nav">
-          <button
+          <Button
+            variant="ghost"
             className={`sidebar__nav-item ${activeView === "threads" ? "sidebar__nav-item--active" : ""}`}
             type="button"
             onClick={() => onSetActiveView("threads")}
           >
             <FolderIcon />
             <span>{t("Threads")}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             className={`sidebar__nav-item ${activeView === "scheduled" ? "sidebar__nav-item--active" : ""}`}
             type="button"
             data-testid="sidebar-scheduled"
@@ -436,8 +450,9 @@ export function Sidebar(props: SidebarProps) {
           >
             <ClockIcon />
             <span>{t("Scheduled")}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             className="sidebar__nav-item"
             type="button"
             onClick={() =>
@@ -446,8 +461,9 @@ export function Sidebar(props: SidebarProps) {
           >
             <SkillIcon />
             <span>{t("Skills")}</span>
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
             className="sidebar__nav-item"
             type="button"
             onClick={() =>
@@ -456,17 +472,7 @@ export function Sidebar(props: SidebarProps) {
           >
             <ExtensionIcon />
             <span>{t("Extensions")}</span>
-          </button>
-          <button
-            className="sidebar__nav-item"
-            type="button"
-            onClick={() =>
-              onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
-            }
-          >
-            <SettingsIcon />
-            <span>{t("Settings")}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -678,6 +684,21 @@ export function Sidebar(props: SidebarProps) {
           </DndContext>
         )}
       </div>
+      <div className="sidebar__footer">
+        <Button
+          variant="ghost"
+          className="sidebar__settings"
+          type="button"
+          onClick={() =>
+            onOpenSettings(selectedWorkspace?.rootWorkspaceId ?? selectedWorkspace?.id)
+          }
+        >
+          <span className="sidebar__settings-mark">
+            <SettingsIcon />
+          </span>
+          <span>{t("Settings")}</span>
+        </Button>
+      </div>
     </aside>
   );
 }
@@ -779,7 +800,8 @@ function WorkspaceFolderContent(
   return (
     <>
       <div className={`workspace-row ${workspaceActive ? "workspace-row--active" : ""}`}>
-        <button
+        <Button
+          variant="ghost"
           className={`workspace-row__select ${dragHandleProps ? "workspace-row__select--draggable" : ""}`}
           onClick={() => {
             if (toggleCollapsed) toggleCollapsed();
@@ -806,7 +828,7 @@ function WorkspaceFolderContent(
             ) : null}
           </span>
           <span className="workspace-row__name">{workspace.name}</span>
-        </button>
+        </Button>
         <span className="workspace-row__actions">
           {onNewThread ? (
             <Button
@@ -827,90 +849,81 @@ function WorkspaceFolderContent(
               <PlusIcon />
             </Button>
           ) : null}
-          <span
-            className="workspace-row__menu-wrap"
-            ref={wsMenu.workspaceMenuId === workspace.id ? wsMenu.workspaceMenuWrapRef : undefined}
+          <DropdownMenu
+            open={wsMenu.workspaceMenuId === workspace.id}
+            onOpenChange={(open) => {
+              if (open) wsMenu.openWorkspaceMenu(workspace.id);
+              else wsMenu.closeWorkspaceMenu();
+            }}
           >
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t("Workspace actions for {{value0}}", { value0: workspace.name })}
-              aria-haspopup="menu"
-              className="workspace-row__menu-button"
-              aria-expanded={wsMenu.workspaceMenuId === workspace.id}
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                wsMenu.openWorkspaceMenu(workspace.id);
-              }}
-            >
-              …
-            </Button>
-            {wsMenu.workspaceMenuId === workspace.id ? (
-              <div className="workspace-menu">
-                <button
-                  className="workspace-menu__item"
-                  type="button"
-                  onClick={(event) =>
-                    wsMenu.runWorkspaceMenuAction(event, () => {
-                      void api.openWorkspaceInFinder(workspace.id).catch((error: unknown) => {
-                        console.error("[renderer] openWorkspaceInFinder failed", error);
-                      });
-                    })
-                  }
-                >
-                  {t("Open folder")}
-                </button>
-                {linkedWorktree ? (
-                  <button
-                    className="workspace-menu__item workspace-menu__item--danger"
-                    type="button"
-                    onClick={(event) =>
-                      wsMenu.runWorkspaceMenuAction(event, () =>
-                        wsMenu.removeWorktree(
-                          linkedWorktree.rootWorkspaceId || workspace.id,
-                          linkedWorktree,
-                        ),
-                      )
-                    }
-                  >
-                    {t("Remove worktree")}
-                  </button>
-                ) : (
-                  <button
-                    className="workspace-menu__item"
-                    type="button"
-                    onClick={(event) =>
-                      wsMenu.runWorkspaceMenuAction(event, () =>
-                        wsMenu.createWorktree(workspace.id),
-                      )
-                    }
-                  >
-                    {t("Create permanent worktree")}
-                  </button>
-                )}
-                <button
-                  className="workspace-menu__item"
-                  type="button"
-                  onClick={(event) =>
-                    wsMenu.runWorkspaceMenuAction(event, () => wsMenu.startRename(workspace))
-                  }
-                >
-                  {t("Edit name")}
-                </button>
-                <button
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("Workspace actions for {{value0}}", { value0: workspace.name })}
+                aria-haspopup="menu"
+                className="workspace-row__menu-button"
+                aria-expanded={wsMenu.workspaceMenuId === workspace.id}
+                type="button"
+              >
+                …
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="workspace-menu">
+              <DropdownMenuItem
+                className="workspace-menu__item"
+                onClick={(event) =>
+                  wsMenu.runWorkspaceMenuAction(event, () => {
+                    void api.openWorkspaceInFinder(workspace.id).catch((error: unknown) => {
+                      console.error("[renderer] openWorkspaceInFinder failed", error);
+                    });
+                  })
+                }
+              >
+                {t("Open folder")}
+              </DropdownMenuItem>
+              {linkedWorktree ? (
+                <DropdownMenuItem
                   className="workspace-menu__item workspace-menu__item--danger"
-                  type="button"
                   onClick={(event) =>
-                    wsMenu.runWorkspaceMenuAction(event, () => wsMenu.removeWorkspace(workspace))
+                    wsMenu.runWorkspaceMenuAction(event, () =>
+                      wsMenu.removeWorktree(
+                        linkedWorktree.rootWorkspaceId || workspace.id,
+                        linkedWorktree,
+                      ),
+                    )
                   }
                 >
-                  {t("Remove")}
-                </button>
-              </div>
-            ) : null}
-          </span>
+                  {t("Remove worktree")}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className="workspace-menu__item"
+                  onClick={(event) =>
+                    wsMenu.runWorkspaceMenuAction(event, () => wsMenu.createWorktree(workspace.id))
+                  }
+                >
+                  {t("Create permanent worktree")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                className="workspace-menu__item"
+                onClick={(event) =>
+                  wsMenu.runWorkspaceMenuAction(event, () => wsMenu.startRename(workspace))
+                }
+              >
+                {t("Edit name")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="workspace-menu__item workspace-menu__item--danger"
+                onClick={(event) =>
+                  wsMenu.runWorkspaceMenuAction(event, () => wsMenu.removeWorkspace(workspace))
+                }
+              >
+                {t("Remove")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </span>
       </div>
       {wsMenu.workspaceRenameId === workspace.id ? (
@@ -938,19 +951,21 @@ function WorkspaceFolderContent(
             }}
           />
           <div className="workspace-rename__actions">
-            <button
+            <Button
+              variant="ghost"
               className="workspace-rename__button"
               type="button"
               onClick={wsMenu.cancelRename}
             >
               {t("Cancel")}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
               className="workspace-rename__button workspace-rename__button--primary"
               type="submit"
             >
               {t("Save")}
-            </button>
+            </Button>
           </div>
         </form>
       ) : null}
@@ -1107,7 +1122,8 @@ function HistoryToggle({
   useLocale();
   const text = expanded ? t("Show less") : t("Show more");
   return (
-    <button
+    <Button
+      variant="ghost"
       aria-expanded={expanded}
       aria-label={`${text} ${label}`}
       className="thread-history-toggle"
@@ -1115,7 +1131,7 @@ function HistoryToggle({
       onClick={onToggle}
     >
       {text}
-    </button>
+    </Button>
   );
 }
 
@@ -1127,205 +1143,49 @@ function ThreadGroupingControl({
   readonly onChange: (grouping: ThreadGrouping) => void;
 }) {
   useLocale();
-  const [open, setOpen] = useState(false);
-  const [submenuOpen, setSubmenuOpen] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
-  const [submenuStyle, setSubmenuStyle] = useState<CSSProperties>({});
-  const wrapRef = useRef<HTMLSpanElement | null>(null);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const groupingRef = useRef<HTMLButtonElement | null>(null);
-  const submenuRef = useRef<HTMLDivElement | null>(null);
-  const submenuTimer = useRef<number | null>(null);
-
-  const closeSubmenuSoon = () => {
-    if (submenuTimer.current !== null) {
-      window.clearTimeout(submenuTimer.current);
-    }
-    submenuTimer.current = window.setTimeout(() => {
-      submenuTimer.current = null;
-      setSubmenuOpen(false);
-    }, 140);
-  };
-
-  const keepSubmenu = () => {
-    if (submenuTimer.current !== null) {
-      window.clearTimeout(submenuTimer.current);
-      submenuTimer.current = null;
-    }
-    setSubmenuOpen(true);
-  };
-
-  const closeMenu = () => {
-    if (submenuTimer.current !== null) {
-      window.clearTimeout(submenuTimer.current);
-      submenuTimer.current = null;
-    }
-    setSubmenuOpen(false);
-    setOpen(false);
-  };
-
-  useEffect(() => {
-    if (!open) {
-      return undefined;
-    }
-    const handlePointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (wrapRef.current?.contains(target) || menuRef.current?.contains(target)) {
-        return;
-      }
-      closeMenu();
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    };
-    window.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [open]);
-
-  useEffect(
-    () => () => {
-      if (submenuTimer.current !== null) {
-        window.clearTimeout(submenuTimer.current);
-      }
-    },
-    [],
-  );
-
-  useLayoutEffect(() => {
-    if (!open || !buttonRef.current) {
-      return;
-    }
-    const rect = buttonRef.current.getBoundingClientRect();
-    setMenuStyle({
-      top: rect.bottom + 6,
-      left: rect.right,
-      right: "auto",
-      width: "max-content",
-      transform: "translateX(-100%)",
-    });
-  }, [open]);
-
-  useLayoutEffect(() => {
-    if (!submenuOpen || !groupingRef.current) {
-      return;
-    }
-    const rect = groupingRef.current.getBoundingClientRect();
-    const gap = 6;
-    const width = submenuRef.current?.offsetWidth ?? 0;
-    const openRight = rect.right + gap;
-    const left =
-      width > 0 && openRight + width > window.innerWidth - 8
-        ? Math.max(8, rect.left - gap - width)
-        : openRight;
-    setSubmenuStyle({
-      top: rect.top - 6,
-      left,
-      right: "auto",
-      width: "max-content",
-    });
-  }, [submenuOpen]);
-
   return (
-    <span className="shortcut-tooltip-wrap thread-grouping" ref={wrapRef}>
-      <Button
-        variant="ghost"
-        size="icon"
-        ref={buttonRef}
-        aria-expanded={open}
-        aria-haspopup="menu"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label={t("Customize Sidebar")} type="button">
+          <CustomizeSidebarIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className="workspace-menu thread-grouping__menu"
         aria-label={t("Customize Sidebar")}
-
-        type="button"
-        onClick={() => {
-          if (open) {
-            closeMenu();
-            return;
-          }
-          setOpen(true);
-        }}
       >
-        <CustomizeSidebarIcon />
-      </Button>
-      {open ? null : (
-        <span className="shortcut-tooltip" role="tooltip">
-          {t("Customize Sidebar")}
-        </span>
-      )}
-      {open
-        ? createPortal(
-            <div ref={menuRef}>
-              <div
-                aria-label={t("Customize Sidebar")}
-                className="workspace-menu thread-grouping__menu"
-                role="menu"
-                style={menuStyle}
-              >
-                <button
-                  ref={groupingRef}
-                  aria-expanded={submenuOpen}
-                  aria-haspopup="menu"
-                  className={`workspace-menu__item${submenuOpen ? " thread-grouping__parent--open" : ""}`}
-                  role="menuitem"
-                  type="button"
-                  onClick={() => {
-                    keepSubmenu();
-                  }}
-                  onMouseEnter={keepSubmenu}
-                  onMouseLeave={closeSubmenuSoon}
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className="workspace-menu__item">
+            {t("Grouping")}
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent
+            className="workspace-menu thread-grouping__submenu"
+            aria-label={t("Grouping")}
+          >
+            <DropdownMenuRadioGroup
+              value={grouping}
+              onValueChange={(value) => onChange(value as ThreadGrouping)}
+            >
+              {(
+                [
+                  ["time", t("Time")],
+                  ["workspace", t("Workspace")],
+                ] as const
+              ).map(([value, label]) => (
+                <DropdownMenuRadioItem
+                  key={value}
+                  value={value}
+                  className="workspace-menu__item thread-grouping__option"
                 >
-                  <span>{t("Grouping")}</span>
-                  <ChevronRightIcon />
-                </button>
-              </div>
-              {submenuOpen ? (
-                <div
-                  ref={submenuRef}
-                  aria-label={t("Grouping")}
-                  className="workspace-menu thread-grouping__submenu"
-                  role="menu"
-                  style={submenuStyle}
-                  onMouseEnter={keepSubmenu}
-                  onMouseLeave={closeSubmenuSoon}
-                >
-                  {(
-                    [
-                      ["time", t("Time")],
-                      ["workspace", t("Workspace")],
-                    ] as const
-                  ).map(([value, label]) => (
-                    <button
-                      key={value}
-                      aria-checked={grouping === value}
-                      className="workspace-menu__item thread-grouping__option"
-                      role="menuitemradio"
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        if (value !== grouping) {
-                          onChange(value);
-                        }
-                      }}
-                    >
-                      <span aria-hidden="true" className="thread-grouping__check">
-                        {grouping === value ? <CheckIcon /> : null}
-                      </span>
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>,
-            document.body,
-          )
-        : null}
-    </span>
+                  {label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -1356,7 +1216,8 @@ function ArchivedThreadsSection({
   useLocale();
   return (
     <div className="archived-thread-group">
-      <button
+      <Button
+        variant="ghost"
         aria-expanded={open}
         className="archived-thread-group__toggle"
         type="button"
@@ -1370,7 +1231,7 @@ function ArchivedThreadsSection({
         </span>
         <span>{t("Archived")}</span>
         <span className="archived-thread-group__count">{archivedThreads.length}</span>
-      </button>
+      </Button>
       {open ? (
         <div className="session-list session-list--archived">
           {archivedThreads.map((thread) => {
@@ -1619,7 +1480,8 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
             threadMenu.openSidebarMenu(thread.session.id);
           }}
         >
-          <button
+          <Button
+            variant="ghost"
             className="session-row__select"
             onClick={(event) => {
               event.stopPropagation();
@@ -1648,7 +1510,7 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
                 <span className="session-row__context">{thread.contextLabel}</span>
               ) : null}
             </span>
-          </button>
+          </Button>
           <span className="session-row__trailing">
             {thread.environment.kind === "worktree" ? (
               <span
@@ -1685,36 +1547,41 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
                   <PinIcon filled={pinned} />
                 </Button>
               ) : null}
-              <span className="shortcut-tooltip-wrap session-row__tooltip-wrap">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`${archived ? t("Restore") : t("Archive")} ${thread.session.title}${actionContext}`}
-                  className="session-row__action"
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onAction();
-                  }}
-                >
-                  {archived ? <RestoreIcon /> : <ArchiveIcon />}
-                </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`${archived ? t("Restore") : t("Archive")} ${thread.session.title}${actionContext}`}
+                    className="session-row__action"
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onAction();
+                    }}
+                  >
+                    {archived ? <RestoreIcon /> : <ArchiveIcon />}
+                  </Button>
+                </TooltipTrigger>
                 {threadMenu && !overlay && !menuOpen ? (
-                  <span className="shortcut-tooltip session-row__tooltip" role="tooltip">
+                  <TooltipContent>
                     <span>{archived ? t("Restore thread") : t("Archive thread")}</span>
                     {archived ? null : <kbd>{archiveThreadShortcut(threadMenu.platform)}</kbd>}
-                  </span>
+                  </TooltipContent>
                 ) : null}
-              </span>
+              </Tooltip>
             </span>
-            {threadMenu && menuOpen ? (
-              <div className="session-row__menu-wrap" ref={threadMenu.menuWrapRef}>
-                <ThreadActionsMenu
-                  actions={threadMenu.actionsFor(thread)}
-                  className="session-row__menu"
-                />
-              </div>
-            ) : null}
+            {threadMenu && !overlay ? (
+              <ThreadActionsMenu
+                actions={threadMenu.actionsFor(thread)}
+                className="session-row__menu"
+                open={menuOpen}
+                onOpenChange={(open) => {
+                  if (!open) threadMenu.closeMenu();
+                }}
+                trigger={<span className="session-row__menu-anchor" />}
+              />
+            ) : null}{" "}
           </span>
         </div>
         {threadMenu?.renameSessionId === thread.session.id ? (
@@ -1743,19 +1610,21 @@ const ThreadSessionRow = forwardRef<HTMLDivElement, ThreadSessionRowProps>(
               }}
             />
             <div className="workspace-rename__actions">
-              <button
+              <Button
+                variant="ghost"
                 className="workspace-rename__button"
                 type="button"
                 onClick={threadMenu.cancelRename}
               >
                 {t("Cancel")}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 className="workspace-rename__button workspace-rename__button--primary"
                 type="submit"
               >
                 {t("Save")}
-              </button>
+              </Button>
             </div>
           </form>
         ) : null}

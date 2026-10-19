@@ -1,3 +1,4 @@
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -339,91 +340,101 @@ export function TerminalPanel({ workspace, sessionId, onHide }: TerminalPanelPro
   }, [activeSession?.id, api, createTerminal, fitAndResize]);
 
   return (
-    <section
-      ref={panelRef}
-      className="terminal-panel"
-      data-pi-terminal="true"
-      data-testid="integrated-terminal"
+    <Tabs
+      asChild
+      className="gap-0"
+      value={panel?.activeSessionId ?? ""}
+      onValueChange={(id) => {
+        void setActiveTerminal(id).catch((error: unknown) =>
+          setError(error instanceof Error ? error.message : String(error)),
+        );
+      }}
     >
-      <div className="terminal-panel__toolbar">
-        <div className="terminal-panel__tabs" role="tablist" aria-label={t("Terminal sessions")}>
-          {(panel?.sessions ?? []).map((session) => (
-            <div
-              key={session.id}
-              className={`terminal-panel__tab-item${session.id === panel?.activeSessionId ? " terminal-panel__tab-item--active" : ""}`}
+      <section
+        ref={panelRef}
+        className="terminal-panel"
+        data-pi-terminal="true"
+        data-testid="integrated-terminal"
+      >
+        <div className="terminal-panel__toolbar">
+          <TabsList
+            variant="line"
+            className="terminal-panel__tabs"
+            aria-label={t("Terminal sessions")}
+          >
+            {(panel?.sessions ?? []).map((session) => (
+              <div
+                key={session.id}
+                className={`terminal-panel__tab-item${session.id === panel?.activeSessionId ? " terminal-panel__tab-item--active" : ""}`}
+              >
+                <TabsTrigger
+                  value={session.id}
+                  className="terminal-panel__tab"
+                  type="button"
+                  data-testid="terminal-tab"
+                >
+                  <span
+                    className={`terminal-panel__status terminal-panel__status--${session.status}`}
+                  />
+                  <span className="terminal-panel__tab-title">{session.title}</span>
+                </TabsTrigger>
+                <Button
+                  variant="ghost"
+                  type="button"
+                  className="terminal-panel__tab-close"
+                  aria-label={t("Close {{value0}}", { value0: session.title })}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void closeTerminal(session.id).catch((error: unknown) => {
+                      setError(error instanceof Error ? error.message : String(error));
+                    });
+                  }}
+                >
+                  <CloseIcon />
+                </Button>
+              </div>
+            ))}
+          </TabsList>
+          <div className="terminal-panel__actions">
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="terminal-panel__action"
+              title={t("New terminal")}
+              aria-label={t("New terminal")}
+              onClick={() =>
+                void createTerminal().catch((error: unknown) => {
+                  setError(error instanceof Error ? error.message : String(error));
+                })
+              }
             >
-              <button
-                className="terminal-panel__tab"
-                type="button"
-                role="tab"
-                aria-selected={session.id === panel?.activeSessionId}
-                data-testid="terminal-tab"
-                onClick={() =>
-                  void setActiveTerminal(session.id).catch((error: unknown) => {
-                    setError(error instanceof Error ? error.message : String(error));
-                  })
-                }
-              >
-                <span
-                  className={`terminal-panel__status terminal-panel__status--${session.status}`}
-                />
-                <span className="terminal-panel__tab-title">{session.title}</span>
-              </button>
-              <button
-                type="button"
-                className="terminal-panel__tab-close"
-                aria-label={t("Close {{value0}}", { value0: session.title })}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  void closeTerminal(session.id).catch((error: unknown) => {
-                    setError(error instanceof Error ? error.message : String(error));
-                  });
-                }}
-              >
-                <CloseIcon />
-              </button>
-            </div>
-          ))}
+              <PlusIcon />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              type="button"
+              className="terminal-panel__action"
+              title={t("Restart terminal")}
+              aria-label={t("Restart terminal")}
+              onClick={() =>
+                void restartTerminal().catch((error: unknown) => {
+                  setError(error instanceof Error ? error.message : String(error));
+                })
+              }
+            >
+              <RefreshIcon />
+            </Button>
+          </div>
         </div>
-        <div className="terminal-panel__actions">
-          <Button
-            variant="ghost"
-            size="icon"
-            type="button"
-            className="terminal-panel__action"
-            title={t("New terminal")}
-            aria-label={t("New terminal")}
-            onClick={() =>
-              void createTerminal().catch((error: unknown) => {
-                setError(error instanceof Error ? error.message : String(error));
-              })
-            }
-          >
-            <PlusIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            type="button"
-            className="terminal-panel__action"
-            title={t("Restart terminal")}
-            aria-label={t("Restart terminal")}
-            onClick={() =>
-              void restartTerminal().catch((error: unknown) => {
-                setError(error instanceof Error ? error.message : String(error));
-              })
-            }
-          >
-            <RefreshIcon />
-          </Button>
-        </div>
-      </div>
-      {error ? (
-        <div className="terminal-panel__error">{error}</div>
-      ) : (
-        <div className="terminal-panel__viewport" ref={containerRef} />
-      )}
-    </section>
+        {error ? (
+          <div className="terminal-panel__error">{error}</div>
+        ) : (
+          <div className="terminal-panel__viewport" ref={containerRef} />
+        )}
+      </section>
+    </Tabs>
   );
 }
 

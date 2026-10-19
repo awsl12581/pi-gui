@@ -1,6 +1,8 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/sidebar.css";

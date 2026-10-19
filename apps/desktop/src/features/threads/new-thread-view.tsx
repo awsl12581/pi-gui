@@ -1,3 +1,11 @@
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -172,17 +180,18 @@ export function NewThreadView({
           <h1 className="new-thread__title">{t("Let's build")}</h1>
           <label className="new-thread__workspace-picker">
             <span className="sr-only">{t("Workspace")}</span>
-            <select
-              className="new-thread__workspace"
-              value={workspace.id}
-              onChange={(event) => onSelectWorkspace(event.target.value)}
-            >
-              {workspaces.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.name}
-                </option>
-              ))}
-            </select>
+            <Select value={workspace.id} onValueChange={onSelectWorkspace}>
+              <SelectTrigger className="new-thread__workspace" aria-label={t("Workspace")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {workspaces.map((entry) => (
+                  <SelectItem key={entry.id} value={entry.id}>
+                    {entry.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
         </div>
 
@@ -298,22 +307,30 @@ function NewThreadComposerFooter({
       <div className="composer__footer">
         <div className="composer__footer-row">
           <div className="composer__hint new-thread__hint">
-            <div className="new-thread__environment-group">
-              <button
+            <RadioGroup
+              className="new-thread__environment-group"
+              aria-label={t("New thread")}
+              value={environment}
+              onValueChange={(value) => onSelectEnvironment(value as NewThreadEnvironment)}
+              orientation="horizontal"
+            >
+              <RadioGroupItem
+                variant="segment"
+                value="local"
                 className={`new-thread__environment ${environment === "local" ? "new-thread__environment--active" : ""}`}
                 type="button"
-                onClick={() => onSelectEnvironment("local")}
               >
                 <span>{t("Local")}</span>
-              </button>
-              <button
+              </RadioGroupItem>
+              <RadioGroupItem
+                variant="segment"
+                value="worktree"
                 className={`new-thread__environment ${environment === "worktree" ? "new-thread__environment--active" : ""}`}
                 type="button"
-                onClick={() => onSelectEnvironment("worktree")}
               >
                 <span>{t("Worktree")}</span>
-              </button>
-            </div>
+              </RadioGroupItem>
+            </RadioGroup>
             <span className="new-thread__hint-separator">·</span>
             <ModelSelector
               runtime={runtime}

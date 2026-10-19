@@ -1,3 +1,4 @@
+import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Checkbox } from "../../components/ui/checkbox";
 import { Button } from "../../components/ui/button";
@@ -8,7 +9,6 @@ import {
   CUSTOM_PROVIDER_ID_PATTERN,
   isValidHttpBaseUrl,
 } from "@pi-gui/pi-sdk-driver/custom-provider-types";
-import { trapDialogFocus } from "../../ui/dialog-focus";
 import type { CustomProviderConfig, CustomProviderModelConfig } from "../../../contracts/ipc";
 import { SettingsGroup } from "./settings-utils";
 
@@ -190,7 +190,6 @@ function CustomEndpointDialog({
   const [probePending, setProbePending] = useState(false);
   const [formError, setFormError] = useState<string | undefined>();
   const [savePending, setSavePending] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
   const probeButtonRef = useRef<HTMLButtonElement>(null);
   const restoreProbeFocusRef = useRef(false);
 
@@ -294,32 +293,29 @@ function CustomEndpointDialog({
   };
 
   return (
-    <div className="extension-dialog-backdrop">
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !savePending) onClose();
+      }}
+    >
+      <DialogContent
         className="extension-dialog custom-endpoint-dialog"
         data-testid="custom-endpoint-dialog"
-        onKeyDown={(event) => {
-          if (event.key === "Escape" && !savePending) {
-            event.preventDefault();
-            onClose();
-            return;
-          }
-          if (event.key === "Tab") {
-            trapDialogFocus(event, dialogRef.current);
-          }
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onInteractOutside={(event) => event.preventDefault()}
+        onEscapeKeyDown={(event) => {
+          if (savePending) event.preventDefault();
         }}
-        ref={dialogRef}
-        role="dialog"
       >
         <div
           className="custom-endpoint-dialog__content"
           data-testid="custom-endpoint-dialog-content"
         >
-          <div className="extension-dialog__title" id={titleId}>
+          <DialogTitle className="extension-dialog__title" id={titleId}>
             {isEdit ? t("Edit custom endpoint") : t("Add custom endpoint")}
-          </div>
+          </DialogTitle>
           <p className="extension-dialog__body">
             {t(
               "Configure an OpenAI-compatible server. The endpoint and API key are stored in plaintext at",
@@ -452,8 +448,8 @@ function CustomEndpointDialog({
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

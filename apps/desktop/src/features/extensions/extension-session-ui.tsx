@@ -1,10 +1,16 @@
+import { Textarea } from "../../components/ui/textarea";
+import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useCallback, useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import type { HostUiResponse } from "@pi-gui/session-driver";
-import { trapDialogFocus } from "../../ui/dialog-focus";
 import { focusComposerAfter } from "./focus-composer";
 import { ChevronDownIcon, ChevronRightIcon, CloseIcon } from "../../ui/icons";
 import type {
@@ -113,7 +119,8 @@ export function ExtensionDock({
       data-testid="extension-dock"
     >
       <div className="extension-dock__bar">
-        <button
+        <Button
+          variant="ghost"
           aria-controls="extension-dock-body"
           aria-expanded={expanded}
           className="extension-dock__toggle"
@@ -128,7 +135,7 @@ export function ExtensionDock({
           <span className="extension-dock__chevron" aria-hidden="true">
             {expanded ? <ChevronDownIcon /> : <ChevronRightIcon />}
           </span>
-        </button>
+        </Button>
         {onDismiss ? (
           <Button
             variant="ghost"
@@ -168,7 +175,15 @@ export function ExtensionDialog({
   const [draft, setDraft] = useState("");
   const titleId = useId();
   const bodyId = useId();
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const answeredRequest = useRef<string | null>(null);
+  const respond = (response: HostUiResponse) => {
+    if (answeredRequest.current === dialog.requestId) return;
+    answeredRequest.current = dialog.requestId;
+    onRespond(response);
+  };
+  const Root = dialog.kind === "confirm" ? AlertDialog : Dialog;
+  const Content = dialog.kind === "confirm" ? AlertDialogContent : DialogContent;
+  const Title = dialog.kind === "confirm" ? AlertDialogTitle : DialogTitle;
   const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstOptionButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -194,7 +209,7 @@ export function ExtensionDialog({
     }
   }, [dialog]);
 
-  const respondWithCancel = () => onRespond({ requestId: dialog.requestId, cancelled: true });
+  const respondWithCancel = () => respond({ requestId: dialog.requestId, cancelled: true });
   const respondWithSubmit = () => {
     if (dialog.kind === "confirm") {
       onRespond({ requestId: dialog.requestId, confirmed: true });
@@ -205,10 +220,6 @@ export function ExtensionDialog({
     }
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Tab") {
-      trapDialogFocus(event, dialogRef.current);
-      return;
-    }
     if (event.key === "Escape") {
       event.preventDefault();
       respondWithCancel();
@@ -223,20 +234,40 @@ export function ExtensionDialog({
   };
 
   return (
-    <div className="extension-dialog-backdrop">
-      <div
-        aria-describedby={dialog.kind === "confirm" ? bodyId : undefined}
-        aria-labelledby={titleId}
-        aria-modal="true"
+    <Root
+      open
+      onOpenChange={(open) => {
+        if (!open) respondWithCancel();
+      }}
+    >
+      <Content
         className="extension-dialog"
         data-testid="extension-dialog"
-        ref={dialogRef}
-        role="dialog"
+        showCloseButton={false}
+        aria-describedby={dialog.kind === "confirm" ? bodyId : undefined}
+        onInteractOutside={(event) => event.preventDefault()}
+        onOpenAutoFocus={(event) => {
+          if (dialog.kind === "confirm") {
+            event.preventDefault();
+            cancelButtonRef.current?.focus();
+          } else if (dialog.kind === "select") {
+            event.preventDefault();
+            firstOptionButtonRef.current?.focus();
+          }
+        }}
+        onCloseAutoFocus={(event) => {
+          const treeSearch = document.querySelector<HTMLInputElement>(
+            '[data-testid="tree-modal-search"]',
+          );
+          if (!treeSearch) return;
+          event.preventDefault();
+          queueMicrotask(() => treeSearch.focus());
+        }}
         onKeyDown={handleKeyDown}
       >
-        <div className="extension-dialog__title" id={titleId}>
+        <Title className="extension-dialog__title" id={titleId}>
           {dialog.title}
-        </div>
+        </Title>
         {dialog.kind === "confirm" ? (
           <p className="extension-dialog__body" id={bodyId}>
             {dialog.message}
@@ -246,7 +277,8 @@ export function ExtensionDialog({
         {dialog.kind === "select" ? (
           <div className="extension-dialog__options">
             {dialog.options.map((option, index) => (
-              <button
+              <Button
+                variant="ghost"
                 className="extension-dialog__option"
                 key={option}
                 ref={index === 0 ? firstOptionButtonRef : undefined}
@@ -254,7 +286,7 @@ export function ExtensionDialog({
                 onClick={() => onRespond({ requestId: dialog.requestId, value: option })}
               >
                 {option}
-              </button>
+              </Button>
             ))}
           </div>
         ) : null}
@@ -270,7 +302,7 @@ export function ExtensionDialog({
         ) : null}
 
         {dialog.kind === "editor" ? (
-          <textarea
+          <Textarea
             autoFocus
             className="extension-dialog__editor"
             value={draft}
@@ -312,8 +344,8 @@ export function ExtensionDialog({
             </Button>
           ) : null}
         </div>
-      </div>
-    </div>
+      </Content>
+    </Root>
   );
 }
 

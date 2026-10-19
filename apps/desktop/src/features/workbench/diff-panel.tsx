@@ -497,7 +497,8 @@ export function DiffPanel({
             });
           }}
         />
-        <button
+        <Button
+          variant="ghost"
           className={`icon-button review-panel__tool${treeVisible ? " review-panel__tool--active" : ""}`}
           type="button"
           onClick={() => setTreeVisible(!treeVisible)}
@@ -506,7 +507,7 @@ export function DiffPanel({
           title={treeVisible ? t("Hide file tree") : t("Show file tree")}
         >
           <SidePanelIcon />
-        </button>
+        </Button>
       </div>
       {requestedScope.kind === "branch" ? (
         <form

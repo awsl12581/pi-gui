@@ -2,6 +2,7 @@ import { SearchIcon } from "../../ui/icons";
 import { Input } from "../../components/ui/input";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../../components/ui/input-group";
 import { Button } from "../../components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../../components/ui/dialog";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useEffect, useMemo, useState } from "react";
@@ -198,13 +199,14 @@ export function SettingsProvidersSection({
           )}
         </div>
         {hiddenAvailableCount > 0 ? (
-          <button
+          <Button
+            variant="ghost"
             className="resource-list__more"
             type="button"
             onClick={() => setShowAllAvailable(true)}
           >
             {t("Show {{value0}} more", { value0: hiddenAvailableCount })}
-          </button>
+          </Button>
         ) : null}
       </section>
 
@@ -251,10 +253,20 @@ function ProviderApiKeyDialog({
       : t("Save an API key locally for {{value0}}.", { value0: provider.name });
 
   return (
-    <div className="extension-dialog-backdrop">
-      <div className="extension-dialog" data-testid="provider-api-key-dialog">
-        <div className="extension-dialog__title">{title}</div>
-        <p className="extension-dialog__body">{body}</p>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent
+        className="extension-dialog"
+        data-testid="provider-api-key-dialog"
+        showCloseButton={false}
+        onInteractOutside={(event) => {
+          if (pending) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (pending) event.preventDefault();
+        }}
+      >
+        <DialogTitle className="extension-dialog__title">{title}</DialogTitle>
+        <DialogDescription className="extension-dialog__body">{body}</DialogDescription>
         <Input
           aria-label={t("{{value0}} API key", { value0: provider.name })}
           autoFocus
@@ -316,7 +328,7 @@ function ProviderApiKeyDialog({
             {provider.authSource === "auth_file" ? t("Save key") : t("Set API key")}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

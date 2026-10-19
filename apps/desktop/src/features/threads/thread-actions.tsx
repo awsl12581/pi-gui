@@ -1,4 +1,9 @@
-import { Button } from "../../components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "../../components/ui/dropdown-menu";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import type { ReactNode } from "react";
@@ -130,34 +135,51 @@ export function buildThreadActions(
 }
 
 interface ThreadActionsMenuProps {
+  readonly trigger: ReactNode;
+  readonly open: boolean;
+  readonly onOpenChange: (open: boolean) => void;
   readonly actions: readonly ThreadAction[];
   readonly className: string;
 }
 
-export function ThreadActionsMenu({ actions, className }: ThreadActionsMenuProps) {
+export function ThreadActionsMenu({
+  actions,
+  className,
+  trigger,
+  open,
+  onOpenChange,
+}: ThreadActionsMenuProps) {
   useLocale();
   return (
-    <div className={`workspace-menu ${className}`} role="menu">
-      {actions.map((action) => (
-        <Button
-          key={action.id}
-          className="workspace-menu__item"
-          data-thread-action={action.id}
-          type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            action.run();
-          }}
-        >
-          <span>{action.title}</span>
-          {action.hint ? (
-            <span className="workspace-menu__shortcut" aria-hidden="true">
-              {action.hint}
-            </span>
-          ) : null}
-        </Button>
-      ))}
-    </div>
+    <DropdownMenu open={open} onOpenChange={onOpenChange}>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        className={`workspace-menu ${className}`}
+        onCloseAutoFocus={(event) => {
+          if (document.querySelector(".session-rename")) event.preventDefault();
+        }}
+      >
+        {actions.map((action) => (
+          <DropdownMenuItem
+            key={action.id}
+            className="workspace-menu__item"
+            data-thread-action={action.id}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              action.run();
+            }}
+          >
+            <span>{action.title}</span>
+            {action.hint ? (
+              <span className="workspace-menu__shortcut" aria-hidden="true">
+                {action.hint}
+              </span>
+            ) : null}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

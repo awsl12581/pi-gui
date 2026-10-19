@@ -202,13 +202,14 @@ export function SettingsModelsSection({
               ))}
             </div>
           ) : (
-            <button
+            <Button
+              variant="ghost"
               className="resource-list__more"
               type="button"
               onClick={() => setShowUnconnected(true)}
             >
               {t("Show {{count}} models", { count: unconnectedModels.length })}
-            </button>
+            </Button>
           )}
         </section>
       ) : null}

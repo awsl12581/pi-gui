@@ -75,7 +75,8 @@ export function ReviewFileTree({
       const open = filtering || !collapsed.has(node.path);
       return (
         <div key={`dir:${node.path}`} role="group" aria-label={node.name}>
-          <button
+          <Button
+            variant="ghost"
             className="review-tree__folder"
             type="button"
             style={indent}
@@ -84,7 +85,7 @@ export function ReviewFileTree({
           >
             {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
             <span>{node.name}</span>
-          </button>
+          </Button>
           {open ? node.children.map((child) => renderNode(child, depth + 1)) : null}
         </div>
       );
@@ -101,7 +102,8 @@ export function ReviewFileTree({
         data-file-path={file.path}
         style={indent}
       >
-        <button
+        <Button
+          variant="ghost"
           className="diff-panel__file-name"
           title={formatPathForDisplay(file.path)}
           type="button"
@@ -109,7 +111,7 @@ export function ReviewFileTree({
           onClick={() => onSelect(file.path)}
         >
           <span className="diff-panel__file-path">{formatPathForDisplay(node.name)}</span>
-        </button>
+        </Button>
         {stageActions.length ? (
           <span className="review-panel__stage-actions">
             {file.hasStagedChanges && stageActions.includes("unstage") ? (

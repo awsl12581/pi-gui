@@ -1,6 +1,13 @@
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+} from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
-import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { CheckIcon } from "../../ui/icons";
+import { Fragment, useId, type ReactNode } from "react";
 
 export interface ReviewMenuOption {
   readonly id: string;
@@ -35,85 +42,53 @@ export function ReviewMenu({
   value,
 }: ReviewMenuProps) {
   const valueId = useId();
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOutside = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      event.stopPropagation();
-      setOpen(false);
-      rootRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
-    };
-    document.addEventListener("pointerdown", closeOutside, true);
-    document.addEventListener("keydown", closeOnEscape, true);
-    return () => {
-      document.removeEventListener("pointerdown", closeOutside, true);
-      document.removeEventListener("keydown", closeOnEscape, true);
-    };
-  }, [open]);
-
   return (
-    <div
-      className="review-menu"
-      ref={rootRef}
-      onBlur={(event) => {
-        if (!rootRef.current?.contains(event.relatedTarget as Node | null)) setOpen(false);
-      }}
-    >
-      <Button
-        className={buttonClassName}
-        type="button"
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={label}
-        aria-describedby={value ? valueId : undefined}
-        onClick={() => setOpen((value) => !value)}
-      >
-        {value ? <span id={valueId}>{value}</span> : null}
-        {buttonContent}
-      </Button>
-      {open ? (
-        <div
-          className={`workspace-menu review-menu__popover review-menu__popover--${align}`}
-          role="menu"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          className={buttonClassName}
+          type="button"
           aria-label={label}
+          aria-haspopup="menu"
+          title={label}
+          aria-describedby={value ? valueId : undefined}
         >
-          {details?.length ? (
-            <div className="review-menu__details" data-testid="review-comparison-identity">
-              {details.map((detail) => (
-                <span key={detail}>{detail}</span>
-              ))}
-            </div>
-          ) : null}
+          {value ? <span id={valueId}>{value}</span> : null}
+          {buttonContent}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align={align}
+        className="workspace-menu review-menu__popover"
+        aria-label={label}
+      >
+        {details?.length ? (
+          <div className="review-menu__details" data-testid="review-comparison-identity">
+            {details.map((detail) => (
+              <span key={detail}>{detail}</span>
+            ))}
+          </div>
+        ) : null}
+        <DropdownMenuRadioGroup
+          value={options.find((option) => option.checked)?.id}
+          onValueChange={onSelect}
+        >
           {options.map((option) => (
             <Fragment key={option.id}>
               {option.startsGroup ? (
-                <div className="review-menu__divider" role="separator" />
+                <DropdownMenuSeparator className="review-menu__divider" />
               ) : null}
-              <Button
+              <DropdownMenuRadioItem
+                value={option.id}
                 className="workspace-menu__item review-menu__item"
-                type="button"
-                role="menuitemradio"
-                aria-checked={option.checked}
                 data-option-id={option.id}
-                onClick={() => {
-                  setOpen(false);
-                  onSelect(option.id);
-                }}
               >
                 <span>{option.label}</span>
-                {option.checked ? <CheckIcon /> : null}
-              </Button>
+              </DropdownMenuRadioItem>
             </Fragment>
           ))}
-        </div>
-      ) : null}
-    </div>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

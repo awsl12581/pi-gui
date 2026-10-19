@@ -231,7 +231,8 @@ function TimelineMessage({
       />
       {forkable ? (
         <div className="timeline-item__actions">
-          <button
+          <Button
+            variant="ghost"
             type="button"
             className="timeline-item__action"
             title={
@@ -246,7 +247,7 @@ function TimelineMessage({
           >
             <ForkIcon />
             <span className="timeline-item__action-label">{t("Fork")}</span>
-          </button>
+          </Button>
         </div>
       ) : null}
       {markers}
@@ -307,7 +308,8 @@ function TimelineToolCallItem({
         <span className="timeline-tool__glyph" aria-hidden="true">
           {extensionLabel === undefined || diffText ? toolGlyph(item.toolName) : <SparkIcon />}
         </span>
-        <button
+        <Button
+          variant="ghost"
           className="timeline-tool__header"
           type="button"
           aria-expanded={expanded}
@@ -333,7 +335,7 @@ function TimelineToolCallItem({
             <span className="timeline-tool__status-pip" aria-hidden="true" />
             {`${item.toolName} \u00b7 ${statusLabel(item.status)}`}
           </span>
-        </button>
+        </Button>
         {filePath && onViewFileInDiff ? (
           <Button
             variant="ghost"

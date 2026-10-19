@@ -1,3 +1,4 @@
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import { useState } from "react";
@@ -29,6 +30,7 @@ export function ForkModal({
   return (
     <Dialog open onOpenChange={(open) => !open && !submitting && onClose()}>
       <DialogContent
+        showCloseButton={false}
         className="tree-modal tree-modal--compact"
         data-testid="fork-modal"
         onInteractOutside={(event) => {
@@ -72,36 +74,35 @@ export function ForkModal({
             </div>
           ) : null}
 
-          <div
+          <RadioGroup
+            value={environment}
+            onValueChange={(value) => setEnvironment(value as NewThreadEnvironment)}
+            orientation="horizontal"
+            disabled={submitting}
             className="new-thread__environment-group"
-            role="radiogroup"
             aria-label={t("Fork environment")}
           >
-            <Button
-              variant={environment === "local" ? "default" : "outline"}
-              size="sm"
-              aria-pressed={environment === "local"}
+            <RadioGroupItem
+              variant="segment"
+              value="local"
               className={`new-thread__environment ${environment === "local" ? "new-thread__environment--active" : ""}`}
               data-testid="fork-environment-local"
               type="button"
-              onClick={() => setEnvironment("local")}
             >
               <span>{t("Same worktree")}</span>
-            </Button>
-            <Button
-              variant={environment === "worktree" ? "default" : "outline"}
-              size="sm"
-              aria-pressed={environment === "worktree"}
+            </RadioGroupItem>
+            <RadioGroupItem
+              variant="segment"
+              value="worktree"
               className={`new-thread__environment ${environment === "worktree" ? "new-thread__environment--active" : ""}`}
               data-testid="fork-environment-worktree"
               disabled={!canUseWorktree}
               title={canUseWorktree ? undefined : t("This workspace can't create worktrees.")}
               type="button"
-              onClick={() => setEnvironment("worktree")}
             >
               <span>{t("New worktree")}</span>
-            </Button>
-          </div>
+            </RadioGroupItem>
+          </RadioGroup>
 
           <div className="tree-modal__footer">
             <div className="tree-modal__hint">

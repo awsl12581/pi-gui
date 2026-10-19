@@ -1,3 +1,4 @@
+import { ConfirmationDialog } from "../../../components/ui/confirmation-dialog";
 import { t } from "../../../../i18n";
 import { useLocale } from "../../../ui/use-locale";
 import {
@@ -26,11 +27,11 @@ interface UseWorkspaceMenuParams {
 }
 
 export interface WorkspaceMenuState {
+  readonly confirmationDialog: React.ReactNode;
   readonly workspaceMenuId: string | null;
   readonly workspaceRenameId: string | null;
   readonly workspaceRenameDraft: string;
   readonly setWorkspaceRenameDraft: Dispatch<SetStateAction<string>>;
-  readonly workspaceMenuWrapRef: RefObject<HTMLSpanElement | null>;
   readonly workspaceRenamePanelRef: RefObject<HTMLFormElement | null>;
   readonly workspaceRenameInputRef: RefObject<HTMLInputElement | null>;
   readonly openWorkspaceMenu: (workspaceId: string) => void;
@@ -56,11 +57,15 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
   useLocale();
   const { api, setSnapshot, updateSnapshot } = params;
 
+  const [confirmation, setConfirmation] = useState<{
+    kind: "workspace" | "worktree";
+    name: string;
+    run: () => Promise<DesktopAppState>;
+  } | null>(null);
   const [workspaceMenuId, setWorkspaceMenuId] = useState<string | null>(null);
   const [workspaceRenameId, setWorkspaceRenameId] = useState<string | null>(null);
   const [workspaceRenameDraft, setWorkspaceRenameDraft] = useState("");
 
-  const workspaceMenuWrapRef = useRef<HTMLSpanElement | null>(null);
   const workspaceRenamePanelRef = useRef<HTMLFormElement | null>(null);
   const workspaceRenameInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -82,17 +87,14 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
       if (!(target instanceof Node)) {
         return;
       }
-      const menuContains = workspaceMenuWrapRef.current?.contains(target) ?? false;
       const renamePanelContains = workspaceRenamePanelRef.current?.contains(target) ?? false;
-      if (!menuContains && !renamePanelContains) {
-        setWorkspaceMenuId(null);
+      if (!renamePanelContains) {
         setWorkspaceRenameId(null);
       }
     };
 
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === "Escape") {
-        setWorkspaceMenuId(null);
         setWorkspaceRenameId(null);
       }
     };
@@ -144,21 +146,14 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
   };
 
   const removeWorkspace = (workspace: WorkspaceRecord) => {
-    const confirmed = window.confirm(
-      t("Remove {{value0}} from pi-gui? This will not delete any files.", {
-        value0: workspace.name,
-      }),
-    );
+    if (!api) return;
     setWorkspaceMenuId(null);
     setWorkspaceRenameId(null);
-    if (!confirmed || !api) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () => api.removeWorkspace(workspace.id)).catch(
-      (error: unknown) => {
-        console.error("[renderer] removeWorkspace failed", error);
-      },
-    );
+    setConfirmation({
+      kind: "workspace",
+      name: workspace.name,
+      run: () => updateSnapshot(setSnapshot, () => api.removeWorkspace(workspace.id)),
+    });
   };
 
   const createWorktree = (
@@ -178,18 +173,14 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
   };
 
   const removeWorktree = (workspaceId: string, worktree: WorktreeRecord) => {
-    const confirmed = window.confirm(
-      t("Remove worktree {{value0}}? This removes the git worktree from disk.", {
-        value0: worktree.name,
-      }),
-    );
-    if (!confirmed || !api) {
-      return;
-    }
-    void updateSnapshot(setSnapshot, () =>
-      api.removeWorktree({ workspaceId, worktreeId: worktree.id }),
-    ).catch((error: unknown) => {
-      console.error("[renderer] updateSnapshot failed", error);
+    if (!api) return;
+    setConfirmation({
+      kind: "worktree",
+      name: worktree.name,
+      run: () =>
+        updateSnapshot(setSnapshot, () =>
+          api.removeWorktree({ workspaceId, worktreeId: worktree.id }),
+        ),
     });
   };
 
@@ -212,11 +203,25 @@ export function useWorkspaceMenu(params: UseWorkspaceMenuParams): WorkspaceMenuS
   };
 
   return {
+    confirmationDialog: confirmation ? (
+      <ConfirmationDialog
+        description={
+          confirmation.kind === "workspace"
+            ? t("Remove {{value0}} from pi-gui? This will not delete any files.", {
+                value0: confirmation.name,
+              })
+            : t("Remove worktree {{value0}}? This removes the git worktree from disk.", {
+                value0: confirmation.name,
+              })
+        }
+        onConfirm={confirmation.run}
+        onClose={() => setConfirmation(null)}
+      />
+    ) : null,
     workspaceMenuId,
     workspaceRenameId,
     workspaceRenameDraft,
     setWorkspaceRenameDraft,
-    workspaceMenuWrapRef,
     workspaceRenamePanelRef,
     workspaceRenameInputRef,
     openWorkspaceMenu,

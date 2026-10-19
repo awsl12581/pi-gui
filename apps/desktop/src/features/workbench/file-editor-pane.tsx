@@ -1,3 +1,4 @@
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -111,119 +112,121 @@ export function FileEditorPane({
   const showSource = !markdown || sourceMode;
 
   return (
-    <section className="file-editor" data-testid="file-editor" aria-label={t("Open file")}>
-      <div className="file-editor__tab-strip">
-        {worktreeLabel ? (
-          <span className="file-editor__worktree-chip" data-testid="file-editor-worktree-chip">
-            <WorktreeIcon />
-            <span>{worktreeLabel}</span>
-          </span>
-        ) : null}
-        <div className="file-editor__tabs">
-          {tabs.tabs.map((path) => {
-            const selected = path === activePath;
-            return (
-              <div
-                className={`file-editor__tab ${selected ? "file-editor__tab--active" : ""}`}
-                data-testid="file-workbench-tab"
-                key={path}
+    <Tabs asChild className="gap-0" value={activePath ?? ""} onValueChange={onActivate}>
+      <section className="file-editor" data-testid="file-editor" aria-label={t("Open file")}>
+        <div className="file-editor__tab-strip">
+          {worktreeLabel ? (
+            <span className="file-editor__worktree-chip" data-testid="file-editor-worktree-chip">
+              <WorktreeIcon />
+              <span>{worktreeLabel}</span>
+            </span>
+          ) : null}
+          <TabsList variant="line" aria-label={t("Files")} className="file-editor__tabs">
+            {tabs.tabs.map((path) => {
+              const selected = path === activePath;
+              return (
+                <div
+                  className={`file-editor__tab ${selected ? "file-editor__tab--active" : ""}`}
+                  data-testid="file-workbench-tab"
+                  key={path}
+                >
+                  <TabsTrigger value={path} className="file-editor__tab-button" type="button">
+                    {fileNameFromPath(path)}
+                  </TabsTrigger>
+                  <Button
+                    variant="ghost"
+                    aria-label={t("Close {{value0}}", { value0: fileNameFromPath(path) })}
+                    className="file-editor__tab-close"
+                    type="button"
+                    onClick={() => onClose(path)}
+                  >
+                    <CloseIcon />
+                  </Button>
+                </div>
+              );
+            })}
+          </TabsList>
+          {activePath ? (
+            <div className="file-editor__actions">
+              {markdown ? (
+                <Button
+                  variant="ghost"
+                  aria-pressed={showSource}
+                  className={
+                    showSource
+                      ? "file-workbench__mode file-workbench__mode--active"
+                      : "file-workbench__mode"
+                  }
+                  type="button"
+                  onClick={() => setSourceMode((current) => !current)}
+                >
+                  {t("View source")}
+                </Button>
+              ) : null}
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={t("Copy file")}
+
+                disabled={!preview || preview.binary || Boolean(viewerError)}
+                type="button"
+                onClick={() => {
+                  if (preview && !preview.binary) {
+                    void navigator.clipboard.writeText(preview.content).catch((error: unknown) => {
+                      console.error("[renderer] copy file failed", error);
+                    });
+                  }
+                }}
               >
-                <button
-                  aria-current={selected ? "page" : undefined}
-                  className="file-editor__tab-button"
-                  type="button"
-                  onClick={() => onActivate(path)}
-                >
-                  {fileNameFromPath(path)}
-                </button>
-                <button
-                  aria-label={t("Close {{value0}}", { value0: fileNameFromPath(path) })}
-                  className="file-editor__tab-close"
-                  type="button"
-                  onClick={() => onClose(path)}
-                >
-                  <CloseIcon />
-                </button>
-              </div>
-            );
-          })}
+                <CopyIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                className="file-workbench__mode"
+                disabled={!activePath}
+                type="button"
+                onClick={() => {
+                  void api.revealWorkspaceFile(workspace.id, activePath).catch((error: unknown) => {
+                    setViewerError(error instanceof Error ? error.message : String(error));
+                  });
+                }}
+              >
+                {t("Open")}
+              </Button>
+            </div>
+          ) : null}
         </div>
         {activePath ? (
-          <div className="file-editor__actions">
-            {markdown ? (
-              <button
-                aria-pressed={showSource}
-                className={
-                  showSource
-                    ? "file-workbench__mode file-workbench__mode--active"
-                    : "file-workbench__mode"
-                }
-                type="button"
-                onClick={() => setSourceMode((current) => !current)}
-              >
-                {t("View source")}
-              </button>
-            ) : null}
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={t("Copy file")}
-
-              disabled={!preview || preview.binary || Boolean(viewerError)}
-              type="button"
-              onClick={() => {
-                if (preview && !preview.binary) {
-                  void navigator.clipboard.writeText(preview.content).catch((error: unknown) => {
-                    console.error("[renderer] copy file failed", error);
-                  });
-                }
-              }}
-            >
-              <CopyIcon />
-            </Button>
-            <button
-              className="file-workbench__mode"
-              disabled={!activePath}
-              type="button"
-              onClick={() => {
-                void api.revealWorkspaceFile(workspace.id, activePath).catch((error: unknown) => {
-                  setViewerError(error instanceof Error ? error.message : String(error));
-                });
-              }}
-            >
-              {t("Open")}
-            </button>
-          </div>
-        ) : null}
-      </div>
-      {activePath ? (
-        <nav
-          aria-label={t("File path")}
-          className="file-editor__breadcrumb"
-          data-testid="file-editor-breadcrumb"
-        >
-          {breadcrumbSegments(activePath).map((segment, index, segments) => (
-            <span key={`${segment}-${index}`}>
-              {index > 0 ? <span className="file-editor__breadcrumb-sep">›</span> : null}
-              <span className={index === segments.length - 1 ? "file-editor__breadcrumb-file" : ""}>
-                {segment}
+          <nav
+            aria-label={t("File path")}
+            className="file-editor__breadcrumb"
+            data-testid="file-editor-breadcrumb"
+          >
+            {breadcrumbSegments(activePath).map((segment, index, segments) => (
+              <span key={`${segment}-${index}`}>
+                {index > 0 ? <span className="file-editor__breadcrumb-sep">›</span> : null}
+                <span
+                  className={index === segments.length - 1 ? "file-editor__breadcrumb-file" : ""}
+                >
+                  {segment}
+                </span>
               </span>
-            </span>
-          ))}
-        </nav>
-      ) : null}
-      <div className="file-editor__body">
-        {renderEditorBody({
-          activePath,
-          lineMark: showSource ? lineMark : null,
-          markdown,
-          preview,
-          showSource,
-          viewerError,
-          viewerLoading,
-        })}
-      </div>
-    </section>
+            ))}
+          </nav>
+        ) : null}
+        <div className="file-editor__body">
+          {renderEditorBody({
+            activePath,
+            lineMark: showSource ? lineMark : null,
+            markdown,
+            preview,
+            showSource,
+            viewerError,
+            viewerLoading,
+          })}
+        </div>
+      </section>
+    </Tabs>
   );
 }
 

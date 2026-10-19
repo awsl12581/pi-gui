@@ -1,7 +1,8 @@
+import { Tooltip, TooltipTrigger, TooltipContent } from "../../components/ui/tooltip";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   SessionPlanLimit,
   SessionPromptCache,
@@ -22,7 +23,6 @@ const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 export function ContextMeter({ usage }: ContextMeterProps) {
   useLocale();
   const [open, setOpen] = useState(false);
-  const cardId = useId();
   const now = useNow(open && hasCountdown(usage));
   const context = usage?.context;
   if (!usage || !context) return null;
@@ -36,109 +36,94 @@ export function ContextMeter({ usage }: ContextMeterProps) {
       : t("Context window: {{value0}} used", { value0: formatPercent(percent) });
 
   return (
-    <div
-      className="context-meter"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-    >
-      <Button
-        type="button"
-        className="context-meter__ring"
-        data-tone={tone}
-        aria-label={label}
-        aria-describedby={open ? cardId : undefined}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        onKeyDown={(event) => {
-          if (event.key === "Escape") setOpen(false);
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-          <circle className="context-meter__track" cx="8" cy="8" r={RING_RADIUS} />
-          <circle
-            className="context-meter__fill"
-            cx="8"
-            cy="8"
-            r={RING_RADIUS}
-            strokeDasharray={`${(Math.min(percent ?? 0, 100) / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
-            transform="rotate(-90 8 8)"
-          />
-        </svg>
-      </Button>
-      {open ? (
-        <div className="context-meter__card" id={cardId} role="tooltip">
-          <section className="context-meter__section">
-            <h3 className="context-meter__heading">{t("Context window")}</h3>
-            <p className="context-meter__headline">
-              {context.tokens === null || percent === null
-                ? t("Unknown until the next reply · {{value0}} window", {
-                    value0: formatTokens(context.contextWindow),
-                  })
-                : t("{{value0}} used · {{value1}} / {{value2}} tokens", {
-                    value0: formatPercent(percent),
-                    value1: formatTokens(context.tokens),
-                    value2: formatTokens(context.contextWindow),
-                  })}
-            </p>
-            <p className="context-meter__note">
-              {context.compactAtTokens === undefined
-                ? t("Automatic compaction is off")
-                : t("Compacts automatically at {{value0}}", {
-                    value0: formatPercent((context.compactAtTokens / context.contextWindow) * 100),
-                  })}
-            </p>
-          </section>
-          <section className="context-meter__section">
-            <h3 className="context-meter__heading">{t("Prompt cache")}</h3>
-            {usage.lastTurn ? (
-              <Row
-                label={t("Last turn")}
-                value={t("{{value0}} cached", {
-                  value0: formatPercent(cacheHitPercent(usage.lastTurn)),
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <Button type="button" className="context-meter__ring" data-tone={tone} aria-label={label}>
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <circle className="context-meter__track" cx="8" cy="8" r={RING_RADIUS} />
+            <circle
+              className="context-meter__fill"
+              cx="8"
+              cy="8"
+              r={RING_RADIUS}
+              strokeDasharray={`${(Math.min(percent ?? 0, 100) / 100) * RING_CIRCUMFERENCE} ${RING_CIRCUMFERENCE}`}
+              transform="rotate(-90 8 8)"
+            />
+          </svg>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="top" align="end" className="context-meter__card">
+        <section className="context-meter__section">
+          <h3 className="context-meter__heading">{t("Context window")}</h3>
+          <p className="context-meter__headline">
+            {context.tokens === null || percent === null
+              ? t("Unknown until the next reply · {{value0}} window", {
+                  value0: formatTokens(context.contextWindow),
+                })
+              : t("{{value0}} used · {{value1}} / {{value2}} tokens", {
+                  value0: formatPercent(percent),
+                  value1: formatTokens(context.tokens),
+                  value2: formatTokens(context.contextWindow),
                 })}
-              />
-            ) : null}
-            <CacheRow cache={usage.cache} now={now} />
-          </section>
-          {usage.planLimits && usage.planLimits.limits.length > 0 ? (
-            <section className="context-meter__section">
-              <h3 className="context-meter__heading">{t("Plan limits")}</h3>
-              {usage.planLimits.limits.map((limit) => (
-                <Row
-                  key={limit.windowMinutes}
-                  label={t("{{value0}} of {{value1}} limit", {
-                    value0: formatPercent(limit.usedPercent),
-                    value1: windowLabel(limit),
-                  })}
-                  value={
-                    limit.resetsAt
-                      ? t("resets in {{value0}}", {
-                          value0: formatDuration(Date.parse(limit.resetsAt) - now),
-                        })
-                      : ""
-                  }
-                />
-              ))}
-            </section>
+          </p>
+          <p className="context-meter__note">
+            {context.compactAtTokens === undefined
+              ? t("Automatic compaction is off")
+              : t("Compacts automatically at {{value0}}", {
+                  value0: formatPercent((context.compactAtTokens / context.contextWindow) * 100),
+                })}
+          </p>
+        </section>
+        <section className="context-meter__section">
+          <h3 className="context-meter__heading">{t("Prompt cache")}</h3>
+          {usage.lastTurn ? (
+            <Row
+              label={t("Last turn")}
+              value={t("{{value0}} cached", {
+                value0: formatPercent(cacheHitPercent(usage.lastTurn)),
+              })}
+            />
           ) : null}
+          <CacheRow cache={usage.cache} now={now} />
+        </section>
+        {usage.planLimits && usage.planLimits.limits.length > 0 ? (
           <section className="context-meter__section">
-            <h3 className="context-meter__heading">{t("This thread")}</h3>
-            <Row
-              label={t("Input / Output")}
-              value={`${formatTokens(usage.totals.input)} / ${formatTokens(usage.totals.output)}`}
-            />
-            <Row
-              label={t("Cache read / write")}
-              value={`${formatTokens(usage.totals.cacheRead)} / ${formatTokens(usage.totals.cacheWrite)}`}
-            />
-            <Row
-              label={t("Cost")}
-              value={usage.subscription ? t("Subscription") : `$${usage.totals.cost.toFixed(2)}`}
-            />
+            <h3 className="context-meter__heading">{t("Plan limits")}</h3>
+            {usage.planLimits.limits.map((limit) => (
+              <Row
+                key={limit.windowMinutes}
+                label={t("{{value0}} of {{value1}} limit", {
+                  value0: formatPercent(limit.usedPercent),
+                  value1: windowLabel(limit),
+                })}
+                value={
+                  limit.resetsAt
+                    ? t("resets in {{value0}}", {
+                        value0: formatDuration(Date.parse(limit.resetsAt) - now),
+                      })
+                    : ""
+                }
+              />
+            ))}
           </section>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+        <section className="context-meter__section">
+          <h3 className="context-meter__heading">{t("This thread")}</h3>
+          <Row
+            label={t("Input / Output")}
+            value={`${formatTokens(usage.totals.input)} / ${formatTokens(usage.totals.output)}`}
+          />
+          <Row
+            label={t("Cache read / write")}
+            value={`${formatTokens(usage.totals.cacheRead)} / ${formatTokens(usage.totals.cacheWrite)}`}
+          />
+          <Row
+            label={t("Cost")}
+            value={usage.subscription ? t("Subscription") : `$${usage.totals.cost.toFixed(2)}`}
+          />
+        </section>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 

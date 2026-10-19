@@ -3,12 +3,6 @@
  * Modelled on Codex's context-window hover and Claude's usage-limit hover.
  * ========================================================================== */
 
-.context-meter {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
 .context-meter__ring {
   display: inline-flex;
   align-items: center;
@@ -58,11 +52,6 @@
 }
 
 .context-meter__card {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-bottom: 8px;
   width: 300px;
   padding: 12px 14px;
   background: var(--surface);
@@ -73,16 +62,6 @@
   font-size: 12px;
   line-height: 1.45;
   cursor: default;
-}
-
-/* Keeps the pointer inside the hover area while it crosses the gap to the card. */
-.context-meter__card::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  height: 8px;
 }
 
 .context-meter__section {

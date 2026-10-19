@@ -1,3 +1,10 @@
+import { Tabs, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+} from "../../components/ui/dropdown-menu";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
@@ -82,45 +89,42 @@ export function ScheduledTasksView({
           </p>
         </div>
         <div className="view-header__actions">
-          <div className="scheduled-create">
-            <Button
-              variant="default"
+          <DropdownMenu open={createOpen} onOpenChange={setCreateOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="default"
 
-              data-testid="scheduled-task-create"
-              type="button"
-              aria-haspopup="menu"
-              aria-expanded={createOpen}
-              onClick={() => setCreateOpen((open) => !open)}
-            >
-              {t("Create")}
-            </Button>
-            {createOpen ? (
-              <div className="workspace-menu scheduled-create__menu" role="menu">
-                <button
-                  className="workspace-menu__item"
-                  data-testid="scheduled-task-create-with-pi"
-                  type="button"
-                  onClick={() => {
-                    setCreateOpen(false);
-                    onCreateWithPi();
-                  }}
-                >
-                  {t("Create with pi")}
-                </button>
-                <button
-                  className="workspace-menu__item"
-                  data-testid="scheduled-task-setup-manually"
-                  type="button"
-                  onClick={() => {
-                    setCreateOpen(false);
-                    onOpenEditor({ mode: "create" });
-                  }}
-                >
-                  {t("Set up manually")}
-                </button>
-              </div>
-            ) : null}
-          </div>
+                data-testid="scheduled-task-create"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={createOpen}
+              >
+                {t("Create")}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="workspace-menu scheduled-create__menu">
+              <DropdownMenuItem
+                className="workspace-menu__item"
+                data-testid="scheduled-task-create-with-pi"
+                onClick={() => {
+                  setCreateOpen(false);
+                  onCreateWithPi();
+                }}
+              >
+                {t("Create with pi")}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="workspace-menu__item"
+                data-testid="scheduled-task-setup-manually"
+                onClick={() => {
+                  setCreateOpen(false);
+                  onOpenEditor({ mode: "create" });
+                }}
+              >
+                {t("Set up manually")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </header>
 
@@ -133,21 +137,21 @@ export function ScheduledTasksView({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />
-        <div className="scheduled-tabs" role="tablist">
-          {FILTERS.map((entry) => (
-            <button
-              className={`scheduled-tabs__item${filter === entry.id ? " scheduled-tabs__item--active" : ""}`}
-              data-testid={`scheduled-task-filter-${entry.id}`}
-              key={entry.id}
-              role="tab"
-              type="button"
-              aria-selected={filter === entry.id}
-              onClick={() => setFilter(entry.id)}
-            >
-              {entry.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={filter} onValueChange={(value) => setFilter(value as ScheduledTaskFilter)}>
+          <TabsList variant="line" className="scheduled-tabs">
+            {FILTERS.map((entry) => (
+              <TabsTrigger
+                value={entry.id}
+                className={`scheduled-tabs__item${filter === entry.id ? " scheduled-tabs__item--active" : ""}`}
+                data-testid={`scheduled-task-filter-${entry.id}`}
+                key={entry.id}
+                type="button"
+              >
+                {entry.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
       {lastError ? <p className="error-banner">{lastError}</p> : null}
@@ -172,90 +176,89 @@ export function ScheduledTasksView({
               data-task-id={task.id}
               key={task.id}
             >
-              <button
+              <Button
+                variant="ghost"
                 className="scheduled-task-row__body"
                 type="button"
                 onClick={() => onOpenEditor({ mode: "edit", taskId: task.id })}
               >
                 <strong className="scheduled-task-row__title">{task.title}</strong>
                 <span className="scheduled-task-row__meta">{formatScheduledTaskRowMeta(task)}</span>
-              </button>
-              <span className="scheduled-task-row__menu-wrap">
-                <Button
-                  variant="ghost"
-                  size="icon"
+              </Button>
+              <DropdownMenu
+                open={menuTaskId === task.id}
+                onOpenChange={(open) => setMenuTaskId(open ? task.id : undefined)}
+              >
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
 
-                  type="button"
-                  aria-label={t("Actions for {{value0}}", { value0: task.title })}
-                  aria-haspopup="menu"
-                  aria-expanded={menuTaskId === task.id}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setMenuTaskId((current) => (current === task.id ? undefined : task.id));
-                  }}
+                    type="button"
+                    aria-label={t("Actions for {{value0}}", { value0: task.title })}
+                    aria-haspopup="menu"
+                    aria-expanded={menuTaskId === task.id}
+                  >
+                    …
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="workspace-menu scheduled-task-row__menu"
                 >
-                  …
-                </Button>
-                {menuTaskId === task.id ? (
-                  <div className="workspace-menu scheduled-task-row__menu" role="menu">
-                    {task.status === "paused" ? (
-                      <button
-                        className="workspace-menu__item"
-                        type="button"
-                        onClick={() => {
-                          setMenuTaskId(undefined);
-                          void updateSnapshot(setSnapshot, () =>
-                            api.updateScheduledTask(task.id, { status: "active" }),
-                          ).catch((error: unknown) => {
-                            console.error("[renderer] updateScheduledTask failed", error);
-                          });
-                        }}
-                      >
-                        {t("Resume")}
-                      </button>
-                    ) : task.status !== "completed" ? (
-                      <button
-                        className="workspace-menu__item"
-                        type="button"
-                        onClick={() => {
-                          setMenuTaskId(undefined);
-                          void updateSnapshot(setSnapshot, () =>
-                            api.updateScheduledTask(task.id, { status: "paused" }),
-                          ).catch((error: unknown) => {
-                            console.error("[renderer] updateScheduledTask failed", error);
-                          });
-                        }}
-                      >
-                        {t("Pause")}
-                      </button>
-                    ) : null}
-                    <button
+                  {task.status === "paused" ? (
+                    <DropdownMenuItem
                       className="workspace-menu__item"
-                      type="button"
-                      onClick={() => {
-                        setMenuTaskId(undefined);
-                        onOpenEditor({ mode: "edit", taskId: task.id });
-                      }}
-                    >
-                      {t("Edit")}
-                    </button>
-                    <button
-                      className="workspace-menu__item workspace-menu__item--danger"
-                      type="button"
                       onClick={() => {
                         setMenuTaskId(undefined);
                         void updateSnapshot(setSnapshot, () =>
-                          api.deleteScheduledTask(task.id),
+                          api.updateScheduledTask(task.id, { status: "active" }),
                         ).catch((error: unknown) => {
-                          console.error("[renderer] deleteScheduledTask failed", error);
+                          console.error("[renderer] updateScheduledTask failed", error);
                         });
                       }}
                     >
-                      {t("Delete")}
-                    </button>
-                  </div>
-                ) : null}
-              </span>
+                      {t("Resume")}
+                    </DropdownMenuItem>
+                  ) : task.status !== "completed" ? (
+                    <DropdownMenuItem
+                      className="workspace-menu__item"
+                      onClick={() => {
+                        setMenuTaskId(undefined);
+                        void updateSnapshot(setSnapshot, () =>
+                          api.updateScheduledTask(task.id, { status: "paused" }),
+                        ).catch((error: unknown) => {
+                          console.error("[renderer] updateScheduledTask failed", error);
+                        });
+                      }}
+                    >
+                      {t("Pause")}
+                    </DropdownMenuItem>
+                  ) : null}
+                  <DropdownMenuItem
+                    className="workspace-menu__item"
+                    onClick={() => {
+                      setMenuTaskId(undefined);
+                      onOpenEditor({ mode: "edit", taskId: task.id });
+                    }}
+                  >
+                    {t("Edit")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    className="workspace-menu__item workspace-menu__item--danger"
+                    onClick={() => {
+                      setMenuTaskId(undefined);
+                      void updateSnapshot(setSnapshot, () =>
+                        api.deleteScheduledTask(task.id),
+                      ).catch((error: unknown) => {
+                        console.error("[renderer] deleteScheduledTask failed", error);
+                      });
+                    }}
+                  >
+                    {t("Delete")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </article>
           ))}
         </div>

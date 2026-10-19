@@ -230,3 +230,16 @@ select:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+.workspace-menu[data-slot] {
+  position: relative;
+  z-index: 60;
+}
+.workspace-menu [data-highlighted] {
+  background: var(--surface-muted);
+}
+.session-row__menu-anchor {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}

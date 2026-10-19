@@ -1,3 +1,5 @@
+import { Textarea } from "../../components/ui/textarea";
+import { Dialog, DialogContent, DialogTitle } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { t, i18n } from "../../../i18n";
@@ -16,7 +18,6 @@ import type {
   SessionTreeNodeSnapshot,
   SessionTreeSnapshot,
 } from "@pi-gui/session-driver/types";
-import { trapDialogFocus } from "../../ui/dialog-focus";
 import { ChevronDownIcon, ChevronRightIcon } from "../../ui/icons";
 
 interface TreeModalProps {
@@ -113,35 +114,6 @@ export function TreeModal({
       ?.focus();
   }, [loading, step, summaryMode, tree]);
 
-  useLayoutEffect(() => {
-    const handleFocusIn = (event: FocusEvent) => {
-      const dialog = dialogRef.current;
-      const target = event.target;
-      if (!dialog || !(target instanceof Node) || dialog.contains(target)) {
-        return;
-      }
-
-      // Tab handling keeps keyboard navigation inside; this also contains delayed programmatic focus.
-      if (step === "select" && !loading && tree && searchRef.current) {
-        searchRef.current.focus();
-        return;
-      }
-      if (step === "summary" && summaryMode === "custom" && customInstructionsRef.current) {
-        customInstructionsRef.current.focus();
-        return;
-      }
-      dialog.querySelector<HTMLButtonElement>("[data-tree-summary-confirm='true']")?.focus();
-      if (!dialog.contains(document.activeElement)) {
-        dialog.focus();
-      }
-    };
-
-    document.addEventListener("focusin", handleFocusIn);
-    return () => {
-      document.removeEventListener("focusin", handleFocusIn);
-    };
-  }, [loading, step, summaryMode, tree]);
-
   const displayRows = useMemo(
     () => (tree ? buildVisibleRows(tree.nodes, expandedIds, search, tree.leafId) : []),
     [expandedIds, search, tree, i18n.language],
@@ -201,24 +173,6 @@ export function TreeModal({
   }, [autoScrollRequest, displayRows, step]);
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Tab") {
-      trapDialogFocus(event, dialogRef.current);
-      return;
-    }
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      if (submitting) {
-        return;
-      }
-      if (step === "summary") {
-        setStep("select");
-        return;
-      }
-      onClose();
-      return;
-    }
-
     if (step !== "select" || displayRows.length === 0) {
       return;
     }
@@ -299,32 +253,39 @@ export function TreeModal({
   };
 
   return (
-    <div
-      className="tree-modal-backdrop"
-      onMouseDown={(event) => {
-        if (event.target !== event.currentTarget || step !== "select" || submitting) {
-          return;
-        }
-        onClose();
+    <Dialog
+      open
+      onOpenChange={(open) => {
+        if (!open && !submitting && step === "select") onClose();
       }}
     >
-      <div
-        aria-modal="true"
+      <DialogContent
         className="tree-modal"
         data-testid="tree-modal"
         ref={dialogRef}
-        role="dialog"
-        tabIndex={-1}
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onInteractOutside={(event) => {
+          if (step !== "select" || submitting) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          event.preventDefault();
+          if (!submitting) {
+            if (step === "summary") setStep("select");
+            else onClose();
+          }
+        }}
         onKeyDown={handleKeyDown}
       >
         <div className="tree-modal__header">
           <div>
             <div className="tree-modal__eyebrow">{t("Session tree")}</div>
-            <h2 className="tree-modal__title">
+            <DialogTitle className="tree-modal__title">
               {step === "summary" ? t("Switch branch") : t("Browse branches")}
-            </h2>
+            </DialogTitle>
           </div>
-          <button
+          <Button
+            variant="ghost"
             aria-label={t("Close tree modal")}
             className="tree-modal__close"
             disabled={submitting}
@@ -338,7 +299,7 @@ export function TreeModal({
             }}
           >
             ×
-          </button>
+          </Button>
         </div>
 
         {error ? (
@@ -390,7 +351,8 @@ export function TreeModal({
                       className={`tree-row ${isSelected ? "tree-row--selected" : ""} ${isCurrentLeaf ? "tree-row--active" : ""}`}
                       key={row.node.id}
                     >
-                      <button
+                      <Button
+                        variant="ghost"
                         aria-label={row.expanded ? t("Collapse branch") : t("Expand branch")}
                         className={`tree-row__toggle ${row.hasChildren ? "" : "tree-row__toggle--hidden"}`}
                         disabled={searching || !row.hasChildren}
@@ -405,8 +367,9 @@ export function TreeModal({
                             <ChevronRightIcon />
                           )
                         ) : null}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="ghost"
                         className="tree-row__content"
                         data-tree-selected={isSelected ? "true" : undefined}
                         data-testid={`tree-row-${row.node.id}`}
@@ -427,7 +390,7 @@ export function TreeModal({
                         <span className="tree-row__line">
                           {buildTreeRowLine(row, currentLeafId)}
                         </span>
-                      </button>
+                      </Button>
                     </div>
                   );
                 })
@@ -466,7 +429,8 @@ export function TreeModal({
               )}
             </div>
             <div className="tree-summary-options">
-              <button
+              <Button
+                variant="ghost"
                 className={`tree-summary-option ${summaryMode === "none" ? "tree-summary-option--selected" : ""}`}
                 type="button"
                 onClick={() => setSummaryMode("none")}
@@ -475,8 +439,9 @@ export function TreeModal({
                 <span className="tree-summary-option__description">
                   {t("Jump immediately with no branch summary.")}
                 </span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 className={`tree-summary-option ${summaryMode === "summary" ? "tree-summary-option--selected" : ""}`}
                 type="button"
                 onClick={() => setSummaryMode("summary")}
@@ -485,8 +450,9 @@ export function TreeModal({
                 <span className="tree-summary-option__description">
                   {t("Generate a branch summary before switching.")}
                 </span>
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="ghost"
                 className={`tree-summary-option ${summaryMode === "custom" ? "tree-summary-option--selected" : ""}`}
                 type="button"
                 onClick={() => setSummaryMode("custom")}
@@ -497,11 +463,11 @@ export function TreeModal({
                 <span className="tree-summary-option__description">
                   {t("Provide extra instructions for the summary.")}
                 </span>
-              </button>
+              </Button>
             </div>
 
             {summaryMode === "custom" ? (
-              <textarea
+              <Textarea
                 autoFocus
                 aria-label={t("Custom summary instructions")}
                 className="tree-modal__custom-instructions"
@@ -550,8 +516,8 @@ export function TreeModal({
             </div>
           </div>
         ) : null}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

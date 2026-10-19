@@ -963,6 +963,7 @@ export default function App() {
           onSelectView={setActiveView}
           onTrySkill={handleTrySkill}
         />
+        {wsMenu.confirmationDialog}
         {commandPalette}
       </>
     );
@@ -1036,30 +1037,27 @@ export default function App() {
                   ? runningLabel
                   : formatRelativeTime(selectedSession.updatedAt)}
               </div>
-              <div
-                className="chat-header__menu-wrap"
-                ref={threadMenu.openMenu?.surface === "header" ? threadMenu.menuWrapRef : undefined}
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-haspopup="menu"
-                  aria-expanded={threadMenu.openMenu?.surface === "header"}
-                  aria-label={t("Thread actions")}
-
-                  data-testid="thread-header-menu"
-                  type="button"
-                  onClick={threadMenu.toggleHeaderMenu}
-                >
-                  …
-                </Button>
-                {threadMenu.openMenu?.surface === "header" && selectedThreadActions ? (
-                  <ThreadActionsMenu
-                    actions={selectedThreadActions}
-                    className="chat-header__menu"
-                  />
-                ) : null}
-              </div>
+              {selectedThreadActions ? (
+                <ThreadActionsMenu
+                  actions={selectedThreadActions}
+                  className="chat-header__menu"
+                  open={threadMenu.openMenu?.surface === "header"}
+                  onOpenChange={(open) => {
+                    threadMenu.setHeaderMenu(open);
+                  }}
+                  trigger={
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t("Thread actions")}
+                      data-testid="thread-header-menu"
+                      type="button"
+                    >
+                      …
+                    </Button>
+                  }
+                />
+              ) : null}
             </>
           ) : null}
         </Topbar>
@@ -1158,14 +1156,15 @@ export default function App() {
                           "This session was written by a newer version of pi — some content may not display. Update pi-gui (or open it with the pi CLI) to see everything.",
                         )}
                       </span>
-                      <button
+                      <Button
+                        variant="ghost"
                         type="button"
                         className="schema-skew-notice__dismiss"
                         aria-label={t("Dismiss notice")}
                         onClick={() => dismissSchemaSkewNotice(selectedSessionKey)}
                       >
                         {t("Dismiss")}
-                      </button>
+                      </Button>
                     </div>
                   ) : null}
 

@@ -1,3 +1,4 @@
+import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
 import {
@@ -53,19 +54,25 @@ export function SettingsSegmented<T extends string>({
 }) {
   useLocale();
   return (
-    <div aria-label={label} className="settings-segmented" role="group">
+    <RadioGroup
+      aria-label={label}
+      className="settings-segmented"
+      value={value ?? ""}
+      onValueChange={(next) => onChange(next as T)}
+      orientation="horizontal"
+    >
       {options.map((option) => (
-        <button
-          aria-pressed={option.value === value}
+        <RadioGroupItem
+          variant="segment"
+          value={option.value}
           className="settings-segmented__option"
           key={option.value}
           type="button"
-          onClick={() => onChange(option.value)}
         >
           {option.label}
-        </button>
+        </RadioGroupItem>
       ))}
-    </div>
+    </RadioGroup>
   );
 }
 

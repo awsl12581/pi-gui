@@ -40,14 +40,15 @@ type OpenThreadMenu =
 
 export interface ThreadMenuState {
   readonly platform: NodeJS.Platform;
+  readonly closeMenu: () => void;
   readonly openMenu: OpenThreadMenu | null;
   readonly renameSessionId: string | null;
   readonly renameDraft: string;
   readonly setRenameDraft: Dispatch<SetStateAction<string>>;
-  readonly menuWrapRef: RefObject<HTMLDivElement | null>;
   readonly renamePanelRef: RefObject<HTMLFormElement | null>;
   readonly openSidebarMenu: (sessionId: string) => void;
   readonly toggleHeaderMenu: () => void;
+  readonly setHeaderMenu: (open: boolean) => void;
   readonly submitRename: (subject: ThreadActionSubject) => void;
   readonly cancelRename: () => void;
   /**
@@ -72,21 +73,18 @@ export function useThreadActions({
   const [openMenu, setOpenMenu] = useState<OpenThreadMenu | null>(null);
   const [renameSessionId, setRenameSessionId] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState("");
-  const menuWrapRef = useRef<HTMLDivElement | null>(null);
   const renamePanelRef = useRef<HTMLFormElement | null>(null);
 
   useEffect(() => {
     const handlePointerDown = (event: MouseEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) return;
-      if (!menuWrapRef.current?.contains(target) && !renamePanelRef.current?.contains(target)) {
-        setOpenMenu(null);
+      if (!renamePanelRef.current?.contains(target)) {
         setRenameSessionId(null);
       }
     };
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpenMenu(null);
         setRenameSessionId(null);
       }
     };
@@ -159,11 +157,11 @@ export function useThreadActions({
 
   return {
     platform,
+    closeMenu: () => setOpenMenu(null),
     openMenu,
     renameSessionId,
     renameDraft,
     setRenameDraft,
-    menuWrapRef,
     renamePanelRef,
     openSidebarMenu: (sessionId) => {
       setRenameSessionId(null);
@@ -172,6 +170,10 @@ export function useThreadActions({
     toggleHeaderMenu: () => {
       setRenameSessionId(null);
       setOpenMenu((current) => (current?.surface === "header" ? null : { surface: "header" }));
+    },
+    setHeaderMenu: (open) => {
+      setRenameSessionId(null);
+      setOpenMenu(open ? { surface: "header" } : null);
     },
     submitRename: (subject) => {
       const nextTitle = renameDraft.trim();

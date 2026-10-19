@@ -1,3 +1,4 @@
+import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
 import { t, i18n } from "../../../../i18n";
 import { useLocale } from "../../../ui/use-locale";
@@ -285,7 +286,8 @@ function AddToChatButton({
       className="annotation-popover annotation-add"
       style={{ top: popoverTop(anchor, 32), left: Math.max(POPOVER_GAP, anchor.left) }}
     >
-      <button
+      <Button
+        variant="ghost"
         className="annotation-add__button"
         data-testid="add-to-chat"
         type="button"
@@ -299,7 +301,7 @@ function AddToChatButton({
             <kbd key={key}>{key}</kbd>
           ))}
         </span>
-      </button>
+      </Button>
     </div>
   );
 }
@@ -364,7 +366,8 @@ function AnnotationEditor({
           }
         }}
       />
-      <button
+      <Button
+        variant="ghost"
         aria-label={t("Remove annotation")}
         className="annotation-editor__remove"
         data-testid="annotation-remove"
@@ -377,7 +380,7 @@ function AnnotationEditor({
         }}
       >
         <CloseIcon />
-      </button>
+      </Button>
     </div>
   );
 }

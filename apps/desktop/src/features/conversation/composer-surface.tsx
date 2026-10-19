@@ -1,3 +1,4 @@
+import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
 import { t } from "../../../i18n";
 import { useLocale } from "../../ui/use-locale";
@@ -383,7 +384,8 @@ export function ComposerSurface({
             ) : null}
           </div>
         ) : null}
-        <textarea
+        <Textarea
+          autoSize={false}
           aria-label={textareaLabel}
           className={textareaClassName}
           data-testid={textareaTestId}

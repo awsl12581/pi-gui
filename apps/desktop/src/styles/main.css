@@ -1464,6 +1464,7 @@
 .secondary-surface__nav-item {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 10px;
   min-height: 30px;
   padding: 0 var(--space-2);
@@ -1475,13 +1476,19 @@
 }
 
 .secondary-surface__nav-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: var(--muted-strong);
 }
 
 .secondary-surface__nav-icon svg {
   width: 16px;
   height: 16px;
+  flex: none;
 }
 
 .secondary-surface__nav-item:hover {
@@ -2165,7 +2172,7 @@
   color: var(--text-strong);
 }
 
-.settings-segmented__option[aria-pressed="true"] {
+.settings-segmented__option[data-state="checked"] {
   background: var(--overlay-active);
   color: var(--text-strong);
 }
@@ -2712,17 +2719,6 @@
   }
 }
 
-.extension-dialog-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--scrim);
-  backdrop-filter: blur(6px);
-}
-
 .extension-dialog {
   width: min(560px, 100%);
   display: grid;
@@ -2820,17 +2816,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-}
-
-.tree-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 34;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--scrim);
-  backdrop-filter: blur(10px);
 }
 
 .tree-modal {

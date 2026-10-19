@@ -199,14 +199,15 @@ export function ConversationTimeline({
               </div>
             )}
             {!transcriptFailed && viewport.showJumpToLatest ? (
-              <button
+              <Button
+                variant="ghost"
                 className="timeline-jump"
                 data-testid="timeline-jump"
                 type="button"
                 onClick={viewport.jumpToLatest}
               >
                 {t("New activity below")}
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
