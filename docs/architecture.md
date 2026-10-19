@@ -1,16 +1,20 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-18 21:59 CST
-> 文档版本：v9
-> 修改说明：记录应用语言偏好、离线翻译资源、跨窗口同步及时间线文案描述符。
+> 最后修改时间：2026-10-19 13:23 CST
+> 文档版本：v11
+> 修改说明：记录 catalog 优先的两阶段启动、后台同步和 renderer 按需加载。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
+
+App startup creates a persistent `default-workspace` directory under Electron `userData` and registers it through the same Pi workspace lifecycle as project folders. The default workspace provides a working directory for conversations and a runtime context for Providers, Models, MCP and Skills before a project is opened. A valid saved selection is restored; on a fresh profile, an explicitly supplied initial project takes precedence, otherwise the default workspace is selected. Invalid selections fall back to the default workspace. Its display name follows the app language, and rename/removal requests are rejected. Other project workspaces retain their existing lifecycle. Sharing a workspace context does not make MCP servers belong to a model provider, and the default workspace is separate from Pi's global resource directory.
 
 The Pi runtime and desktop extension adapter use Pi 1.2 and Chord 1.2. Extension facets register TypeBox remote contracts with `api.serve`; browser views acquire them through the scoped client host, subscribe to state, and release handles during cleanup. The transport uses Chord's frame, call, cancellation, and state protocols inside the existing opaque-origin frame boundary.
 
 The review/capture and custom extension-view additions are **implemented and verified within the documented macOS scope** as of September 22, 2026. The [final verification report](archive/workspace-redesign-verification.md) separates baseline checks, Core Electron, real-provider workflows, external local-package loading and local packaged-app proof from the older [workspace foundation evidence](archive/workspace-foundation-verification.md). It does not claim Windows/Linux validation or a notarized/published release.
 
 ## Execution path
+
+Startup restores and validates current UI state and attachments, reuses catalog entries for registered workspaces, and loads the selected workspace's runtime before creating the first window. New initial folders and a missing default workspace are registered through the existing Pi sync path. Startup projection uses cached worktree rows and skips secondary runtime preloads. Once the first window reaches `ready-to-show`, main asks the store to reconcile tracked workspaces, refresh worktrees and preload remaining runtimes in the background. Reconcile uses workspace IDs so it cannot re-register a folder removed while it waited. Background refresh preserves newer window selection and drafts, and publishes startup diagnostics for failed workspaces. Selected-session hydration continues independently. Renderer settings, terminal, diff and file panels use lazy chunks; Shiki's engine, grammars and WASM load when highlighted code is first mounted, with plain text displayed while loading.
 
 The renderer calls the browser-safe `window.piApp` API exposed by preload. Electron main validates requests and routes them through [IPC registration](../apps/desktop/electron/ipc/register-desktop-ipc.ts). The [window owner](../apps/desktop/electron/windows/window-owner.ts) supplies the sender window's view and target session. Bounded desktop owners perform the operation, and the Pi SDK driver delegates agent execution to upstream Pi.
 
@@ -232,3 +236,5 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v7   | 2026-10-18 20:45 CST | 将维护中插件明确为第一方扩展，同步新目录和使用入口，标注打包内置为规划。   |
 | v8   | 2026-10-18 21:08 CST | 记录设置许可页的构建时清单生成、离线加载和上游补充声明边界。               |
 | v9   | 2026-10-18 21:59 CST | 记录语言偏好持久化、系统语言回退、离线资源、跨窗口同步和时间线文案描述符。 |
+| v10  | 2026-10-19 13:16 CST | 记录启动默认工作区、工作目录、选择回退、语言显示和重命名／移除保护。       |
+| v11  | 2026-10-19 13:23 CST | 记录 catalog 优先启动、窗口就绪后的同步及 renderer 模块按需加载。          |
