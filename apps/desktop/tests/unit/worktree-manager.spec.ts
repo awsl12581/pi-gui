@@ -237,6 +237,7 @@ test("pruneOrphanedWorktrees removes clean merged orphans and fails closed for p
 });
 
 test("app worktree paths are matched inside the profile root only, even before it exists", async () => {
+  test.skip(process.platform === "win32", "Windows requires Developer Mode for symlink fixtures.");
   const root = await mkdtemp(join(tmpdir(), "wt-roots-"));
   try {
     const isAppWorktreePath = appWorktreeRootMatcher(join(root, "worktrees"));

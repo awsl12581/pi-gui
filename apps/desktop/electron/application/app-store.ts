@@ -1,151 +1,135 @@
-import { t } from "../../i18n";
+import type { SessionCatalogEntry } from "@pi-gui/catalogs";
 import { JsonCatalogStore } from "@pi-gui/catalogs/node";
-import { sessionKey } from "@pi-gui/session-driver";
-import type { ExtensionFlagValues, SessionSchemaInfo } from "@pi-gui/session-driver";
-import type { BrowserWindow } from "electron";
-import { randomUUID } from "node:crypto";
-import { mkdir, readFile, stat } from "node:fs/promises";
-import { homedir, hostname } from "node:os";
-import { join, resolve, sep } from "node:path";
 import {
   applyHostUiRequestToExtensionUiState,
-  type GenerateThreadTitleOptions,
   isExtensionUiDialogRequest,
   PiSdkDriver,
-  type PiSdkDriverConfig,
   SessionLeasedError,
+  type GenerateThreadTitleOptions,
+  type PiSdkDriverConfig,
 } from "@pi-gui/pi-sdk-driver";
-import type { SessionCatalogEntry } from "@pi-gui/catalogs";
-import type {
-  NavigateSessionTreeOptions,
-  NavigateSessionTreeResult,
-  SessionTreeSnapshot,
-} from "@pi-gui/session-driver/types";
 import type {
   CreateSessionOptions,
+  ExtensionFlagValues,
   HostUiResponse,
   SessionConfig,
-  SessionUsageSnapshot,
   SessionDriverEvent,
   SessionQueuedMessage,
   SessionRef,
+  SessionSchemaInfo,
   SessionSnapshot,
+  SessionUsageSnapshot,
   WorkspaceRef,
 } from "@pi-gui/session-driver";
+import { sessionKey } from "@pi-gui/session-driver";
 import type {
-  ModelSettingsSnapshot,
   RuntimeCommandRecord,
   RuntimeLoginCallbacks,
   RuntimeSettingsSnapshot,
   RuntimeSnapshot,
 } from "@pi-gui/session-driver/runtime-types";
+import type {
+  NavigateSessionTreeOptions,
+  NavigateSessionTreeResult,
+  SessionTreeSnapshot,
+} from "@pi-gui/session-driver/types";
+import type { BrowserWindow } from "electron";
+import { randomUUID } from "node:crypto";
+import { mkdir, stat } from "node:fs/promises";
+import { hostname } from "node:os";
+import { join, resolve } from "node:path";
+import { composerImageSavedSkipMessage } from "../../contracts/composer-attachments";
 import {
+  createEmptyDesktopAppState,
   type AppView,
   type ComposerAttachment,
   type ComposerDraftSyncSource,
-  type ExtensionCommandCompatibilityRecord,
-  type ModelSettingsScopeMode,
-  createEmptyDesktopAppState,
+  type CreateScheduledTaskInput,
   type CreateSessionInput,
   type CreateWorktreeInput,
   type DesktopAppState,
   type DesktopAppViewState,
+  type ExtensionCommandCompatibilityRecord,
   type ForkThreadInput,
+  type ModelSettingsScopeMode,
   type NotificationPreferences,
   type QueuedComposerMessage,
   type RemoveWorktreeInput,
-  type SendChildThreadFollowUpInput,
-  type SetChildSupervisionLoopInput,
   type SelectedTranscriptRecord,
+  type SendChildThreadFollowUpInput,
   type SessionExtensionNoticeRecord,
+  type SetChildSupervisionLoopInput,
   type StartThreadInput,
   type StartupDiagnostic,
   type ThemeMode,
   type ThemePresetId,
   type ThreadGrouping,
-  type TranscriptMessage,
+  type UpdateScheduledTaskInput,
   type WorkspaceRecord,
   type WorkspaceSessionTarget,
-  isThemeMode,
-  isThemePresetId,
-  type CreateScheduledTaskInput,
-  type ScheduledTaskRecord,
-  type UpdateScheduledTaskInput,
 } from "../../contracts/desktop-state";
-import {
-  applyTimelineEvent,
-  appendAssistantDelta,
-  clearActiveAssistantMessage,
-  timelineFromDriverTranscript,
-} from "../conversation/app-store-timeline";
-import {
-  applySessionEventState,
-  updateSessionRecord,
-} from "../conversation/app-store-session-state";
-import { StreamingUiPublisher } from "../conversation/streaming-ui-publisher";
-import type { RefreshStateOptions } from "./refresh-state-options";
-import {
-  readPersistedUiState,
-  type PersistedUiState,
-  writePersistedUiState,
-} from "../persistence/app-store-persistence";
-import { AttachmentStore } from "../persistence/attachment-store";
-import {
-  type PendingRuntimeCommandExecution,
-  getLearnedCommandCompatibility,
-  pruneCompatibilityForRuntimeSnapshot,
-  recordLearnedCommandCompatibility,
-  restoreCompatibilityByWorkspace,
-  serializeCompatibilityByWorkspace,
-} from "../conversation/extension-command-compatibility";
-import {
-  buildWorktreeRecords,
-  buildWorkspaceRecords,
-  cloneComposerAttachment,
-  cloneComposerAttachments,
-  latestSessionActivityAt,
-  mergeQueuedComposerMessages,
-  mapToRecord,
-  previewFromTranscript,
-  toSessionQueuedMessages,
-  toSessionRef,
-} from "./app-store-utils";
 import type {
   CustomProviderConfig,
   McpServerScope,
   McpServersSnapshot,
   NewMcpServerInput,
 } from "../../contracts/ipc";
-import { resolveRepoWorkspaceId } from "../../contracts/workspace-roots";
-import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../contracts/workbench";
-import { composerImageSavedSkipMessage } from "../../contracts/composer-attachments";
 import { extensionToolLabels } from "../../contracts/tool-labels";
-import { quarantinePersistedComposerAttachments } from "../ipc/composer-attachment-pixels";
-import { SessionStateMap, type QueuedComposerEditState } from "../conversation/session-state-map";
-import {
-  createEmptyExtensionUiState,
-  serializeExtensionUiState,
-} from "../conversation/session-state-map";
-import {
-  EXTENSION_NOTICE_TIMEOUT_MS,
-  appendExtensionNotice,
-  extensionNoticeFromRequest,
-  extensionNoticeTimerId,
-  removeExtensionNotice,
-} from "../extensions/extension-notices";
-import { appWorktreeRootMatcher } from "../platform/worktrees/app-worktree-roots";
-import { GitWorktreeManager } from "../platform/worktrees/worktree-manager";
-import { createWorkspaceOwner, type WorkspaceOwner } from "../workspace/app-store-workspace";
-import { resolveExtensionFlags, type ResolvedExtensionFlags } from "../workspace/extension-flags";
+import { decodeTaskWorkbenchTemplate, type TaskWorkbenchTemplate } from "../../contracts/workbench";
+import { t } from "../../i18n";
 import {
   createConversationOwner,
   type ConversationOwner,
 } from "../conversation/app-store-composer";
+import {
+  applySessionEventState,
+  updateSessionRecord,
+} from "../conversation/app-store-session-state";
+import {
+  appendAssistantDelta,
+  applyTimelineEvent,
+  timelineFromDriverTranscript,
+} from "../conversation/app-store-timeline";
+import {
+  getLearnedCommandCompatibility,
+  pruneCompatibilityForRuntimeSnapshot,
+  recordLearnedCommandCompatibility,
+  restoreCompatibilityByWorkspace,
+  serializeCompatibilityByWorkspace,
+  type PendingRuntimeCommandExecution,
+} from "../conversation/extension-command-compatibility";
+import {
+  createEmptyExtensionUiState,
+  serializeExtensionUiState,
+  SessionStateMap,
+  type QueuedComposerEditState,
+} from "../conversation/session-state-map";
+import {
+  isSessionActivelyViewed,
+  isSessionVisibleInWindow,
+} from "../conversation/session-visibility";
+import { StreamingUiPublisher } from "../conversation/streaming-ui-publisher";
+import {
+  appendExtensionNotice,
+  EXTENSION_NOTICE_TIMEOUT_MS,
+  extensionNoticeFromRequest,
+  extensionNoticeTimerId,
+  removeExtensionNotice,
+} from "../extensions/extension-notices";
+import { quarantinePersistedComposerAttachments } from "../ipc/composer-attachment-pixels";
 import * as orchestration from "../orchestration/app-store-orchestration";
 import {
   createOrchestrationOwner,
   type OrchestrationOwner,
 } from "../orchestration/app-store-orchestration";
+import {
+  readPersistedUiState,
+  writePersistedUiState,
+  type PersistedUiState,
+} from "../persistence/app-store-persistence";
+import { AttachmentStore } from "../persistence/attachment-store";
+import { appWorktreeRootMatcher } from "../platform/worktrees/app-worktree-roots";
+import { GitWorktreeManager } from "../platform/worktrees/worktree-manager";
 import {
   createScheduledTaskOwner,
   isScheduledTaskInFlight,
@@ -157,15 +141,28 @@ import {
   writeScheduledTasksFile,
 } from "../scheduled-tasks/scheduled-task-store";
 import {
-  isSessionActivelyViewed,
-  isSessionVisibleInWindow,
-} from "../conversation/session-visibility";
-
+  hasStoredModelSettings,
+  modelSettingsEqual,
+  resolveGlobalSettingsPath,
+} from "../settings/model-settings";
+import { PreferencesOwner } from "../settings/preferences-owner";
+import { RuntimeSettingsOwner } from "../settings/runtime-settings-owner";
+import { createWorkspaceOwner, type WorkspaceOwner } from "../workspace/app-store-workspace";
+import { resolveExtensionFlags, type ResolvedExtensionFlags } from "../workspace/extension-flags";
 import {
-  isLanguagePreference,
-  resolveAppLanguage,
-  type LanguagePreference,
-} from "../../contracts/language";
+  buildWorkspaceRecords,
+  buildWorktreeRecords,
+  cloneComposerAttachment,
+  cloneComposerAttachments,
+  latestSessionActivityAt,
+  mapToRecord,
+  mergeQueuedComposerMessages,
+  previewFromTranscript,
+  toSessionRef,
+} from "./app-store-utils";
+import type { RefreshStateOptions } from "./refresh-state-options";
+
+import { resolveAppLanguage, type LanguagePreference } from "../../contracts/language";
 
 type StateListener = (state: DesktopAppState) => void;
 type SelectedTranscriptListener = (payload: SelectedTranscriptRecord | null) => void;
@@ -296,6 +293,9 @@ export class DesktopAppStore {
   /** Flag values last chosen in New thread, by root workspace: the next thread's defaults. */
   private readonly extensionFlagsByWorkspace = new Map<string, ExtensionFlagValues>();
 
+  private readonly preferencesOwner: PreferencesOwner;
+  private readonly runtimeSettingsOwner: RuntimeSettingsOwner;
+
   constructor(options: DesktopAppStoreOptions) {
     this.systemLanguages = options.systemLanguages ?? ["en"];
     this.state = { ...this.state, language: resolveAppLanguage("system", this.systemLanguages) };
@@ -326,6 +326,82 @@ export class DesktopAppStore {
     this.initialWorkspacePaths = options.initialWorkspacePaths;
     this.getWindow = options.getWindow ?? (() => null);
     this.shouldKeepSessionDialogs = options.shouldKeepSessionDialogs ?? (() => false);
+
+    this.preferencesOwner = new PreferencesOwner({
+      preferencesState: () => ({
+        sidebarCollapsed: this.state.sidebarCollapsed,
+        threadGrouping: this.state.threadGrouping,
+        collapsedWorkspaceIds: this.state.collapsedWorkspaceIds,
+        notificationPreferences: this.state.notificationPreferences,
+        integratedTerminalShell: this.state.integratedTerminalShell,
+        enableTransparency: this.state.enableTransparency,
+        languagePreference: this.state.languagePreference,
+        language: this.state.language,
+        themeMode: this.state.themeMode,
+        themePresetId: this.state.themePresetId,
+      }),
+      updatePreferences: (patch) => {
+        this.state = {
+          ...this.state,
+          ...patch,
+          ...(patch.language !== undefined
+            ? {
+                workspaces: this.state.workspaces.map((workspace) =>
+                  workspace.id === this.defaultWorkspaceId
+                    ? { ...workspace, name: t("Default workspace", { lng: patch.language }) }
+                    : workspace,
+                ),
+              }
+            : {}),
+          lastError: undefined,
+          revision: this.state.revision + 1,
+        };
+      },
+      systemLanguages: this.systemLanguages,
+      snapshot: () => this.snapshot(),
+      initialize: () => this.initialize(),
+      persistUiState: () => this.persistUiState(),
+      emit: () => this.emit(),
+    });
+    this.runtimeSettingsOwner = new RuntimeSettingsOwner({
+      runtimeSupervisor: this.driver.runtimeSupervisor,
+      reloadSessionWhenIdle: (sessionRef) => this.driver.reloadSessionWhenIdle(sessionRef),
+      settingsState: () => ({
+        workspaces: this.state.workspaces,
+        selectedWorkspaceId: this.state.selectedWorkspaceId,
+        modelSettingsScopeMode: this.state.modelSettingsScopeMode,
+        globalModelSettings: this.state.globalModelSettings,
+      }),
+      updateModelSettingsScopeMode: (modelSettingsScopeMode) => {
+        this.state = {
+          ...this.state,
+          modelSettingsScopeMode,
+          lastError: undefined,
+          revision: this.state.revision + 1,
+        };
+      },
+      setRuntimeSnapshot: (id, snapshot) => {
+        this.runtimeByWorkspace.set(id, snapshot);
+      },
+      hasRuntimeSnapshot: (id) => this.runtimeByWorkspace.has(id),
+      runtimeSnapshots: () => this.serializeRuntimeState(),
+      isBuiltinExtensionDisabled: (name) => this.disabledBuiltinExtensions.has(name),
+      setBuiltinExtensionDisabled: (name, disabled) => {
+        if (disabled) this.disabledBuiltinExtensions.add(name);
+        else this.disabledBuiltinExtensions.delete(name);
+      },
+      initialize: () => this.initialize(),
+      emit: () => this.emit(),
+      persistUiState: () => this.persistUiState(),
+      recordSettingsSelfWrite: () => this.recordSettingsSelfWrite(),
+      refreshSessionCommandsForWorkspace: (workspaceId) =>
+        this.refreshSessionCommandsForWorkspace(workspaceId),
+      refreshState: (options) => this.refreshState(options),
+      sessionRefsForWorkspace: (workspaceId) => this.sessionRefsForWorkspace(workspaceId),
+      withError: (error) => this.withError(error),
+      withErrorHandling: (fn) => this.withErrorHandling(fn),
+      workspaceRefFromState: (workspaceId) => this.workspaceRefFromState(workspaceId),
+    });
 
     this.conversationOwner = createConversationOwner({
       driver: this.driver,
@@ -1359,205 +1435,51 @@ export class DesktopAppStore {
   }
 
   async setSidebarCollapsed(sidebarCollapsed: boolean): Promise<DesktopAppState> {
-    await this.initialize();
-    if (this.state.sidebarCollapsed === sidebarCollapsed) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      sidebarCollapsed,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setSidebarCollapsed(sidebarCollapsed);
   }
 
   async setThreadGrouping(threadGrouping: ThreadGrouping): Promise<DesktopAppState> {
-    await this.initialize();
-    if (this.state.threadGrouping === threadGrouping) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      threadGrouping,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setThreadGrouping(threadGrouping);
   }
 
   async setWorkspaceCollapsed(workspaceId: string, collapsed: boolean): Promise<DesktopAppState> {
-    await this.initialize();
-    const collapsedWorkspaceIds = new Set(this.state.collapsedWorkspaceIds);
-    if (collapsedWorkspaceIds.has(workspaceId) === collapsed) {
-      return structuredClone(this.state);
-    }
-    if (collapsed) collapsedWorkspaceIds.add(workspaceId);
-    else collapsedWorkspaceIds.delete(workspaceId);
-    this.state = {
-      ...this.state,
-      collapsedWorkspaceIds: [...collapsedWorkspaceIds],
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setWorkspaceCollapsed(workspaceId, collapsed);
   }
 
   async setNotificationPreferences(
     preferences: Partial<NotificationPreferences>,
   ): Promise<DesktopAppState> {
-    await this.initialize();
-    this.state = {
-      ...this.state,
-      notificationPreferences: {
-        ...this.state.notificationPreferences,
-        ...preferences,
-      },
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setNotificationPreferences(preferences);
   }
 
   async setIntegratedTerminalShell(integratedTerminalShell: string): Promise<DesktopAppState> {
-    await this.initialize();
-    const normalizedShell = integratedTerminalShell.trim();
-    if (this.state.integratedTerminalShell === normalizedShell) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      integratedTerminalShell: normalizedShell,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setIntegratedTerminalShell(integratedTerminalShell);
   }
 
   async setEnableTransparency(enabled: boolean): Promise<DesktopAppState> {
-    await this.initialize();
-    if (this.state.enableTransparency === enabled) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      enableTransparency: enabled,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setEnableTransparency(enabled);
   }
 
   async setLanguagePreference(languagePreference: LanguagePreference): Promise<DesktopAppState> {
-    await this.initialize();
-    if (!isLanguagePreference(languagePreference))
-      throw new TypeError(t("Unsupported language preference"));
-    if (this.state.languagePreference === languagePreference) return structuredClone(this.state);
-    this.state = {
-      ...this.state,
-      languagePreference,
-      language: resolveAppLanguage(languagePreference, this.systemLanguages),
-      workspaces: this.state.workspaces.map((workspace) =>
-        workspace.id === this.defaultWorkspaceId
-          ? {
-              ...workspace,
-              name: t("Default workspace", {
-                lng: resolveAppLanguage(languagePreference, this.systemLanguages),
-              }),
-            }
-          : workspace,
-      ),
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setLanguagePreference(languagePreference);
   }
 
   async setThemeMode(themeMode: ThemeMode): Promise<DesktopAppState> {
-    await this.initialize();
-    if (!isThemeMode(themeMode)) {
-      throw new Error(t("Unsupported theme mode: {{value0}}", { value0: String(themeMode) }));
-    }
-    if (this.state.themeMode === themeMode) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      themeMode,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setThemeMode(themeMode);
   }
 
   async setThemePresetId(themePresetId: ThemePresetId): Promise<DesktopAppState> {
-    await this.initialize();
-    if (!isThemePresetId(themePresetId)) {
-      throw new Error(t("Unsupported theme preset: {{value0}}", { value0: String(themePresetId) }));
-    }
-    if (this.state.themePresetId === themePresetId) {
-      return structuredClone(this.state);
-    }
-    this.state = {
-      ...this.state,
-      themePresetId,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.emit();
+    return this.preferencesOwner.setThemePresetId(themePresetId);
   }
 
   async setModelSettingsScopeMode(
     modelSettingsScopeMode: ModelSettingsScopeMode,
   ): Promise<DesktopAppState> {
-    await this.initialize();
-    if (this.state.modelSettingsScopeMode === modelSettingsScopeMode) {
-      return this.emit();
-    }
-    if (modelSettingsScopeMode === "app-global") {
-      await this.restoreGlobalModelSettings(this.state.globalModelSettings);
-    }
-    this.state = {
-      ...this.state,
-      modelSettingsScopeMode,
-      lastError: undefined,
-      revision: this.state.revision + 1,
-    };
-    await this.persistUiState();
-    return this.refreshState({ clearLastError: true });
+    return this.runtimeSettingsOwner.setModelSettingsScopeMode(modelSettingsScopeMode);
   }
 
-  /* ── Runtime / model / provider settings ───────────────── */
-
   async refreshRuntime(workspaceId?: string): Promise<DesktopAppState> {
-    await this.initialize();
-    const resolvedWorkspaceId = workspaceId || this.state.selectedWorkspaceId;
-    const ws = this.workspaceRefFromState(resolvedWorkspaceId);
-    if (!ws) {
-      return this.emit();
-    }
-
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.refreshRuntime(ws);
-      this.runtimeByWorkspace.set(ws.workspaceId, snapshot);
-      const reloaded = await this.reloadOpenSessions([ws.workspaceId]);
-      await this.refreshSessionCommandsForWorkspace(ws.workspaceId);
-      const state = await this.refreshState({ clearLastError: true });
-      return reloaded
-        ? state
-        : this.withError(
-            t("Some open threads could not reload; they pick up the change when reopened."),
-          );
-    });
+    return this.runtimeSettingsOwner.refreshRuntime(workspaceId);
   }
 
   async setSessionModel(
@@ -1573,52 +1495,14 @@ export class DesktopAppStore {
     provider: string,
     modelId: string,
   ): Promise<DesktopAppState> {
-    const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return this.withRuntimeUpdate(targetWorkspaceId, (ws) =>
-        this.driver.runtimeSupervisor.setDefaultModel(ws, { provider, modelId }),
-      );
-    }
-    await this.initialize();
-    const ws = this.workspaceRefFromState(targetWorkspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
-    }
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.setProjectDefaultModel(ws, {
-        provider,
-        modelId,
-      });
-      await this.recordSettingsSelfWrite();
-      this.runtimeByWorkspace.set(ws.workspaceId, snapshot);
-      return this.refreshState({ clearLastError: true });
-    });
+    return this.runtimeSettingsOwner.setDefaultModel(workspaceId, provider, modelId);
   }
 
   async setDefaultThinkingLevel(
     workspaceId: string,
     thinkingLevel: RuntimeSettingsSnapshot["defaultThinkingLevel"],
   ): Promise<DesktopAppState> {
-    const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return this.withRuntimeUpdate(targetWorkspaceId, (ws) =>
-        this.driver.runtimeSupervisor.setDefaultThinkingLevel(ws, thinkingLevel),
-      );
-    }
-    await this.initialize();
-    const ws = this.workspaceRefFromState(targetWorkspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
-    }
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.setProjectDefaultThinkingLevel(
-        ws,
-        thinkingLevel,
-      );
-      await this.recordSettingsSelfWrite();
-      this.runtimeByWorkspace.set(ws.workspaceId, snapshot);
-      return this.refreshState({ clearLastError: true });
-    });
+    return this.runtimeSettingsOwner.setDefaultThinkingLevel(workspaceId, thinkingLevel);
   }
 
   async setSessionThinkingLevel(
@@ -1633,26 +1517,11 @@ export class DesktopAppStore {
     providerId: string,
     callbacks: RuntimeLoginCallbacks,
   ): Promise<DesktopAppState> {
-    await this.initialize();
-    const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.login(ws, providerId, callbacks);
-      this.runtimeByWorkspace.set(workspaceId, snapshot);
-      await this.autoEnableModelsForConnectedProvider(targetWorkspaceId, providerId, snapshot);
-      await this.refreshSessionCommandsForWorkspace(workspaceId);
-      return this.refreshState({ clearLastError: true });
-    });
+    return this.runtimeSettingsOwner.loginProvider(workspaceId, providerId, callbacks);
   }
 
   async logoutProvider(workspaceId: string, providerId: string): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(workspaceId, (ws) =>
-      this.driver.runtimeSupervisor.logout(ws, providerId),
-    );
+    return this.runtimeSettingsOwner.logoutProvider(workspaceId, providerId);
   }
 
   async setProviderApiKey(
@@ -1660,135 +1529,33 @@ export class DesktopAppStore {
     providerId: string,
     apiKey: string,
   ): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(workspaceId, (ws) =>
-      this.driver.runtimeSupervisor.setProviderApiKey(ws, providerId, apiKey),
-    );
+    return this.runtimeSettingsOwner.setProviderApiKey(workspaceId, providerId, apiKey);
   }
 
   async listCustomProviders(): Promise<readonly CustomProviderConfig[]> {
-    await this.initialize();
-    const entries = await this.driver.runtimeSupervisor.listCustomProviders();
-    return entries.map((entry) => ({
-      providerId: entry.providerId,
-      baseUrl: entry.baseUrl,
-      ...(entry.apiKey !== undefined ? { apiKey: entry.apiKey } : {}),
-      models: entry.models.map((model) => ({
-        id: model.id,
-        ...(model.contextWindow !== undefined ? { contextWindow: model.contextWindow } : {}),
-      })),
-    }));
+    return this.runtimeSettingsOwner.listCustomProviders();
   }
 
   async setCustomProvider(
     workspaceId: string,
     config: CustomProviderConfig,
   ): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(
-      workspaceId,
-      (ws) =>
-        this.driver.runtimeSupervisor.setCustomProvider(ws, {
-          providerId: config.providerId,
-          baseUrl: config.baseUrl,
-          ...(config.apiKey !== undefined ? { apiKey: config.apiKey } : {}),
-          models: config.models.map((model) => ({
-            id: model.id,
-            ...(model.contextWindow !== undefined ? { contextWindow: model.contextWindow } : {}),
-          })),
-        }),
-      { refreshAllWorkspaces: true },
-    );
+    return this.runtimeSettingsOwner.setCustomProvider(workspaceId, config);
   }
 
   async deleteCustomProvider(workspaceId: string, providerId: string): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(
-      workspaceId,
-      (ws) => this.driver.runtimeSupervisor.deleteCustomProvider(ws, providerId),
-      { refreshAllWorkspaces: true },
-    );
+    return this.runtimeSettingsOwner.deleteCustomProvider(workspaceId, providerId);
   }
 
   async setEnableSkillCommands(workspaceId: string, enabled: boolean): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(
-      workspaceId,
-      (ws) => this.driver.runtimeSupervisor.setEnableSkillCommands(ws, enabled),
-      { reloadSessions: true },
-    );
+    return this.runtimeSettingsOwner.setEnableSkillCommands(workspaceId, enabled);
   }
 
   async setScopedModelPatterns(
     workspaceId: string,
     patterns: readonly string[],
   ): Promise<DesktopAppState> {
-    const targetWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return this.withRuntimeUpdate(targetWorkspaceId, (ws) =>
-        this.driver.runtimeSupervisor.setScopedModelPatterns(ws, patterns),
-      );
-    }
-    await this.initialize();
-    const ws = this.workspaceRefFromState(targetWorkspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: targetWorkspaceId }));
-    }
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.setProjectScopedModelPatterns(
-        ws,
-        patterns,
-      );
-      await this.recordSettingsSelfWrite();
-      this.runtimeByWorkspace.set(ws.workspaceId, snapshot);
-      return this.refreshState({ clearLastError: true });
-    });
-  }
-
-  private async autoEnableModelsForConnectedProvider(
-    workspaceId: string,
-    providerId: string,
-    snapshot: RuntimeSnapshot,
-  ): Promise<void> {
-    const providerModelPatterns = [
-      ...new Set(
-        snapshot.models
-          .filter((model) => model.available && model.providerId === providerId)
-          .map((model) => `${model.providerId}/${model.modelId}`),
-      ),
-    ];
-    if (providerModelPatterns.length === 0) {
-      return;
-    }
-
-    const currentPatterns = snapshot.settings.enabledModelPatterns;
-    if (currentPatterns.length === 0) {
-      return;
-    }
-
-    const nextPatterns = mergeEnabledModelPatterns(currentPatterns, providerModelPatterns);
-    if (nextPatterns.length === currentPatterns.length) {
-      return;
-    }
-
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      const ownerWorkspace = this.workspaceRefFromState(workspaceId);
-      if (!ownerWorkspace) {
-        return;
-      }
-      const updatedSnapshot = await this.driver.runtimeSupervisor.setScopedModelPatterns(
-        ownerWorkspace,
-        nextPatterns,
-      );
-      this.runtimeByWorkspace.set(workspaceId, updatedSnapshot);
-      return;
-    }
-
-    const ownerWorkspace = this.workspaceRefFromState(workspaceId);
-    if (!ownerWorkspace) {
-      return;
-    }
-    const updatedSnapshot = await this.driver.runtimeSupervisor.setProjectScopedModelPatterns(
-      ownerWorkspace,
-      nextPatterns,
-    );
-    this.runtimeByWorkspace.set(workspaceId, updatedSnapshot);
+    return this.runtimeSettingsOwner.setScopedModelPatterns(workspaceId, patterns);
   }
 
   async setSkillEnabled(
@@ -1796,11 +1563,7 @@ export class DesktopAppStore {
     filePath: string,
     enabled: boolean,
   ): Promise<DesktopAppState> {
-    return this.withRuntimeUpdate(
-      workspaceId,
-      (ws) => this.driver.runtimeSupervisor.setSkillEnabled(ws, filePath, enabled),
-      { reloadSessions: true },
-    );
+    return this.runtimeSettingsOwner.setSkillEnabled(workspaceId, filePath, enabled);
   }
 
   async setExtensionEnabled(
@@ -1808,118 +1571,19 @@ export class DesktopAppStore {
     filePath: string,
     enabled: boolean,
   ): Promise<DesktopAppState> {
-    const builtinName = this.driver.runtimeSupervisor.builtinExtensionName(filePath);
-    if (builtinName) {
-      return this.setBuiltinExtensionEnabled(workspaceId, builtinName, enabled);
-    }
-    // pi's own add-ons (`builtin:mcp` …) are switched in pi's global settings, so every
-    // workspace's runtime and threads pick the change up.
-    const global = filePath.startsWith("builtin:");
-    return this.withRuntimeUpdate(
-      workspaceId,
-      (ws) => this.driver.runtimeSupervisor.setExtensionEnabled(ws, filePath, enabled),
-      { reloadSessions: true, refreshAllWorkspaces: global },
-    );
+    return this.runtimeSettingsOwner.setExtensionEnabled(workspaceId, filePath, enabled);
   }
-
-  /** pi-gui owns built-in extensions, so their switch is app-wide rather than in pi's settings. */
-  private async setBuiltinExtensionEnabled(
-    workspaceId: string,
-    name: string,
-    enabled: boolean,
-  ): Promise<DesktopAppState> {
-    await this.initialize();
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-    const wasDisabled = this.disabledBuiltinExtensions.has(name);
-    const setDisabled = (disabled: boolean) =>
-      disabled
-        ? this.disabledBuiltinExtensions.add(name)
-        : this.disabledBuiltinExtensions.delete(name);
-    setDisabled(!enabled);
-    try {
-      await this.persistUiState();
-    } catch (error) {
-      // New sessions read the set directly, so an unsaved change must not stay in effect.
-      setDisabled(wasDisabled);
-      return this.withError(error);
-    }
-
-    return this.withErrorHandling(async () => {
-      const snapshot = await this.driver.runtimeSupervisor.refreshRuntime(ws);
-      await this.refreshRuntimeForAllWorkspaces(workspaceId, snapshot);
-      const reloaded = await this.reloadOpenSessions(
-        this.state.workspaces.map((workspace) => workspace.id),
-      );
-      await this.refreshSessionCommandsForAllWorkspaces();
-      const state = await this.refreshState({ clearLastError: true });
-      return reloaded
-        ? state
-        : this.withError(
-            t(
-              "Some open threads could not reload; they pick up the pi-gui tools change when reopened.",
-            ),
-          );
-    });
-  }
-
-  /**
-   * Reloads open threads so they re-read their config; one failing does not stop the others. A
-   * thread in the middle of a turn or compaction reloads when that ends, so its tools and MCP
-   * connections are not torn down under it.
-   */
-  private async reloadOpenSessions(workspaceIds: readonly string[]): Promise<boolean> {
-    const reloads = await Promise.allSettled(
-      workspaceIds
-        .flatMap((workspaceId) => this.sessionRefsForWorkspace(workspaceId))
-        // The driver resets the thread's extension UI as it reloads (a "reset" host UI
-        // request, before the extensions start again), whether now or after the turn.
-        .map((sessionRef) => this.driver.reloadSessionWhenIdle(sessionRef)),
-    );
-    const failed = reloads.filter((result) => result.status === "rejected");
-    for (const result of failed) {
-      console.error("[app-store] reloading open threads failed", result.reason);
-    }
-    return failed.length === 0;
-  }
-
-  /* ── MCP servers (pi's mcp.json) and code mode ─────────── */
 
   async listMcpServers(workspaceId: string): Promise<McpServersSnapshot> {
-    await this.initialize();
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      throw new Error(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-    const listing = this.driver.runtimeSupervisor.listMcpServers(ws);
-    return {
-      globalConfigPath: withHomeAsTilde(listing.globalConfigPath),
-      servers: listing.servers.map((server) => ({ ...server })),
-      errors: [...listing.errors],
-      codemodeAlwaysOn: await this.driver.runtimeSupervisor.getCodemodeAlwaysOn(ws),
-    };
+    return this.runtimeSettingsOwner.listMcpServers(workspaceId);
   }
 
   async addMcpServer(workspaceId: string, server: NewMcpServerInput): Promise<DesktopAppState> {
-    // The global file reaches every folder, so a clash with any folder's project file counts.
-    return this.withMcpConfigChange(workspaceId, "global", (ws) =>
-      this.driver.runtimeSupervisor.addMcpServer(
-        ws,
-        server,
-        this.state.workspaces.flatMap((workspace) => {
-          const ref = this.workspaceRefFromState(workspace.id);
-          return ref && ref.workspaceId !== ws.workspaceId ? [ref] : [];
-        }),
-      ),
-    );
+    return this.runtimeSettingsOwner.addMcpServer(workspaceId, server);
   }
 
   async removeMcpServer(workspaceId: string, name: string): Promise<DesktopAppState> {
-    return this.withMcpConfigChange(workspaceId, "global", () =>
-      this.driver.runtimeSupervisor.removeMcpServer(name),
-    );
+    return this.runtimeSettingsOwner.removeMcpServer(workspaceId, name);
   }
 
   async setMcpServerEnabled(
@@ -1928,163 +1592,11 @@ export class DesktopAppStore {
     name: string,
     enabled: boolean,
   ): Promise<DesktopAppState> {
-    return this.withMcpConfigChange(workspaceId, scope, (ws) =>
-      this.driver.runtimeSupervisor.setMcpServerEnabled(ws, scope, name, enabled),
-    );
+    return this.runtimeSettingsOwner.setMcpServerEnabled(workspaceId, scope, name, enabled);
   }
 
-  /**
-   * Writes `+codemode` in pi's `defaultTools`. Switching it on also reloads open threads in every
-   * workspace, since pi's reload turns on newly added default tools; switching it off reaches new
-   * threads only.
-   */
   async setCodemodeAlwaysOn(workspaceId: string, alwaysOn: boolean): Promise<DesktopAppState> {
-    await this.initialize();
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-    return this.withErrorHandling(async () => {
-      await this.driver.runtimeSupervisor.setCodemodeAlwaysOn(ws, alwaysOn);
-      await this.recordSettingsSelfWrite();
-      // pi's reload turns on tools newly added to defaultTools but leaves removed ones on, so
-      // only switching on reaches open threads (a thread mid-turn picks it up when it ends).
-      const reloaded = alwaysOn
-        ? await this.reloadOpenSessions(this.state.workspaces.map((workspace) => workspace.id))
-        : true;
-      const state = await this.refreshState({ clearLastError: true });
-      return reloaded
-        ? state
-        : this.withError(
-            t("Some open threads could not reload; they get code mode when reopened."),
-          );
-    });
-  }
-
-  /**
-   * pi reads mcp.json when a thread starts, so open threads reload to pick up a change
-   * (restarting their MCP servers): every workspace's for the global file, else only the
-   * workspace whose `.pi/mcp.json` changed. Threads mid-turn reload when the turn ends.
-   */
-  private async withMcpConfigChange(
-    workspaceId: string,
-    scope: McpServerScope,
-    change: (ws: WorkspaceRef) => void | Promise<void>,
-  ): Promise<DesktopAppState> {
-    await this.initialize();
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-    return this.withErrorHandling(async () => {
-      await change(ws);
-      const workspaceIds =
-        scope === "global" ? this.state.workspaces.map((workspace) => workspace.id) : [workspaceId];
-      const reloaded = await this.reloadOpenSessions(workspaceIds);
-      await Promise.all(workspaceIds.map((id) => this.refreshSessionCommandsForWorkspace(id)));
-      const state = await this.refreshState({ clearLastError: true });
-      return reloaded
-        ? state
-        : this.withError(
-            t("Some open threads could not reload; they pick up the MCP change when reopened."),
-          );
-    });
-  }
-
-  private async withRuntimeUpdate(
-    workspaceId: string,
-    action: (ws: WorkspaceRef) => Promise<RuntimeSnapshot>,
-    options?: {
-      readonly reloadSessions?: boolean;
-      readonly refreshAllWorkspaces?: boolean;
-    },
-  ): Promise<DesktopAppState> {
-    await this.initialize();
-    const ws = this.workspaceRefFromState(workspaceId);
-    if (!ws) {
-      return this.withError(t("Unknown workspace: {{value0}}", { value0: workspaceId }));
-    }
-
-    return this.withErrorHandling(async () => {
-      const snapshot = await action(ws);
-      // The action just flushed settings files that focus reconcile watches by mtime; record the
-      // new mtimes so this self-write is not mistaken for an external edit on the next focus.
-      await this.recordSettingsSelfWrite();
-      if (options?.refreshAllWorkspaces) {
-        await this.refreshRuntimeForAllWorkspaces(workspaceId, snapshot);
-      } else {
-        this.runtimeByWorkspace.set(workspaceId, snapshot);
-      }
-      const reloaded = options?.reloadSessions
-        ? await this.reloadOpenSessions(
-            options.refreshAllWorkspaces
-              ? this.state.workspaces.map((workspace) => workspace.id)
-              : [workspaceId],
-          )
-        : true;
-      if (options?.refreshAllWorkspaces) {
-        await this.refreshSessionCommandsForAllWorkspaces();
-      } else {
-        await this.refreshSessionCommandsForWorkspace(workspaceId);
-      }
-      const state = await this.refreshState({ clearLastError: true });
-      return reloaded
-        ? state
-        : this.withError(
-            t("Some open threads could not reload; they pick up the change when reopened."),
-          );
-    });
-  }
-
-  private async refreshRuntimeForAllWorkspaces(
-    updatedWorkspaceId: string,
-    updatedSnapshot: RuntimeSnapshot,
-  ): Promise<void> {
-    this.runtimeByWorkspace.set(updatedWorkspaceId, updatedSnapshot);
-    const workspacesToRefresh = this.state.workspaces.filter(
-      (workspace) => workspace.id !== updatedWorkspaceId,
-    );
-    const snapshots = await Promise.allSettled(
-      workspacesToRefresh.map(async (workspace) => {
-        const runtime = await this.driver.runtimeSupervisor.refreshRuntime({
-          workspaceId: workspace.id,
-          path: workspace.path,
-          displayName: workspace.name,
-        });
-        return [workspace, runtime] as const;
-      }),
-    );
-    snapshots.forEach((result, index) => {
-      const workspace = workspacesToRefresh[index];
-      if (result.status === "fulfilled") {
-        this.runtimeByWorkspace.set(result.value[0].id, result.value[1]);
-        return;
-      }
-      console.warn(
-        `[pi-gui] Failed to refresh runtime for ${workspace?.path ?? "unknown workspace"} after custom provider update: ${
-          result.reason instanceof Error ? result.reason.message : String(result.reason)
-        }`,
-      );
-    });
-  }
-
-  private async refreshSessionCommandsForAllWorkspaces(): Promise<void> {
-    const results = await Promise.allSettled(
-      this.state.workspaces.map((workspace) =>
-        this.refreshSessionCommandsForWorkspace(workspace.id),
-      ),
-    );
-    results.forEach((result, index) => {
-      if (result.status === "fulfilled") {
-        return;
-      }
-      const workspace = this.state.workspaces[index];
-      console.warn(
-        `[pi-gui] Failed to refresh session commands for ${workspace?.path ?? "unknown workspace"} after custom provider update: ${
-          result.reason instanceof Error ? result.reason.message : String(result.reason)
-        }`,
-      );
-    });
+    return this.runtimeSettingsOwner.setCodemodeAlwaysOn(workspaceId, alwaysOn);
   }
 
   /* ── Internal application infrastructure ──────────────── */
@@ -2529,7 +2041,7 @@ export class DesktopAppStore {
           runtime,
         );
       }
-      const liveGlobalModelSettings = await this.loadLiveGlobalModelSettings(
+      const liveGlobalModelSettings = await this.runtimeSettingsOwner.loadLiveGlobalModelSettings(
         workspacesSnapshot.workspaces,
         selectedWorkspaceId || workspacesSnapshot.workspaces[0]?.workspaceId,
       );
@@ -2543,7 +2055,7 @@ export class DesktopAppStore {
         hasStoredModelSettings(globalModelSettings) &&
         !modelSettingsEqual(globalModelSettings, liveGlobalModelSettings)
       ) {
-        await this.restoreGlobalModelSettings(
+        await this.runtimeSettingsOwner.restoreGlobalModelSettings(
           globalModelSettings,
           workspacesSnapshot.workspaces,
           selectedWorkspaceId,
@@ -2551,13 +2063,13 @@ export class DesktopAppStore {
       }
       const scopedModelSettingsByWorkspace =
         this.state.modelSettingsScopeMode === "per-repo"
-          ? await this.loadScopedModelSettingsByWorkspace(
+          ? await this.runtimeSettingsOwner.loadScopedModelSettingsByWorkspace(
               workspaces,
               workspacesSnapshot.workspaces,
               globalModelSettings,
             )
           : undefined;
-      const runtimeByWorkspace = this.serializeEffectiveRuntimeState(
+      const runtimeByWorkspace = this.runtimeSettingsOwner.serializeEffectiveRuntimeState(
         workspaces,
         scopedModelSettingsByWorkspace,
       );
@@ -3653,52 +3165,8 @@ export class DesktopAppStore {
     };
   }
 
-  private resolveModelSettingsWorkspaceId(workspaceId: string): string {
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return workspaceId;
-    }
-    return resolveRepoWorkspaceId(this.state.workspaces, workspaceId) ?? workspaceId;
-  }
-
-  private async loadLiveGlobalModelSettings(
-    workspaces: readonly { workspaceId: string; path: string; displayName: string }[],
-    preferredWorkspaceId?: string,
-  ): Promise<ModelSettingsSnapshot> {
-    const fallbackWorkspace =
-      (preferredWorkspaceId
-        ? workspaces.find((entry) => entry.workspaceId === preferredWorkspaceId)
-        : undefined) ?? workspaces[0];
-    if (!fallbackWorkspace) {
-      return this.state.globalModelSettings;
-    }
-    return this.driver.runtimeSupervisor.getGlobalModelSettings({
-      workspaceId: fallbackWorkspace.workspaceId,
-      path: fallbackWorkspace.path,
-      displayName: fallbackWorkspace.displayName,
-    });
-  }
-
   async buildCreateSessionOptions(workspaceId: string): Promise<CreateSessionOptions | undefined> {
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return undefined;
-    }
-    const effectiveSettings = await this.loadEffectiveModelSettingsForWorkspace(workspaceId);
-    if (!effectiveSettings) {
-      return undefined;
-    }
-    return {
-      ...(effectiveSettings.defaultProvider && effectiveSettings.defaultModelId
-        ? {
-            initialModel: {
-              provider: effectiveSettings.defaultProvider,
-              modelId: effectiveSettings.defaultModelId,
-            },
-          }
-        : {}),
-      ...(effectiveSettings.defaultThinkingLevel
-        ? { initialThinkingLevel: effectiveSettings.defaultThinkingLevel }
-        : {}),
-    };
+    return this.runtimeSettingsOwner.buildCreateSessionOptions(workspaceId);
   }
 
   private async resolveExtensionFlags(
@@ -3745,80 +3213,16 @@ export class DesktopAppStore {
       path: workspace.path,
       displayName: workspace.name,
     }));
-    const scopedModelSettingsByWorkspace = await this.loadScopedModelSettingsByWorkspace(
-      this.state.workspaces,
-      workspaceRefs,
-      this.state.globalModelSettings,
-    );
-    return this.serializeEffectiveRuntimeState(
+    const scopedModelSettingsByWorkspace =
+      await this.runtimeSettingsOwner.loadScopedModelSettingsByWorkspace(
+        this.state.workspaces,
+        workspaceRefs,
+        this.state.globalModelSettings,
+      );
+    return this.runtimeSettingsOwner.serializeEffectiveRuntimeState(
       this.state.workspaces,
       scopedModelSettingsByWorkspace,
     );
-  }
-
-  private async loadScopedModelSettingsByWorkspace(
-    workspaces: DesktopAppState["workspaces"],
-    workspaceRefs: readonly { workspaceId: string; path: string; displayName: string }[],
-    globalModelSettings: ModelSettingsSnapshot,
-  ): Promise<Record<string, ModelSettingsSnapshot>> {
-    const uniqueOwnerIds = [
-      ...new Set(
-        workspaces.map(
-          (workspace) => resolveRepoWorkspaceId(workspaces, workspace.id) ?? workspace.id,
-        ),
-      ),
-    ];
-    const refsByWorkspaceId = new Map(
-      workspaceRefs.map((workspace) => [workspace.workspaceId, workspace] as const),
-    );
-    const ownerSettings = await Promise.all(
-      uniqueOwnerIds.map(async (workspaceId) => {
-        const workspace = refsByWorkspaceId.get(workspaceId);
-        if (!workspace) {
-          return undefined;
-        }
-        return [
-          workspaceId,
-          mergeModelSettingsSnapshot(
-            globalModelSettings,
-            await readProjectModelSettingsFile(workspace.path),
-          ),
-        ] as const;
-      }),
-    );
-
-    return Object.fromEntries(
-      ownerSettings.filter((entry): entry is readonly [string, ModelSettingsSnapshot] =>
-        Boolean(entry),
-      ),
-    );
-  }
-
-  private serializeEffectiveRuntimeState(
-    workspaces: DesktopAppState["workspaces"],
-    scopedModelSettingsByWorkspace?: Record<string, ModelSettingsSnapshot>,
-  ): Record<string, RuntimeSnapshot> {
-    const runtimeByWorkspace = this.serializeRuntimeState();
-    if (this.state.modelSettingsScopeMode !== "per-repo") {
-      return runtimeByWorkspace;
-    }
-
-    for (const workspace of workspaces) {
-      const ownerWorkspaceId = resolveRepoWorkspaceId(workspaces, workspace.id);
-      const workspaceRuntime = runtimeByWorkspace[workspace.id];
-      const modelSettings = ownerWorkspaceId
-        ? scopedModelSettingsByWorkspace?.[ownerWorkspaceId]
-        : undefined;
-      if (!workspaceRuntime || !modelSettings) {
-        continue;
-      }
-      runtimeByWorkspace[workspace.id] = applyModelSettingsSnapshot(
-        workspaceRuntime,
-        modelSettings,
-      );
-    }
-
-    return runtimeByWorkspace;
   }
 
   private serializeSessionExtensionUiState() {
@@ -3958,83 +3362,6 @@ export class DesktopAppStore {
     return this.state.workspaces
       .find((w) => w.id === sessionRef.workspaceId)
       ?.sessions.find((s) => s.id === sessionRef.sessionId);
-  }
-
-  private async loadEffectiveModelSettingsForWorkspace(
-    workspaceId: string,
-  ): Promise<ModelSettingsSnapshot | undefined> {
-    const ownerWorkspaceId = this.resolveModelSettingsWorkspaceId(workspaceId);
-    const ownerWorkspace = this.workspaceRefFromState(ownerWorkspaceId);
-    if (!ownerWorkspace) {
-      return undefined;
-    }
-    const globalModelSettings =
-      this.state.modelSettingsScopeMode === "per-repo" &&
-      hasStoredModelSettings(this.state.globalModelSettings)
-        ? this.state.globalModelSettings
-        : await this.loadLiveGlobalModelSettings(
-            this.state.workspaces.map((workspace) => ({
-              workspaceId: workspace.id,
-              path: workspace.path,
-              displayName: workspace.name,
-            })),
-            ownerWorkspaceId,
-          );
-    return mergeModelSettingsSnapshot(
-      globalModelSettings,
-      await readProjectModelSettingsFile(ownerWorkspace.path),
-    );
-  }
-
-  private async restoreGlobalModelSettings(
-    settings: ModelSettingsSnapshot,
-    workspaces?: readonly { workspaceId: string; path: string; displayName: string }[],
-    preferredWorkspaceId?: string,
-  ): Promise<void> {
-    if (!hasStoredModelSettings(settings)) {
-      return;
-    }
-    const workspaceRefs =
-      workspaces ??
-      this.state.workspaces.map((workspace) => ({
-        workspaceId: workspace.id,
-        path: workspace.path,
-        displayName: workspace.name,
-      }));
-    const fallbackWorkspace =
-      (preferredWorkspaceId
-        ? workspaceRefs.find((entry) => entry.workspaceId === preferredWorkspaceId)
-        : undefined) ?? workspaceRefs[0];
-    if (!fallbackWorkspace) {
-      return;
-    }
-    const workspaceRef = {
-      workspaceId: fallbackWorkspace.workspaceId,
-      path: fallbackWorkspace.path,
-      displayName: fallbackWorkspace.displayName,
-    };
-    await this.driver.runtimeSupervisor.setScopedModelPatterns(
-      workspaceRef,
-      settings.enabledModelPatterns,
-    );
-    if (settings.defaultThinkingLevel) {
-      await this.driver.runtimeSupervisor.setDefaultThinkingLevel(
-        workspaceRef,
-        settings.defaultThinkingLevel,
-      );
-    }
-    if (settings.defaultProvider && settings.defaultModelId) {
-      await this.driver.runtimeSupervisor.setDefaultModel(workspaceRef, {
-        provider: settings.defaultProvider,
-        modelId: settings.defaultModelId,
-      });
-    }
-    if (this.runtimeByWorkspace.has(workspaceRef.workspaceId)) {
-      this.runtimeByWorkspace.set(
-        workspaceRef.workspaceId,
-        await this.driver.runtimeSupervisor.refreshRuntime(workspaceRef),
-      );
-    }
   }
 
   private async readUiState(): Promise<PersistedUiState> {
@@ -4830,28 +4157,6 @@ function updateRecordValue<T>(
   };
 }
 
-function applyModelSettingsSnapshot(
-  runtime: RuntimeSnapshot,
-  settings: ModelSettingsSnapshot,
-): RuntimeSnapshot {
-  return {
-    ...runtime,
-    settings: {
-      ...runtime.settings,
-      ...(settings.defaultProvider
-        ? { defaultProvider: settings.defaultProvider }
-        : { defaultProvider: undefined }),
-      ...(settings.defaultModelId
-        ? { defaultModelId: settings.defaultModelId }
-        : { defaultModelId: undefined }),
-      ...(settings.defaultThinkingLevel
-        ? { defaultThinkingLevel: settings.defaultThinkingLevel }
-        : { defaultThinkingLevel: undefined }),
-      enabledModelPatterns: [...settings.enabledModelPatterns],
-    },
-  };
-}
-
 /**
  * Convert an error into the message shown in `lastError`. A SessionLeasedError
  * means another live pi surface holds the session file, so binding a runtime is
@@ -4880,13 +4185,6 @@ function isSessionLeasedError(error: unknown): error is SessionLeasedError {
   );
 }
 
-/**
- * Path to pi's global settings file, mirroring the runtime's own resolution
- * (`getAgentDir()/settings.json`). We resolve it locally rather than importing
- * the runtime's helper because `@earendil-works/pi-coding-agent` is ESM-only and
- * cannot be `require`d from the CJS Electron main bundle; the app store passes no
- * custom `agentDir`, so the default resolution here matches the driver's.
- */
 /** `mtimeMs` of a file, or undefined if it does not exist / cannot be stat'd. */
 async function statMtimeMs(path: string): Promise<number | undefined> {
   try {
@@ -4894,101 +4192,6 @@ async function statMtimeMs(path: string): Promise<number | undefined> {
   } catch {
     return undefined;
   }
-}
-
-/** Shows a path under the home directory as `~/…`, the way pi's docs and terminal name it. */
-function withHomeAsTilde(path: string): string {
-  const home = homedir();
-  return path.startsWith(`${home}${sep}`) ? `~${path.slice(home.length)}` : path;
-}
-
-function resolveGlobalSettingsPath(): string {
-  const override = process.env.PI_CODING_AGENT_DIR;
-  const agentDir = override
-    ? override.startsWith("~")
-      ? join(homedir(), override.slice(1))
-      : override
-    : join(homedir(), ".pi", "agent");
-  return join(agentDir, "settings.json");
-}
-
-async function readProjectModelSettingsFile(
-  workspacePath: string,
-): Promise<Record<string, unknown>> {
-  try {
-    const raw = await readFile(join(workspacePath, ".pi", "settings.json"), "utf8");
-    const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function mergeModelSettingsSnapshot(
-  globalSettings: ModelSettingsSnapshot,
-  projectSettings: Record<string, unknown>,
-): ModelSettingsSnapshot {
-  const defaultProvider =
-    typeof projectSettings.defaultProvider === "string"
-      ? projectSettings.defaultProvider
-      : globalSettings.defaultProvider;
-  const defaultModelId =
-    typeof projectSettings.defaultModel === "string"
-      ? projectSettings.defaultModel
-      : globalSettings.defaultModelId;
-  const defaultThinkingLevel =
-    typeof projectSettings.defaultThinkingLevel === "string"
-      ? (projectSettings.defaultThinkingLevel as RuntimeSettingsSnapshot["defaultThinkingLevel"])
-      : globalSettings.defaultThinkingLevel;
-
-  return {
-    enabledModelPatterns: Array.isArray(projectSettings.enabledModels)
-      ? projectSettings.enabledModels.filter((value): value is string => typeof value === "string")
-      : [...globalSettings.enabledModelPatterns],
-    ...(defaultProvider ? { defaultProvider } : {}),
-    ...(defaultModelId ? { defaultModelId } : {}),
-    ...(defaultThinkingLevel ? { defaultThinkingLevel } : {}),
-  };
-}
-
-function hasStoredModelSettings(
-  settings: ModelSettingsSnapshot | undefined,
-): settings is ModelSettingsSnapshot {
-  return Boolean(
-    settings &&
-    (settings.enabledModelPatterns.length > 0 ||
-      settings.defaultProvider ||
-      settings.defaultModelId ||
-      settings.defaultThinkingLevel),
-  );
-}
-
-function modelSettingsEqual(left: ModelSettingsSnapshot, right: ModelSettingsSnapshot): boolean {
-  return (
-    left.defaultProvider === right.defaultProvider &&
-    left.defaultModelId === right.defaultModelId &&
-    left.defaultThinkingLevel === right.defaultThinkingLevel &&
-    left.enabledModelPatterns.length === right.enabledModelPatterns.length &&
-    left.enabledModelPatterns.every(
-      (pattern, index) => pattern === right.enabledModelPatterns[index],
-    )
-  );
-}
-
-function mergeEnabledModelPatterns(
-  existingPatterns: readonly string[],
-  providerPatterns: readonly string[],
-): readonly string[] {
-  const merged = [...existingPatterns];
-  const seen = new Set(existingPatterns);
-  for (const pattern of providerPatterns) {
-    if (seen.has(pattern)) {
-      continue;
-    }
-    seen.add(pattern);
-    merged.push(pattern);
-  }
-  return merged;
 }
 
 function reconcilePinnedSessionOrder(

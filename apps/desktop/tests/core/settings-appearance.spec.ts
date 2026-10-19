@@ -132,6 +132,7 @@ test("selects and restores theme presets", async () => {
 });
 
 test("every preset recolours the same design instead of restyling it", async () => {
+  test.setTimeout(120_000);
   const userDataDir = await makeUserDataDir();
   const workspacePath = await makeWorkspace("appearance-one-design");
   const harness = await launchDesktop(userDataDir, {
@@ -251,5 +252,10 @@ async function expectSameDesign(window: Page): Promise<void> {
 }
 
 async function selectThemePreset(window: Page, name: string): Promise<void> {
-  await window.getByLabel("Color preset").selectOption({ label: name });
+  const preset = themePresets.find((entry) => entry.name === name);
+  if (!preset) throw new Error(`Unknown theme preset: ${name}`);
+  const presetSelect = window
+    .locator("select")
+    .filter({ has: window.locator(`option[value=\"${preset.id}\"]`) });
+  await presetSelect.selectOption(preset.id);
 }

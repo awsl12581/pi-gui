@@ -161,7 +161,7 @@ test("adds, switches and removes an MCP server from Settings, editing mcp.json i
 
     await row("fixture").getByRole("button", { name: "Remove" }).click();
     const accepted = window.getByRole("alertdialog");
-    await expect(accepted).toHaveText(
+    await expect(accepted.locator('[data-slot="alert-dialog-description"]')).toHaveText(
       'Remove MCP server "fixture"? pi in the terminal stops using it too.',
     );
     await accepted.getByRole("button", { name: "Confirm" }).click();
@@ -212,7 +212,10 @@ test("rejects a server Settings cannot run and leaves mcp.json alone", async () 
     await expect(surface.getByTestId("mcp-servers-empty")).toContainText("/mcp");
 
     await surface.getByLabel("Server name").fill("local-file");
-    await surface.getByRole("group", { name: "Server type" }).getByText("URL").click();
+    await surface
+      .getByRole("radiogroup", { name: "Server type" })
+      .getByRole("radio", { name: "URL" })
+      .click();
     await surface.getByLabel("Server URL").fill("file:///etc/passwd");
     await surface.getByRole("button", { name: "Add server", exact: true }).click();
     await expect(surface).toContainText("MCP server URL must be a valid http:// or https:// URL");

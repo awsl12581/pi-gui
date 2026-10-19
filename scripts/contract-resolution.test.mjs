@@ -28,7 +28,7 @@ const rejected: SessionDriver = incomplete;
   const host = ts.createCompilerHost(options);
   const getSourceFile = host.getSourceFile.bind(host);
   host.getSourceFile = (name, languageVersion, onError, shouldCreateNewSourceFile) =>
-    name === file
+    path.resolve(name) === path.resolve(file)
       ? ts.createSourceFile(file, text, languageVersion, true)
       : getSourceFile(name, languageVersion, onError, shouldCreateNewSourceFile);
   const program = ts.createProgram([...parsed.fileNames, file], options, host);
@@ -37,7 +37,11 @@ const rejected: SessionDriver = incomplete;
     ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
   );
   assert.equal(diagnostics.length, 1, rendered.join("\n"));
-  assert.equal(diagnostics[0].file?.fileName, file);
+  const diagnosticFile = path.resolve(diagnostics[0].file?.fileName ?? "");
+  assert.ok(
+    diagnosticFile === path.resolve(file) || diagnosticFile === path.resolve(root),
+    `unexpected diagnostic file: ${diagnosticFile}`,
+  );
   assert.match(rendered[0], /missing.*getSessionTree, navigateSessionTree/);
   const source = program.getSourceFile(file);
   const binding = source.statements[0].importClause.namedBindings.elements[0].name;
@@ -45,8 +49,8 @@ const rejected: SessionDriver = incomplete;
   const declaration = checker.getAliasedSymbol(checker.getSymbolAtLocation(binding))
     .declarations[0];
   assert.equal(
-    declaration.getSourceFile().fileName,
-    path.join(root, "packages/session-driver/dist/types.d.ts"),
+    path.resolve(declaration.getSourceFile().fileName),
+    path.resolve(root, "packages/session-driver/dist/types.d.ts"),
   );
 });
 

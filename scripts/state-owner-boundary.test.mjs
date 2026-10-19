@@ -11,6 +11,8 @@ const ownerFiles = [
   "apps/desktop/electron/workspace/app-store-worktree.ts",
   "apps/desktop/electron/orchestration/app-store-orchestration.ts",
   "apps/desktop/electron/scheduled-tasks/app-store-scheduled-tasks.ts",
+  "apps/desktop/electron/settings/preferences-owner.ts",
+  "apps/desktop/electron/settings/runtime-settings-owner.ts",
 ];
 
 const reviewedStore = "apps/desktop/electron/workbench/reviewed-store.ts";

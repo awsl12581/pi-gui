@@ -22,6 +22,13 @@ function languageSelect(page: Page) {
   return page.getByRole("combobox", { name: /^(App language|应用语言)$/ });
 }
 
+async function selectLanguage(page: Page, language: "system" | "en" | "zh-CN") {
+  await languageSelect(page).click();
+  const name =
+    language === "system" ? /^(System|跟随系统)$/ : language === "en" ? "English" : "简体中文";
+  await page.getByRole("option", { name, exact: true }).click();
+}
+
 test("language follows the OS by default and switches across windows without losing a draft", async ({}, testInfo) => {
   const userDataDir = await makeUserDataDir("pi-gui-language-");
   const workspacePath = await makeWorkspace("language-fixture");
@@ -46,8 +53,8 @@ test("language follows the OS by default and switches across windows without los
       resolveAppLanguage("system", systemLanguages),
     );
     await openGeneral(page);
-    await expect(languageSelect(page)).toHaveValue("system");
-    await languageSelect(page).selectOption("en");
+    await expect(languageSelect(page)).toHaveText(/^(System|跟随系统)$/);
+    await selectLanguage(page, "en");
     await expect(page.getByRole("heading", { name: "General", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Back to app", exact: true }).click();
     // A fixture session establishes an editable composer without contacting a provider.
@@ -55,7 +62,7 @@ test("language follows the OS by default and switches across windows without los
     const draft = "Settings\nNew thread\n保留这份草稿 /tmp/Settings.ts";
     await page.getByTestId("composer").fill(draft);
     await openGeneral(page);
-    await languageSelect(page).selectOption("zh-CN");
+    await selectLanguage(page, "zh-CN");
     await expect(page.getByRole("heading", { name: "通用", exact: true })).toBeVisible();
     await expect(page.getByText("偏好设置", { exact: true })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
@@ -86,10 +93,10 @@ test("language follows the OS by default and switches across windows without los
     const secondPage = await nextWindow;
     await expect(secondPage.locator("html")).toHaveAttribute("lang", "zh-CN");
     await openGeneral(secondPage);
-    await languageSelect(secondPage).selectOption("en");
+    await selectLanguage(secondPage, "en");
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByTestId("composer")).toHaveValue(draft);
-    await languageSelect(secondPage).selectOption("zh-CN");
+    await selectLanguage(secondPage, "zh-CN");
     await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
     await harness.close();
     harness = await launchDesktop(userDataDir, launchOptions);
@@ -98,8 +105,8 @@ test("language follows the OS by default and switches across windows without los
     await expect(restarted.locator("html")).toHaveAttribute("lang", "zh-CN");
     expect((await getDesktopState(restarted)).languagePreference).toBe("zh-CN");
     await openGeneral(restarted);
-    await expect(languageSelect(restarted)).toHaveValue("zh-CN");
-    await languageSelect(restarted).selectOption("system");
+    await expect(languageSelect(restarted)).toHaveText("简体中文");
+    await selectLanguage(restarted, "system");
     await expect
       .poll(async () => (await getDesktopState(restarted)).language)
       .toBe(resolveAppLanguage("system", systemLanguages));

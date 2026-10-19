@@ -1,8 +1,8 @@
 # Architecture and ownership
 
-> 最后修改时间：2026-10-19 13:23 CST
-> 文档版本：v11
-> 修改说明：记录 catalog 优先的两阶段启动、后台同步和 renderer 按需加载。
+> 最后修改时间：2026-10-19 14:05 CST
+> 文档版本：v12
+> 修改说明：记录偏好与运行时设置 owner 的职责、能力接口和模型设置归属。
 
 pi-gui keeps the desktop app, portable contracts, catalogs, and Pi adapter separate. Code is grouped by the component that owns behavior and mutable state. Folder placement alone is not an ownership boundary; types and repository guards enforce the important dependency rules.
 
@@ -22,24 +22,28 @@ Start tracing in [main](../apps/desktop/electron/main.ts), [window owner](../app
 
 ## Owners and boundaries
 
-| Owner                | Responsibility                                                                 | Enforced interface                                                                                                                                             |
-| -------------------- | ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Renderer features    | Interaction, presentation, and renderer-local view state                       | Depend on desktop contracts and the preload API; do not import Electron, Node, or host implementation.                                                         |
-| Workbench controller | Each window's live per-task tools, selection, visibility and file references   | One reducer; explicit interactions save templates through narrow IPC. Restores and data refreshes do not broadcast or rewrite live layouts.                    |
-| Review owner         | Immutable comparisons, pinned file identities, freshness and reviewed marks    | `ReviewOwner` receives only task validation, checkout lookup, userData storage and an optional checkpoint source; Git stays in its platform adapter.           |
-| Checkpoint store     | Before/after trees, interval provenance and native transcript-anchor lookup    | `TurnCheckpointStore` receives portable awaited capture boundaries; all snapshot objects/index/refs belong to its separate userData Git repository.            |
-| Extension view owner | One backend facet host per registered view/runtime, connections and assets     | Receives declarations from Pi's loaded catalog, validates their sources, and binds each connection to its task/runtime/window; no aggregate application state. |
-| Desktop contracts    | Browser-safe requests, snapshots, and shared values                            | Depend on neither React nor host/runtime implementation.                                                                                                       |
-| IPC                  | Request validation and routing                                                 | Receives grouped state, workspace, conversation, orchestration, scheduled-task, and settings operations plus narrow platform capabilities.                     |
-| Window owner         | Per-window selection, snapshot projection, and serialized actions              | Captures explicit session targets from the sender and never receives writable aggregate store state.                                                           |
-| Conversation owner   | Drafts, attachments, queued messages, session commands, and transcript updates | Receives only conversation maps, a runtime lookup, and conversation operations.                                                                                |
-| Workspace owner      | Workspace/session lifecycle and Git worktree use cases                         | Receives cloned workspace views, explicit session setup operations, and the catalog/worktree capabilities it needs.                                            |
-| Orchestration owner  | Child-thread policy, supervision, transcript evidence, and orchestration tools | Receives cloned orchestration views and bounded transcript, error, conversation, and workspace operations.                                                     |
-| Scheduled-task owner | Local on-device schedules, fire, interview session, and agent tools            | Receives a bounded host for the task file, session lookup, selecting create, background create, and background instruction delivery.                           |
-| Persistence owners   | UI state, attachments, catalog data, and scheduled tasks                       | Decode their own durable format before use or replacement.                                                                                                     |
-| Platform adapters    | Files, worktrees, terminal, dialogs, notifications, theme, and updates         | Stay in Electron main and expose only the required capability to IPC or an owner.                                                                              |
+| Owner                  | Responsibility                                                                     | Enforced interface                                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Renderer features      | Interaction, presentation, and renderer-local view state                           | Depend on desktop contracts and the preload API; do not import Electron, Node, or host implementation.                                                         |
+| Workbench controller   | Each window's live per-task tools, selection, visibility and file references       | One reducer; explicit interactions save templates through narrow IPC. Restores and data refreshes do not broadcast or rewrite live layouts.                    |
+| Review owner           | Immutable comparisons, pinned file identities, freshness and reviewed marks        | `ReviewOwner` receives only task validation, checkout lookup, userData storage and an optional checkpoint source; Git stays in its platform adapter.           |
+| Checkpoint store       | Before/after trees, interval provenance and native transcript-anchor lookup        | `TurnCheckpointStore` receives portable awaited capture boundaries; all snapshot objects/index/refs belong to its separate userData Git repository.            |
+| Extension view owner   | One backend facet host per registered view/runtime, connections and assets         | Receives declarations from Pi's loaded catalog, validates their sources, and binds each connection to its task/runtime/window; no aggregate application state. |
+| Desktop contracts      | Browser-safe requests, snapshots, and shared values                                | Depend on neither React nor host/runtime implementation.                                                                                                       |
+| IPC                    | Request validation and routing                                                     | Receives grouped state, workspace, conversation, orchestration, scheduled-task, and settings operations plus narrow platform capabilities.                     |
+| Window owner           | Per-window selection, snapshot projection, and serialized actions                  | Captures explicit session targets from the sender and never receives writable aggregate store state.                                                           |
+| Conversation owner     | Drafts, attachments, queued messages, session commands, and transcript updates     | Receives only conversation maps, a runtime lookup, and conversation operations.                                                                                |
+| Workspace owner        | Workspace/session lifecycle and Git worktree use cases                             | Receives cloned workspace views, explicit session setup operations, and the catalog/worktree capabilities it needs.                                            |
+| Orchestration owner    | Child-thread policy, supervision, transcript evidence, and orchestration tools     | Receives cloned orchestration views and bounded transcript, error, conversation, and workspace operations.                                                     |
+| Scheduled-task owner   | Local on-device schedules, fire, interview session, and agent tools                | Receives a bounded host for the task file, session lookup, selecting create, background create, and background instruction delivery.                           |
+| Preferences owner      | Application preferences, language and theme updates                                | Reads preference fields and writes a preference-only patch; the composition point owns revisions and default workspace naming.                                 |
+| Runtime-settings owner | Model scope/defaults, Provider, Skills, extension switches, MCP and runtime reload | Receives the runtime supervisor, a settings view, snapshot operations and explicit reload/persistence capabilities.                                            |
+| Persistence owners     | UI state, attachments, catalog data, and scheduled tasks                           | Decode their own durable format before use or replacement.                                                                                                     |
+| Platform adapters      | Files, worktrees, terminal, dialogs, notifications, theme, and updates             | Stay in Electron main and expose only the required capability to IPC or an owner.                                                                              |
 
-`DesktopAppStore` is the composition point. Its aggregate state, driver, catalogs, session maps, runtime maps, worktree services, and attachment store are private. It constructs conversation, workspace, orchestration, and scheduled-task owners through bounded capability factories. The removed `AppStoreInternals` whole-store interface is prohibited by [the state-owner guard](../scripts/state-owner-boundary.test.mjs), which also rejects direct owner access to `store.state`, `store.sessionState`, and `store.runtimeByWorkspace`, and keeps `reviewed-files.json`, the checkpoint store paths and `writeFileAtomicQueued` inside their owner modules.
+`DesktopAppStore` is the composition point. Its aggregate state, driver, catalogs, session maps, runtime maps, worktree services, and attachment store are private. It constructs conversation, workspace, orchestration, scheduled-task, preference, and runtime-settings owners through bounded capability interfaces. The removed `AppStoreInternals` whole-store interface is prohibited by [the state-owner guard](../scripts/state-owner-boundary.test.mjs), which also rejects direct owner access to `store.state`, `store.sessionState`, and `store.runtimeByWorkspace`, and keeps `reviewed-files.json`, the checkpoint store paths and `writeFileAtomicQueued` inside their owner modules.
+
+[`PreferencesOwner`](../apps/desktop/electron/settings/preferences-owner.ts) owns preference validation and update flows, including language and theme. Its write port accepts only preference fields; the composition point applies the patch, updates the default workspace's translated name when language changes, and advances the revision. [`RuntimeSettingsOwner`](../apps/desktop/electron/settings/runtime-settings-owner.ts) owns model scope/defaults, Provider, Skills, extension switches, MCP, code mode and runtime reload flows. It receives a settings view, the runtime supervisor, per-workspace snapshot operations and explicit session reload/publication/persistence capabilities, without access to mutable application maps. [`model-settings.ts`](../apps/desktop/electron/settings/model-settings.ts) owns model-settings file resolution, reading, merging and comparison. Startup recovery, focus reconciliation and event ordering remain coordinated by the application store. The [split charter](missions/app-store-split-charter.md) defines the scope and acceptance criteria.
 
 The window owner keeps a separate view for every Electron window. Draft, send, attachment, queue-editing, model, thinking, tree-navigation, and Stop requests use a session target captured from the IPC sender. Attachment picking captures the target before opening the native dialog. Opening New thread flushes the outgoing conversation's pending draft before navigation. Archiving the open thread flushes it the same way. Before a window closes, and before quit for every window, main asks the renderer to send its pending draft and waits for its main-frame acknowledgement, bounded at 2 seconds within the 5-second quit budget, so the store's final flush includes it.
 
@@ -104,6 +108,7 @@ apps/desktop/
     main.ts              process composition and platform wiring
     preload.ts           narrow renderer transport
     application/         private aggregate store and projection helpers
+    settings/            preference and runtime-setting flows, model-settings helpers
     windows/             per-window views and action serialization
     ipc/                 validation and request routing
     conversation/        session commands, drafts, transcript, visibility
@@ -238,3 +243,4 @@ preserve offsets; they do not preserve the exact word after reflow within a larg
 | v9   | 2026-10-18 21:59 CST | 记录语言偏好持久化、系统语言回退、离线资源、跨窗口同步和时间线文案描述符。 |
 | v10  | 2026-10-19 13:16 CST | 记录启动默认工作区、工作目录、选择回退、语言显示和重命名／移除保护。       |
 | v11  | 2026-10-19 13:23 CST | 记录 catalog 优先启动、窗口就绪后的同步及 renderer 模块按需加载。          |
+| v12  | 2026-10-19 14:05 CST | 记录偏好与运行时设置 owner 的职责、能力接口和模型设置归属。                |
